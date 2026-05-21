@@ -15,7 +15,7 @@ Flat organizations — startups and small companies intentionally operating with
 
 ### Solution
 
-Ceptly is a Slack-native product powered by AI agents that proactively gather context from individual contributors through async conversations, synthesize that context, and deliver structured updates, alerts, and answers to founders and team leads — without requiring a manager in the loop.
+Ceptly is a Slack native product powered by AI agents that proactively gather context from individual contributors through async conversations, synthesize that context, and deliver structured updates, alerts, and answers to founders and team leads — without requiring a manager in the loop.
 
 ### Target User
 
@@ -24,7 +24,7 @@ Ceptly is a Slack-native product powered by AI agents that proactively gather co
 
 ### Core Value Proposition
 
-> "Your team's AI chief of staff. Always listening, never in the way."
+> "Your team's AI chief of staff. Allowing people to focus on real work."
 
 ---
 
@@ -128,28 +128,32 @@ The product is built around three agents with distinct roles. All agents operate
 **Output Format (posted to Slack):**
 
 ```
-📋 Weekly Team Digest — Week of May 19
+Weekly Team Digest — Week of May 19
 
-✅ Progress
-• Sarah: Onboarding flow, dashboard bug fix
-• James: Auth refactor (Day 3/5)
-• Priya: Customer interviews for Q3 research
+Progress:
+• Sarah B:
+  - [5/10] Onboarding flow
+  - [7/10] dashboard bug fix
+• James G:
+  - [2/10] Auth refactor (Day 3/5)
+• Meagan K:
+  - [9/10] Customer interviews for Q3 research
 
-🚧 Blockers (3)
-• Sarah → waiting on design: empty state screens
-• James → needs backend env access from DevOps
-• Priya → no blockers
+Blockers (3):
+• Sarah B → waiting on design: empty state screens
+• James G → needs backend env access from DevOps
+• Meagan K → no blockers
 
-📊 Workload Sentiment
+Workload Sentiment
 Average: 3.2 / 5  ▓▓▓░░
 • 2 people trending toward overload (4+)
 • 1 person underloaded (1)
 
-⚠️ Flags
+Flags
 • James hasn't responded to 2 consecutive check-ins
 • Workload scores up 0.8 pts vs last week — worth a pulse check
 
-💬 Open Items for Leadership
+Open Items for Leadership
 • "Are we still targeting a June launch or has that shifted?"
 • "Can we get clarity on the new feature prioritization?"
 ```
@@ -475,7 +479,8 @@ Vercel (Next.js) → REST API request with auth token
 - [ ] Should ICs see the digest, or only founders/leads?
 - [ ] How do we handle contractors vs full-time employees in the roster?
 - [ ] What's the right default check-in frequency — 2x/week may feel like too much for some teams
-- [ ] Do we want a web dashboard at all in v1, or stay fully Slack-native?
+- [x] Do we want a web dashboard at all in v1, or stay fully Slack-native?
+  - Yes we do.
 - [ ] How do we handle very small teams (2–5 people) where patterns are harder to detect?
 - [ ] Should managers be able to assign different question sets to different team members or sub-teams?
 - [ ] How do we handle question set changes mid-sprint — do we notify ICs?
