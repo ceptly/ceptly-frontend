@@ -11,42 +11,38 @@
 
 ### Problem Statement
 
-Flat organizations — startups and small companies intentionally operating without a middle management layer — break down at scale because coordination, visibility, and team health depend on humans manually doing the work that managers typically own: check-ins, status updates, blocker identification, and performance signals. Without tooling to replace that function, founders become the information bottleneck and problems surface too late.
+Flat organizations — startups, small companies intentionally operating without a middle management layer and large companies that want to layoff much of their middle management — break down at scale because coordination, visibility, and team health depend on humans manually doing the work that managers typically own: check-ins, status updates, blocker identification, and performance signals. Without tooling to replace that function, founders become the information bottleneck and problems surface too late.
 
 ### Solution
 
-Ceptly is a Slack native product powered by AI agents that proactively gather context from individual contributors through async conversations, synthesize that context, and deliver structured updates, alerts, and answers to founders and team leads — without requiring a manager in the loop.
+Ceptly is a product powered by AI agents that proactively gather context from individual contributors through async conversations or slack MCP servers, synthesize that context, and deliver structured updates, alerts, and answers to founders and team leads — without requiring a middle manager in the loop.
 
 ### Target User
 
-- **Primary:** Founders and team leads at flat-structure startups (10–80 people)
-- **Secondary:** Individual contributors who need a lightweight async way to surface blockers and progress
+- **Primary:** Founders and team leads at flat-structure startups (10–80 people).
+- **Secondary:** Executives at large companies that want to flatten their companies org.
+- **Thirdary:** Individual contributors who need a lightweight async way to surface blockers and progress.
 
 ### Core Value Proposition
 
 > "Your team's AI chief of staff. Allowing people to focus on real work."
+> "Replace your middle manager."
 
 ---
 
-## 2. Goals & Success Metrics
+## 2. Goals
 
 ### Goals
 
 - Replace the coordination and visibility function of middle managers for flat orgs
 - Reduce founder time spent on status gathering and team health monitoring
 - Surface problems earlier than they would appear organically
+- Reduce time spent by IC's communicating with higher ups
 - Require zero behavior change from ICs beyond a Slack DM
-
-### Success Metrics (MVP)
-
-| Metric | Target |
-|---|---|
-| Weekly active teams | 10+ within 60 days of launch |
-| IC check-in completion rate | >70% per week |
-| Founder-reported time saved on status gathering | >3 hrs/week |
-| Retention at 30 days | >60% of teams |
-
----
+- Assist Team Leads with performance reviews
+- Assist Team Leads with tracking performance
+- Assist Team Leads by tracking lateness etc.
+- Assist Team Leads with giving requirements to Team Leads
 
 ## 3. User Stories
 
@@ -67,6 +63,7 @@ Ceptly is a Slack native product powered by AI agents that proactively gather co
 
 ### Individual Contributor
 
+- As an IC, I just want to talk to my boss about technical things. Nothing else.
 - As an IC, I want to report my status without having to write a formal update or attend a sync.
 - As an IC, I want to flag a blocker to leadership without having to navigate politics or escalate manually.
 - As an IC, I want the check-in to feel conversational, not like filling out a form.
@@ -106,10 +103,16 @@ The product is built around three agents with distinct roles. All agents operate
 - Is there anything you're unclear on in terms of priorities?
 
 **Configuration (per workspace):**
-- Check-in frequency (daily / 2x week / weekly)
-- Check-in window (e.g., only between 9am–11am in team's timezone)
+- Check-in schedule (manager-configurable in Settings UI):
+  - Days of week — checkboxes (any combination, e.g. Mon + Thu)
+  - Time of day — time picker in workspace timezone
+  - Frequency — daily, or specific days (custom = any day combination)
+  - Timezone — workspace-level; auto-detected on onboarding, editable
+- Default: Monday and Thursday mornings (team-specific schedules override via UI)
 - Active question set (managed via Question Editor — see Section 4.4)
 - Whether ICs can opt out of specific questions
+
+See [spec.md](./spec.md) for Render cron + scheduler implementation.
 
 ---
 
@@ -384,7 +387,7 @@ Alert
 | ORM | Drizzle | Type-safe queries, lightweight, pairs well with Postgres |
 | AI / Agents | Anthropic Claude API (claude-sonnet-4-20250514) | Best conversational quality for check-ins |
 | Slack Integration | Slack Bolt SDK (Node) | First-party SDK, handles events + slash commands |
-| Job Scheduling | Inngest | Durable background jobs for scheduled check-ins and digest triggers |
+| Job Scheduling | Render Cron Jobs | Periodic HTTP trigger to Express `/internal/*` scheduler (see [spec.md](./spec.md)); per-workspace schedule stored in Postgres |
 
 ### Permissions Architecture
 
@@ -416,7 +419,7 @@ Vercel (Next.js) → REST API request with auth token
 - Blocker alerts (real-time, on detection)
 - Disengagement alerts (missed 2+ check-ins)
 - Q&A Agent for founders via Slack DM
-- Basic config UI: team roster, schedule, channel selection
+- Basic config UI: team roster, check-in schedule (days, time, frequency, timezone), channel selection
 - **Question Editor (Next.js):**
   - Create, edit, reorder, toggle active/inactive questions
   - AI Question Suggester (goal → suggested question set)
@@ -450,8 +453,10 @@ Vercel (Next.js) → REST API request with auth token
 ## 10. Build Phases
 
 ### Phase 1 — Core Loop (Weeks 1–4)
+- Render: Web Service (Express) + Postgres + Cron Job → `/internal/checkin-scheduler`
 - Slack app setup and OAuth
 - Check-In Agent: DM flow, hardcoded default question set, response storage
+- Workspace schedule in DB + secured cron scheduler (default Mon/Thu)
 - Basic digest posted to channel (manual trigger)
 - Test with 1 real team
 
