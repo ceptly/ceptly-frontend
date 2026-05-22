@@ -1,4 +1,6 @@
 import { cookies } from "next/headers";
+import { cache } from "react";
+import { redirect } from "next/navigation";
 
 import { AUTH_ENDPOINTS, resolveApiBaseUrl } from "@/lib/api/auth";
 import type { AuthUser } from "@/lib/api/types";
@@ -78,7 +80,7 @@ export async function clearAuthCookies() {
   cookieStore.set("workspace_name", "", { ...options, maxAge: 0 });
 }
 
-export async function getCurrentUser(): Promise<AuthUser | null> {
+export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
   const token = await getAccessToken();
   if (!token) {
     return null;
@@ -135,4 +137,17 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   } catch {
     return null;
   }
+});
+
+export async function requireAuth(): Promise<AuthUser> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    if (await getAccessToken()) {
+      await clearAuthCookies();
+    }
+    redirect("/auth");
+  }
+
+  return user;
 }

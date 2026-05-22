@@ -1,21 +1,13 @@
-import { redirect } from "next/navigation";
-
 import { WorkspaceNameForm } from "@/components/settings/workspace-name-form";
-import { getCurrentUser } from "@/lib/auth/server";
+import { requireAuth } from "@/lib/auth/server";
 
 const ADMIN_ROLES = new Set(["founder", "admin"]);
 
 export default async function SettingsPage() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/auth");
-  }
+  const user = await requireAuth();
 
   const workspace = user.workspaces?.[0];
-  const canEdit = workspace
-    ? ADMIN_ROLES.has(workspace.role)
-    : false;
+  const canEdit = workspace ? ADMIN_ROLES.has(workspace.role) : false;
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">

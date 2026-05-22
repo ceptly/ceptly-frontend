@@ -35,7 +35,7 @@ Use this file as the execution checklist. Check items when shipped and verified 
 
 - [x] Express scaffold + `GET /health`
 - [x] Drizzle + Postgres connection
-- [ ] `workspaces` table with:
+- [x] `workspaces` table with:
     - schedule columns: `timezone`, `days`, `time`, `frequency`, idempotency field (e.g. `last_checkin_schedule_fire_at`)
     - `team_members` column (associates multiple users to a workspace)
     - unique constraint or composite primary key as necessary for integrity
@@ -43,8 +43,8 @@ Use this file as the execution checklist. Check items when shipped and verified 
     - foreign key to organization (if multi-org/future-proofing)
     - migration or seed for first workspace in dev
 - [x] User auth routes (`/api/auth/*`) + JWT
-- [ ] Link authenticated user → workspace (membership / role model)
-- [ ] Seed script or admin path for first test workspace
+- [x] Link authenticated user → workspace (membership / role model)
+- [x] Seed script or admin path for first test workspace
 
 **Frontend (`ceptly2`)**
 
@@ -52,7 +52,7 @@ Use this file as the execution checklist. Check items when shipped and verified 
 - [x] Auth cookies + server session helpers
 - [x] `NEXT_PUBLIC_API_URL` wired to backend
 - [ ] Post-login redirect to home (not stuck on `/auth`)
-- [ ] Protected routes for settings / dashboard (middleware or layout guard)
+- [x] Protected routes for settings / dashboard (middleware or layout guard)
 
 ### Phase complete
 
