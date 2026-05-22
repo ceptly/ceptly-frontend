@@ -6,6 +6,9 @@ import Image from "next/image";
 import { LogOut, User } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useStatsigClient } from "@statsig/react-bindings";
+
+import { signOut } from "@/actions/auth";
+import type { AuthUser } from "@/lib/api/types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,22 +21,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const staticUser = {
-  fullName: "Demo User",
-  email: "demo@ceptly.com",
-};
-
 const navigationItems = [
   { label: "Chat", path: "/" },
   { label: "Metrics", path: "/metrics" },
   { label: "Settings", path: "/settings" },
 ];
 
-function getInitials(name: string) {
+function getInitials(user: AuthUser) {
+  const name = user.fullName?.trim() || user.email;
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
   return name.charAt(0).toUpperCase();
 }
 
-export function AccountHeader() {
+function getDisplayName(user: AuthUser) {
+  return user.fullName?.trim() || user.email;
+}
+
+interface AccountHeaderProps {
+  user: AuthUser;
+}
+
+export function AccountHeader({ user }: AccountHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { theme, resolvedTheme } = useTheme();
@@ -44,13 +55,17 @@ export function AccountHeader() {
     setMounted(true);
   }, []);
 
+  if (pathname.startsWith("/auth")) {
+    return null;
+  }
+
   const handleSignOut = () => {
     client.logEvent("sign_out_click");
-    router.push("/");
+    void signOut();
   };
 
   return (
-    <header className="bg-background border-b border-border sticky top-0 z-50">
+    <header className="sticky top-0 z-50 border-b border-border bg-background">
       <div className="px-6 py-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
@@ -104,8 +119,8 @@ export function AccountHeader() {
                 }
               >
                 <Avatar className="size-9">
-                  <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                    {getInitials(staticUser.fullName)}
+                  <AvatarFallback className="bg-primary font-semibold text-primary-foreground">
+                    {getInitials(user)}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
@@ -113,11 +128,11 @@ export function AccountHeader() {
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {staticUser.fullName}
+                      <p className="text-sm leading-none font-medium">
+                        {getDisplayName(user)}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {staticUser.email}
+                        {user.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>

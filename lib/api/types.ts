@@ -1,33 +1,27 @@
-export type UserRole = "founder" | "lead" | "ic";
-
-export interface User {
+export interface AuthUser {
   id: string;
-  slack_id: string;
-  name: string;
-  role: UserRole;
-  workspace_id: string;
-  timezone?: string;
-}
-
-export interface Workspace {
-  id: string;
-  name: string;
-  slack_team_id?: string;
+  email: string;
+  fullName?: string | null;
+  createdAt?: string;
 }
 
 export interface AuthMeResponse {
-  user: User;
-  workspace: Workspace;
+  success: boolean;
+  data?: {
+    user: AuthUser;
+  };
+  error?: string;
 }
 
-export interface AuthCallbackResponse {
-  token: string;
-  user: User;
-  workspace: Workspace;
-}
-
-export interface SessionPayload {
-  token: string;
-  user: User;
-  workspace: Workspace;
+export interface AuthSessionResponse {
+  success: boolean;
+  data?: {
+    user: AuthUser;
+    session: {
+      access_token: string;
+      refresh_token: string;
+      expires_at: number;
+    };
+  };
+  error?: string;
 }

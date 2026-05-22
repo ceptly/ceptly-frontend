@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Montserrat } from "next/font/google";
 import { AccountHeader } from "@/components/account-header";
 import { Providers } from "@/components/providers";
+import { getCurrentUser } from "@/lib/auth/server";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import MyStatsig from "./my-statsig";
@@ -28,11 +29,13 @@ export const metadata: Metadata = {
     "Create and visualize algorithms with collaborative visual tools",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
       <body
@@ -41,7 +44,7 @@ export default function RootLayout({
         <MyStatsig>
           <Analytics />
           <Providers>
-            <AccountHeader />
+            {user ? <AccountHeader user={user} /> : null}
             <main className="flex flex-1 flex-col">{children}</main>
           </Providers>
         </MyStatsig>
