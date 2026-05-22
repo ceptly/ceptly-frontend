@@ -60,7 +60,6 @@ export function AccountHeader({ user }: AccountHeaderProps) {
   }
 
   const handleSignOut = () => {
-    client.logEvent("sign_out_click");
     void signOut();
   };
 

@@ -9,11 +9,12 @@ import {
   SignUpFormSchema,
   type FormState,
 } from "@/lib/auth-schemas";
-import { clearAuthCookies, setAuthCookies } from "@/lib/auth/server";
+import { clearAuthCookies, setAuthAnalyticsEvent, setAuthCookies } from "@/lib/auth/server";
 
 async function authenticate(
   endpoint: string,
   body: Record<string, string>,
+  analyticsEvent: "sign_in" | "sign_up",
 ): Promise<FormState> {
   try {
     const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
@@ -44,6 +45,7 @@ async function authenticate(
     }
 
     await setAuthCookies(result.data.session);
+    await setAuthAnalyticsEvent(analyticsEvent);
   } catch {
     return {
       errors: {
@@ -71,7 +73,7 @@ export async function signIn(
   }
 
   const { email, password } = validatedFields.data;
-  return authenticate(AUTH_ENDPOINTS.login, { email, password });
+  return authenticate(AUTH_ENDPOINTS.login, { email, password }, "sign_in");
 }
 
 export async function signUp(
@@ -91,7 +93,11 @@ export async function signUp(
   }
 
   const { fullName, email, password } = validatedFields.data;
-  return authenticate(AUTH_ENDPOINTS.register, { fullName, email, password });
+  return authenticate(
+    AUTH_ENDPOINTS.register,
+    { fullName, email, password },
+    "sign_up",
+  );
 }
 
 export async function signOut() {
@@ -106,6 +112,7 @@ export async function signOut() {
     // Clearing local session is enough for logout.
   }
 
+  await setAuthAnalyticsEvent("sign_out");
   await clearAuthCookies();
   redirect("/auth");
 }
