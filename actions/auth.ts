@@ -2,21 +2,51 @@
 
 import { redirect } from "next/navigation";
 
-import { AUTH_ENDPOINTS, getApiBaseUrl } from "@/lib/api/auth";
-import type { AuthSessionResponse } from "@/lib/api/types";
+import { AUTH_ENDPOINTS, resolveApiBaseUrl } from "@/lib/api/auth";
+import type { AuthMeResponse, AuthSessionResponse } from "@/lib/api/types";
 import {
   SignInFormSchema,
   SignUpFormSchema,
   type FormState,
 } from "@/lib/auth-schemas";
-import { clearAuthCookies, setAuthCookies } from "@/lib/auth/server";
+import {
+  clearAuthCookies,
+  setAuthCookies,
+  setOnboardingCompleteCookie,
+} from "@/lib/auth/server";
+
+async function resolvePostAuthRedirect(accessToken: string): Promise<string> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(`${base}${AUTH_ENDPOINTS.me}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return "/";
+    }
+
+    const result = (await response.json()) as AuthMeResponse;
+    const onboardingCompleted = result.data?.user.onboardingCompleted ?? false;
+
+    await setOnboardingCompleteCookie(onboardingCompleted);
+
+    return onboardingCompleted ? "/" : "/onboarding";
+  } catch {
+    return "/onboarding";
+  }
+}
 
 async function authenticate(
   endpoint: string,
   body: Record<string, string>,
 ): Promise<FormState> {
   try {
-    const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(`${base}${endpoint}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -44,15 +74,21 @@ async function authenticate(
     }
 
     await setAuthCookies(result.data.session);
-  } catch {
+    const redirectPath = await resolvePostAuthRedirect(
+      result.data.session.access_token,
+    );
+    redirect(redirectPath);
+  } catch (error) {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT") {
+      throw error;
+    }
+
     return {
       errors: {
         _form: ["An unexpected error occurred. Please try again."],
       },
     };
   }
-
-  redirect("/");
 }
 
 export async function signIn(

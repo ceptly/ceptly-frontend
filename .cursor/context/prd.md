@@ -1,6 +1,6 @@
 # PRD: Ceptly — AI-Powered Team Management for Flat Organizations
 
-**Version:** 0.3  
+**Version:** 0.4  
 **Status:** Draft  
 **Author:** Michael Ehmke  
 **Last Updated:** May 2026
@@ -11,11 +11,33 @@
 
 ### Problem Statement
 
-Flat organizations — startups, small companies intentionally operating without a middle management layer and large companies that want to layoff much of their middle management — break down at scale because coordination, visibility, and team health depend on humans manually doing the work that managers typically own: check-ins, status updates, blocker identification, and performance signals. Without tooling to replace that function, founders become the information bottleneck and problems surface too late.
+Flat organizations — startups, small companies intentionally operating without a middle management layer, and larger companies that want to reduce middle management — break down at scale because coordination, visibility, and team health depend on humans manually doing the work managers typically own: check-ins, status updates, blocker identification, task assignment, and performance signals. Without tooling to replace that function, executives become the information bottleneck and problems surface too late.
+
+### Product Vision (North Star)
+
+Ceptly is **management by infrastructure instead of by person**: a swarm of specialized AI agents that sit between leadership and individual contributors (ICs), handling day-to-day management so people can focus on deep work.
+
+Imagine a company, say 5 years in the future. They have developers, designers, marketing and executive team. But the executives barely ever talk with the Individual contributors. A system of AI agents does this instead. It handles nearly all the management stuff.
+
+At full maturity, the system includes:
+
+| Agent role | Responsibility |
+|---|---|
+| **Strategy** | Takes executive input; breaks goals into OKRs, timelines, tradeoffs, and project plans |
+| **Coordination & assignment** | Matches work to people by skills, workload, capacity, and past performance |
+| **Communication** | Tailored Slack updates, summaries, and clarifying questions per person’s preferences |
+| **Check-in & feedback** | Async pulse, sentiment, burnout risk, lightweight peer feedback |
+| **Review** | First-pass design/code review; escalates only when ambiguous or high-stakes |
+| **Culture** | Nudges when company values are missing from decisions |
+| **Onboarding** | Triggered when a new hire appears in HRIS — role, channels, Linear, Slack sequence |
+
+Executives primarily interact with a **Strategy Agent** in the web app (chat + charts) and optionally in Slack. ICs interact mainly in Slack. The system learns from what gets approved, ships, and fails.
+
+**MVP focus:** Check-ins, synthesis, Q&A, Question Editor, and executive dashboard foundations — then Linear, capacity signals, and assignment loops (see §8 and §10).
 
 ### Solution
 
-Ceptly is a product powered by AI agents that proactively gather context from individual contributors through async conversations or slack MCP servers, synthesize that context, and deliver structured updates, alerts, and answers to founders and team leads — without requiring a middle manager in the loop.
+Ceptly is a product powered by AI agents that proactively gather context from ICs (Slack conversations, integrations, and lightweight self-reports), synthesize it, and deliver structured updates, alerts, visual dashboards, and answers to founders and executives — without requiring a middle manager in the loop.
 
 ### Target User
 
@@ -25,8 +47,8 @@ Ceptly is a product powered by AI agents that proactively gather context from in
 
 ### Core Value Proposition
 
-> "Your team's AI chief of staff. Allowing people to focus on real work."
-> "Replace your middle manager."
+> "Your team's AI chief of staff — so people focus on real work."
+> "Replace your middle manager with infrastructure that scales."
 
 ---
 
@@ -35,6 +57,16 @@ Ceptly is a product powered by AI agents that proactively gather context from in
 ### Goals
 
 - Replace the coordination and visibility function of middle managers for flat orgs
+- Reduce executive time spent on status gathering, meetings, and team health monitoring
+- Surface problems (blockers, overload, morale dips) earlier than they would appear organically
+- Minimize IC overhead for communicating upward — primarily via Slack, not forms or syncs
+- Give executives a **conversational + visual** command center (Strategy Agent chat + charts)
+- Integrate with tools teams already use (**Slack**, **Linear**; **HRIS** in later phases)
+- Provide consistent, data-driven capacity and performance signals (reduce manager bias)
+- Automate routine management: task breakdown, assignment suggestions, onboarding setup (phased)
+- Assist team leads with evidence-based performance context (not firing recommendations in v1)
+
+old:
 - Reduce founder time spent on status gathering and team health monitoring
 - Surface problems earlier than they would appear organically
 - Reduce time spent by IC's communicating with higher ups
@@ -43,15 +75,19 @@ Ceptly is a product powered by AI agents that proactively gather context from in
 - Assist Team Leads with tracking performance
 - Assist Team Leads by tracking lateness etc.
 - Assist Team Leads with giving requirements to Team Leads
-
 ## 3. User Stories
 
-### Founder / Team Lead
+### Executive / Founder / Team Lead
 
+- As an executive, I want to talk to a Strategy Agent in the web app (like a sharp COO) and get both answers and the right charts inline (velocity, timelines, capacity, sentiment).
+- As an executive, I want to ask "Show me who's overloaded" and see a respectful summary with hard data (Linear) and soft signals (Slack, check-ins) — without oversharing private detail.
+- As an executive, when someone is overloaded, I want suggested actions (reassign ticket, quick sync) and a one-line Team Health view (color-coded roster).
 - As a founder, I want to see a weekly summary of what every team member is working on, without having to ask them myself.
 - As a founder, I want to be alerted when someone is blocked so I can unblock them before it becomes a sprint-level problem.
 - As a founder, I want to ask a question like "Is anyone burnt out?" and get an honest synthesized answer based on recent check-in data.
+- As a founder, I want to ask "How has Jordan been performing?" and get an evidence-based summary from Linear, reviews, pulses, and outcomes — not gut feel.
 - As a team lead, I want to know if team morale is trending down before someone quits.
+- As an executive, I want high-level goals (e.g. "Launch mobile checkout by Black Friday") broken into priorities, tickets, and tradeoffs via Linear integration (later phase).
 
 ### Founder / Team Lead (Question Editor)
 
@@ -67,12 +103,17 @@ Ceptly is a product powered by AI agents that proactively gather context from in
 - As an IC, I want to report my status without having to write a formal update or attend a sync.
 - As an IC, I want to flag a blocker to leadership without having to navigate politics or escalate manually.
 - As an IC, I want the check-in to feel conversational, not like filling out a form.
+- As an IC, when I'm overloaded, I want a private, supportive Slack message and triage — not silent burnout or surprise reassignment without my consent.
 
 ---
 
 ## 4. Agent Architecture
 
-The product is built around three agents with distinct roles. All agents operate inside Slack.
+**v1 (MVP):** Check-In, Synthesis, and Q&A agents — primarily in Slack; managers configure questions in the web app.
+
+**Later phases:** Strategy, Coordination, Communication, Feedback/Culture, Review, and Onboarding agents (see §4.5–§4.6 and §10).
+
+All IC-facing agents default to Slack. Executive Strategy Agent is **web-first** with optional Slack digest (§4.5).
 
 ---
 
@@ -318,6 +359,105 @@ Each time a manager publishes a change to the active question set, Ceptly saves 
 
 ---
 
+### 4.5 Executive Dashboard & Strategy Agent (Web App)
+
+**Role:** Primary executive surface — conversational strategy plus real-time data and charts.
+
+**Behavior:**
+- Main UI: chat with the **Strategy Agent** (natural language in/out; optional voice later)
+- Agent responses can include inline or adjacent **visualizations**: team velocity, project timelines, budget burn, capacity heatmaps, sentiment trends, org-wide workload
+- User can click charts to drill down or ask follow-ups ("Show me who's overloaded" → highlights people on roster/org view with supporting numbers)
+- **Team Health** panel: color-coded team list; overloaded ICs in orange/red with one-line explanation (e.g. "Sarah — 4 active tickets, 3 after-hours Slack messages this week")
+- Queries like "What's going on with Sarah?" return short, respectful summaries with suggested actions ("Reassign one ticket?" / "Schedule a quick sync?")
+- Does not overshare personal detail or make ICs feel surveilled; summaries are work-context only
+
+**Overload on executive side:** When capacity flags fire, exec sees Team Health + optional Strategy Agent narrative; agent suggests concrete actions, human always approves reassignment.
+
+**Relationship to Slack:** Digests and alerts may still post to `#leadership-digest`; deep work and "show me the chart" flows live in the web app.
+
+---
+
+### 4.6 Future Agents (Post–MVP)
+
+Documented for roadmap alignment; not all built in v1.
+
+| Agent | Key behaviors |
+|---|---|
+| **Strategy** | Exec goals → OKRs, timelines, tradeoffs; asks clarifying questions; feeds Coordination agent |
+| **Coordination & assignment** | Creates/updates/prioritizes Linear tickets; breaks vague goals into tasks with acceptance criteria; assigns by skills, workload, capacity score |
+| **Communication** | Channel/DM updates tailored per recipient (bullets vs context vs voice notes) |
+| **Feedback & culture** | Pulse surveys, chat sentiment, burnout flags, values nudges |
+| **Review** | First-pass code/design review; escalate edge cases |
+| **Onboarding (HRIS)** | On new hire in HR system: read role/team/skills → Linear profile, Slack channels, onboarding sequence |
+
+**Trust model (all phases):** Humans can override any agent action; critical decisions escalate; test per department before company-wide rollout.
+
+---
+
+### 4.7 Integrations
+
+### Slack (v1)
+
+Primary channel for IC check-ins, alerts, digests, and optional exec digests. See §5.
+
+### Linear (Phase 2+)
+
+- Create, update, and prioritize issues from executive/strategy input
+- Break high-level goals into well-written tasks with acceptance criteria
+- **Capacity signals:** in-progress count, estimates vs actuals, cycle time vs personal baseline
+- **Performance signals:** completion rate, rework/review cycles, estimate accuracy
+- Foundation for Coordination & assignment agent
+
+### HRIS (Phase 3+)
+
+- Webhook or poll on new hire: position, team, skills
+- Triggers Onboarding agent: Linear user, Slack channels, scripted welcome/check-in sequence
+
+### Company memory (ongoing)
+
+- Vector store for docs, meeting notes, past projects, and agent outcomes (LangGraph/CrewAI-style orchestration when multi-agent flows land)
+- Improves assignment and strategy quality over time
+
+---
+
+### 4.8 Capacity & Overload
+
+**Purpose:** Answer "Who's overloaded?" with a **capacity score** per IC combining:
+
+| Source | Signals |
+|---|---|
+| **Linear** | Active issues, estimate load, actual vs estimated duration, slowdown vs personal baseline |
+| **Slack** | Response latency, after-hours activity, stress language ("swamped", "buried") — work-context only |
+| **Check-ins** | Periodic 1–5 workload self-report (seconds to answer; trend over weeks) |
+
+**IC experience when overloaded:**
+1. Private, gentle Slack DM: e.g. "I've noticed a heavy load lately — want to talk about it?"
+2. If yes: quick triage in Slack (what's heaviest, what could shift, what must stay)
+3. Short summary to lead or Strategy Agent (configurable)
+4. May suggest deprioritization or reassignment — **always confirms with IC before moving tickets**
+
+**Executive experience:** Team Health list + drill-down via Strategy Agent; actionable suggestions without exposing raw private chat content.
+
+---
+
+### 4.9 Performance Tracking (IC)
+
+**Purpose:** Fair, consistent, evidence-based profiles — not surveillance.
+
+Combined automatically from:
+
+| Source | Signals |
+|---|---|
+| **Linear** | Completion rate, quality/rework, estimate accuracy |
+| **Reviews** | First-pass approval rate on code/design review (when integrated) |
+| **Peer pulse** | Low-friction Slack prompts ("How was working with Alex on the last project?") |
+| **Outcomes** | Whether shipped work moved intended business metrics (when linked) |
+| **Check-ins** | Morale, workload, blockers over time |
+
+Profiles update on a regular cadence (e.g. weekly). Executives query via Strategy Agent or dashboard ("How has Jordan been performing?"). **Out of scope for v1:** automated performance reviews or termination recommendations.
+
+---
+
 ## 5. Slack Integration
 
 ### Workspace Setup
@@ -347,11 +487,13 @@ Each time a manager publishes a change to the active question set, Ceptly saves 
 
 ---
 
-## 6. Data Model (MVP)
+## 6. Data Model (MVP + Roadmap)
 
 ```
 User
-  id, slack_id, name, role (founder | lead | ic), workspace_id, timezone
+  id, slack_id, linear_user_id (optional), name, role (founder | lead | ic), workspace_id, timezone
+  capacity_score (computed), capacity_updated_at
+  performance_profile_summary (computed, optional JSON)
 
 QuestionSet
   id, workspace_id, version, created_at, published_at, created_by (user_id), label
@@ -373,7 +515,26 @@ Digest
 
 Alert
   id, workspace_id, type, severity, message, triggered_at, resolved_at
+
+-- Phase 2+
+LinearConnection
+  workspace_id, oauth_tokens, team_id, last_sync_at
+
+LinearIssueSnapshot
+  user_id, issue_id, state, estimate, completed_at, cycle_time_hours
+
+CapacitySignal
+  id, user_id, source (linear | slack | checkin), score_component, recorded_at
+
+OverloadEvent
+  id, user_id, detected_at, ic_contacted_at, triage_summary, resolved_at, exec_notified_at
+
+-- Phase 3+
+HRISConnection / HireEvent
+  workspace_id, external_employee_id, role, team, skills[], hired_at
 ```
+
+See [spec.md](./spec.md) for schedule fields, capacity computation notes, and dashboard API boundaries.
 
 ---
 
@@ -385,8 +546,12 @@ Alert
 | Backend API | Node.js + Express on Render | Separate service, single trust boundary for all permissions |
 | Database | Render Postgres | Managed Postgres, co-located with backend on Render |
 | ORM | Drizzle | Type-safe queries, lightweight, pairs well with Postgres |
-| AI / Agents | Anthropic Claude API (claude-sonnet-4-20250514) | Best conversational quality for check-ins |
-| Slack Integration | Slack Bolt SDK (Node) | First-party SDK, handles events + slash commands |
+| AI / Agents | Anthropic Claude API (claude-sonnet-4-20250514) | Conversational check-ins, Strategy Agent, synthesis |
+| Agent orchestration (later) | LangGraph or CrewAI | Multi-agent coordination when Strategy + Coordination ship |
+| Company memory (later) | Vector DB | Past projects, docs, who-is-good-at-what for assignment |
+| Slack Integration | Slack Bolt SDK (Node) | Events, slash commands, IC and alert flows |
+| Linear Integration (later) | Linear API + OAuth | Tickets, capacity, performance signals |
+| HRIS Integration (later) | Provider API / webhooks | Onboarding trigger on new hire |
 | Job Scheduling | Render Cron Jobs | Periodic HTTP trigger to Express `/internal/*` scheduler (see [spec.md](./spec.md)); per-workspace schedule stored in Postgres |
 
 ### Permissions Architecture
@@ -414,7 +579,7 @@ Vercel (Next.js) → REST API request with auth token
 
 ### In Scope (v1)
 
-- Check-In Agent via Slack DM (2x/week cadence)
+- Check-In Agent via Slack DM (configurable cadence)
 - Synthesis Agent posting weekly digest to `#leadership-digest`
 - Blocker alerts (real-time, on detection)
 - Disengagement alerts (missed 2+ check-ins)
@@ -425,14 +590,30 @@ Vercel (Next.js) → REST API request with auth token
   - AI Question Suggester (goal → suggested question set)
   - Check-in preview ("Preview as IC")
   - Question set versioning
+- **Executive dashboard (foundational):** Strategy Agent chat shell; Team Health placeholder; chart slots wired as data becomes available (check-in sentiment first)
+
+### In Scope (Phase 2 — core management loop)
+
+- Slack communication agents (richer tailored updates)
+- **Linear integration:** ticket create/update, goal → tasks with acceptance criteria
+- **Coordination loop:** task breakdown + assignment suggestions (human approve)
+- **Capacity score** from Linear + check-ins + Slack signals; overload DM flow + exec Team Health
+- Strategy Agent answers with inline charts (velocity, capacity heatmap)
+
+### In Scope (Phase 3)
+
+- HRIS-triggered onboarding agent
+- Feedback & culture agent (pulses, sentiment, values nudges)
+- Peer feedback prompts; performance profile rollups
+- Review agent (first-pass); vector company memory
 
 ### Out of Scope (v1)
 
 - Email or Teams integration
-- Performance reviews or firing recommendations
-- Goal/OKR tracking
-- Peer feedback loops
-- Mobile app
+- Automated performance reviews or firing recommendations
+- Full OKR product (strategy agent may draft OKRs later; not a standalone OKR tool in v1)
+- Unsupervised ticket reassignment without IC consent
+- Mobile native app
 - Multi-workspace enterprise features
 - SSO / SAML
 
@@ -477,6 +658,18 @@ Vercel (Next.js) → REST API request with auth token
 - IC opt-in/pause commands
 - Onboarding flow for new workspaces
 
+### Phase 4 — Linear & Capacity (Weeks 13–18)
+- Linear OAuth and issue sync
+- Capacity score pipeline; overload detection + IC triage flow
+- Executive dashboard: capacity heatmap, "who's overloaded" drill-down
+- Strategy Agent + chart responses for capacity/velocity
+
+### Phase 5 — Assignment & HR (Weeks 19+)
+- Executive goal → Linear ticket breakdown (Strategy + Coordination agents)
+- Assignment suggestions with human override
+- HRIS webhook → onboarding agent
+- Peer pulse + performance profile summaries
+
 ---
 
 ## 11. Open Questions
@@ -485,7 +678,11 @@ Vercel (Next.js) → REST API request with auth token
 - [ ] How do we handle contractors vs full-time employees in the roster?
 - [ ] What's the right default check-in frequency — 2x/week may feel like too much for some teams
 - [x] Do we want a web dashboard at all in v1, or stay fully Slack-native?
-  - Yes we do.
+  - **Yes** — executives use the web app for Strategy Agent chat and charts; Slack remains primary for ICs and digests.
+- [ ] Which chart library and auth pattern for exec-only dashboard routes?
+- [ ] Linear: workspace-level OAuth vs per-user?
+- [ ] HRIS vendor for first integration (Rippling, Gusto, etc.)?
+- [ ] Slack "stress language" detection: keyword list vs classifier; privacy review
 - [ ] How do we handle very small teams (2–5 people) where patterns are harder to detect?
 - [ ] Should managers be able to assign different question sets to different team members or sub-teams?
 - [ ] How do we handle question set changes mid-sprint — do we notify ICs?

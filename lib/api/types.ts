@@ -3,6 +3,14 @@ export interface AuthUser {
   email: string;
   fullName?: string | null;
   createdAt?: string;
+  onboardingCompleted?: boolean;
+  workspaces?: WorkspaceMembership[];
+}
+
+export interface WorkspaceMembership {
+  id: string;
+  name: string;
+  role: "founder" | "admin" | "lead" | "ic";
 }
 
 export interface AuthMeResponse {

@@ -56,7 +56,7 @@ export default function AuthPage() {
           />
         </div>
 
-        <Card className="w-full">
+        <Card className="w-full dark:border-white/20">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">
               {isSignUp ? "Create your Ceptly account" : "Welcome Back"}

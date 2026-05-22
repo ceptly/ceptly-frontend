@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Montserrat } from "next/font/google";
+import { headers } from "next/headers";
 import { AccountHeader } from "@/components/account-header";
 import { Providers } from "@/components/providers";
 import { getCurrentUser } from "@/lib/auth/server";
@@ -24,9 +25,9 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Ceptly - Visual Ideation Platform",
+  title: "Ceptly - AI Chief of Staff",
   description:
-    "Create and visualize algorithms with collaborative visual tools",
+    "Your team's AI chief of staff — so people focus on real work.",
 };
 
 export default async function RootLayout({
@@ -35,6 +36,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getCurrentUser();
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "";
+  const hideHeader =
+    pathname.startsWith("/auth") || pathname.startsWith("/onboarding");
 
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
@@ -44,7 +49,7 @@ export default async function RootLayout({
         <MyStatsig authUser={user}>
           <Analytics />
           <Providers>
-            {user ? <AccountHeader user={user} /> : null}
+            {user && !hideHeader ? <AccountHeader user={user} /> : null}
             <main className="flex flex-1 flex-col">{children}</main>
           </Providers>
         </MyStatsig>

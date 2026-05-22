@@ -64,6 +64,8 @@ export function AccountHeader({ user }: AccountHeaderProps) {
     void signOut();
   };
 
+  const workspaceName = user.workspaces?.[0]?.name ?? "My Workspace";
+
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background">
       <div className="px-6 py-2.5">
@@ -92,6 +94,16 @@ export function AccountHeader({ user }: AccountHeaderProps) {
             </div>
 
             <nav className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  client.logEvent("workspace_nav_click");
+                  router.push("/settings");
+                }}
+              >
+                {workspaceName}
+              </Button>
               {navigationItems.map((item) => (
                 <Button
                   key={item.path}
