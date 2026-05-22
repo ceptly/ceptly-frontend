@@ -6,7 +6,6 @@ import { getCurrentUser } from "@/lib/auth/server";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import MyStatsig from "./my-statsig";
-import { StatsigAuthTracker } from "@/components/statsig-auth-tracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,8 +41,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} min-h-full flex flex-col antialiased bg-background text-foreground selection:bg-primary/20 selection:text-primary`}
       >
-        <MyStatsig>
-          <StatsigAuthTracker />
+        <MyStatsig authUser={user}>
           <Analytics />
           <Providers>
             {user ? <AccountHeader user={user} /> : null}

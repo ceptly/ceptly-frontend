@@ -2,10 +2,6 @@ import { cookies } from "next/headers";
 
 import { AUTH_ENDPOINTS, getApiBaseUrl } from "@/lib/api/auth";
 import type { AuthUser } from "@/lib/api/types";
-import {
-  AUTH_ANALYTICS_EVENT_COOKIE,
-  type AuthAnalyticsEvent,
-} from "@/lib/auth/analytics";
 
 function cookieOptions() {
   const isSecure =
@@ -39,20 +35,6 @@ export async function setAuthCookies(session: {
   cookieStore.set("refresh_token", session.refresh_token, {
     ...options,
     maxAge: 7 * 24 * 60 * 60,
-  });
-}
-
-export async function setAuthAnalyticsEvent(event: AuthAnalyticsEvent) {
-  const cookieStore = await cookies();
-  const isSecure =
-    process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
-
-  cookieStore.set(AUTH_ANALYTICS_EVENT_COOKIE, event, {
-    httpOnly: false,
-    secure: isSecure,
-    sameSite: isSecure ? ("none" as const) : ("lax" as const),
-    path: "/",
-    maxAge: 60,
   });
 }
 
