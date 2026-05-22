@@ -4,10 +4,8 @@ import React from "react";
 import { LogLevel, StatsigProvider } from "@statsig/react-bindings";
 
 export default function MyStatsig({ children }: { children: React.ReactNode }) {
-  const id = typeof userID !== "undefined" ? userID : "a-user";
-
   const user = {
-    userID: id,
+    userID: "a-user",
     // Optional additional fields:
     // email: 'user@example.com',
     // customIDs: { internalID: 'internal-123' },
