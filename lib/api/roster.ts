@@ -1,0 +1,148 @@
+import { resolveApiBaseUrl } from "./auth";
+
+export interface RosterMember {
+  id: string;
+  email: string;
+  slack_user_id: string;
+  display_name: string;
+  paused: boolean;
+  created_at: string;
+}
+
+async function parseJsonResponse<T>(
+  response: Response,
+): Promise<T & { success: boolean; error?: string }> {
+  const contentType = response.headers.get("content-type");
+  if (!contentType?.includes("application/json")) {
+    return {
+      success: false,
+      error: `Unexpected response (HTTP ${response.status}).`,
+    } as T & { success: boolean; error?: string };
+  }
+
+  return (await response.json()) as T & { success: boolean; error?: string };
+}
+
+export async function listRosterMembers(
+  accessToken: string,
+  workspaceId: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+  data?: { members: RosterMember[] };
+}> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/roster`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cache: "no-store",
+      },
+    );
+
+    return parseJsonResponse<{ data?: { members: RosterMember[] } }>(response);
+  } catch {
+    return {
+      success: false,
+      error: "Could not reach the API. Is the backend running?",
+    };
+  }
+}
+
+export async function addRosterMember(
+  accessToken: string,
+  workspaceId: string,
+  email: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+  data?: { member: RosterMember };
+}> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/roster`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      },
+    );
+
+    return parseJsonResponse<{ data?: { member: RosterMember } }>(response);
+  } catch {
+    return {
+      success: false,
+      error: "Could not reach the API. Is the backend running?",
+    };
+  }
+}
+
+export async function updateRosterMember(
+  accessToken: string,
+  workspaceId: string,
+  memberId: string,
+  payload: { display_name?: string; paused?: boolean },
+): Promise<{
+  success: boolean;
+  error?: string;
+  data?: { member: RosterMember };
+}> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/roster/${memberId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      },
+    );
+
+    return parseJsonResponse<{ data?: { member: RosterMember } }>(response);
+  } catch {
+    return {
+      success: false,
+      error: "Could not reach the API. Is the backend running?",
+    };
+  }
+}
+
+export async function deleteRosterMember(
+  accessToken: string,
+  workspaceId: string,
+  memberId: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/roster/${memberId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    return parseJsonResponse<Record<string, never>>(response);
+  } catch {
+    return {
+      success: false,
+      error: "Could not reach the API. Is the backend running?",
+    };
+  }
+}
