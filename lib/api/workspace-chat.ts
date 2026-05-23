@@ -1,5 +1,6 @@
 import { resolveApiBaseUrl } from "./auth";
 import type {
+  AdhocConversationProposal,
   ChatAgentId,
   ConversationSetupPlan,
   SetupChatMessage,
@@ -42,6 +43,7 @@ export async function chatWorkspace(
     assistant_message: string;
     agent: ChatAgentId;
     proposal: ConversationSetupPlan | null;
+    adhoc_proposal: AdhocConversationProposal | null;
     ui_component: SetupChatUiComponent | null;
   };
 }> {
@@ -60,6 +62,7 @@ export async function chatWorkspace(
         assistant_message: string;
         agent: ChatAgentId;
         proposal: ConversationSetupPlan | null;
+        adhoc_proposal: AdhocConversationProposal | null;
         ui_component: SetupChatUiComponent | null;
       };
     }>(response);
