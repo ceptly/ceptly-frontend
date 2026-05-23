@@ -11,14 +11,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useStatsigClient } from "@statsig/react-bindings";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   commitSetupPlan,
   sendSetupMessage,
 } from "@/actions/conversation-setup";
 import { ChatMessageList } from "@/components/chat/chat-message-list";
-import { ConversationSetupProposal } from "@/components/settings/conversation-setup-proposal";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +50,51 @@ interface EmployeeChatPromptProps {
   canEdit?: boolean;
 }
 
+function getEditableConversationIndex(plan: ConversationSetupPlan): number {
+  const newIndex = plan.conversations.findIndex(
+    (conversation) => !conversation.unchanged_from_existing,
+  );
+  if (newIndex >= 0) {
+    return newIndex;
+  }
+  return Math.max(plan.conversations.length - 1, 0);
+}
+
+function updateProposalDays(
+  plan: ConversationSetupPlan,
+  days: number[],
+): ConversationSetupPlan {
+  const index = getEditableConversationIndex(plan);
+
+  return {
+    ...plan,
+    conversations: plan.conversations.map((conversation, conversationIndex) =>
+      conversationIndex === index
+        ? {
+            ...conversation,
+            schedule: {
+              ...conversation.schedule,
+              frequency: "specific_days",
+              days_of_week: days,
+            },
+          }
+        : conversation,
+    ),
+  };
+}
+
+function getProposalDays(
+  plan: ConversationSetupPlan,
+  pickerDays?: number[],
+): number[] {
+  if (pickerDays && pickerDays.length > 0) {
+    return pickerDays;
+  }
+
+  const conversation = plan.conversations[getEditableConversationIndex(plan)];
+  return conversation?.schedule.days_of_week ?? [];
+}
+
 export function EmployeeChatPrompt({
   workspaceId,
   canEdit = true,
@@ -67,7 +111,29 @@ export function EmployeeChatPrompt({
   const [publishSuccess, setPublishSuccess] = useState(false);
 
   const hasMessages = messages.length > 0 || chatPending;
-  const isEmptyState = !hasMessages && !proposal && !chatError;
+  const isEmptyState = !hasMessages && !chatError;
+  const chatDisabled = chatPending || publishPending || !canEdit;
+
+  const pickerDays = useMemo(() => {
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index];
+      if (
+        message?.role === "assistant" &&
+        message.ui_component?.type === "day_picker"
+      ) {
+        return message.ui_component.days_of_week;
+      }
+    }
+    return undefined;
+  }, [messages]);
+
+  const publishDisabled = useMemo(() => {
+    if (!proposal || publishPending || chatPending) {
+      return true;
+    }
+
+    return getProposalDays(proposal, pickerDays).length === 0;
+  }, [proposal, publishPending, chatPending, pickerDays]);
 
   async function handleSend(content: string) {
     const trimmed = content.trim();
@@ -86,6 +152,8 @@ export function EmployeeChatPrompt({
     setChatPending(true);
     setChatError(null);
     setPublishSuccess(false);
+    setProposal(null);
+    setPublishError(null);
 
     const result = await sendSetupMessage(workspaceId, nextMessages);
 
@@ -99,25 +167,67 @@ export function EmployeeChatPrompt({
     if (result.assistant_message) {
       setMessages([
         ...nextMessages,
-        { role: "assistant", content: result.assistant_message },
+        {
+          role: "assistant",
+          content: result.assistant_message,
+          ui_component: result.ui_component ?? undefined,
+        },
       ]);
     }
 
     if (result.proposal) {
-      setProposal(result.proposal);
+      const daysFromPicker =
+        result.ui_component?.type === "day_picker"
+          ? result.ui_component.days_of_week
+          : undefined;
+      setProposal(
+        daysFromPicker
+          ? updateProposalDays(result.proposal, daysFromPicker)
+          : result.proposal,
+      );
     }
   }
 
-  async function handlePublish() {
-    if (!proposal) {
+  function handleDaysChange(messageIndex: number, days: number[]) {
+    if (!proposal || interactiveDisabled()) {
       return;
     }
+
+    const updatedProposal = updateProposalDays(proposal, days);
+    setProposal(updatedProposal);
+    setMessages((current) =>
+      current.map((message, index) =>
+        index === messageIndex && message.ui_component?.type === "day_picker"
+          ? {
+              ...message,
+              ui_component: {
+                ...message.ui_component,
+                days_of_week: days,
+              },
+            }
+          : message,
+      ),
+    );
+  }
+
+  function interactiveDisabled() {
+    return chatDisabled || publishSuccess;
+  }
+
+  async function handlePublish() {
+    if (!proposal || publishDisabled) {
+      return;
+    }
+
+    const planToPublish = pickerDays
+      ? updateProposalDays(proposal, pickerDays)
+      : proposal;
 
     setPublishPending(true);
     setPublishError(null);
     setPublishSuccess(false);
 
-    const result = await commitSetupPlan(workspaceId, proposal);
+    const result = await commitSetupPlan(workspaceId, planToPublish);
 
     setPublishPending(false);
 
@@ -126,6 +236,7 @@ export function EmployeeChatPrompt({
       return;
     }
 
+    setProposal(null);
     setPublishSuccess(true);
   }
 
@@ -152,7 +263,7 @@ export function EmployeeChatPrompt({
         placeholder="Describe your check-in schedule and questions…"
         rows={3}
         value={input}
-        disabled={chatPending}
+        disabled={chatDisabled}
         onChange={(event) => setInput(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Enter" && !event.shiftKey) {
@@ -178,7 +289,7 @@ export function EmployeeChatPrompt({
           variant="default"
           size="icon-sm"
           className="rounded-full"
-          disabled={!input.trim() || chatPending}
+          disabled={!input.trim() || chatDisabled}
           aria-label="Send message"
         >
           {chatPending ? (
@@ -254,7 +365,12 @@ export function EmployeeChatPrompt({
     <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
       {hasMessages ? (
         <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
-          <ChatMessageList messages={messages} pending={chatPending} />
+          <ChatMessageList
+            messages={messages}
+            pending={chatPending}
+            onDaysChange={handleDaysChange}
+            interactiveDisabled={interactiveDisabled()}
+          />
         </div>
       ) : null}
 
@@ -264,14 +380,28 @@ export function EmployeeChatPrompt({
         </Alert>
       ) : null}
 
-      {proposal ? (
-        <ConversationSetupProposal
-          proposal={proposal}
-          onPublish={handlePublish}
-          publishing={publishPending}
-          publishError={publishError}
-          publishSuccess={publishSuccess}
-        />
+      {publishError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{publishError}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {proposal && !publishSuccess ? (
+        <div className="flex flex-wrap items-center gap-3 px-1">
+          <Button onClick={handlePublish} disabled={publishDisabled}>
+            {publishPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Publishing…
+              </>
+            ) : (
+              "Publish schedule"
+            )}
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Or reply in chat if something needs to change.
+          </p>
+        </div>
       ) : null}
 
       {publishSuccess ? (

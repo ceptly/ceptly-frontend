@@ -3,6 +3,7 @@ import type {
   ConversationSetupPlan,
   ScheduledConversation,
   SetupChatMessage,
+  SetupChatUiComponent,
 } from "./types";
 
 async function parseJsonResponse<T>(
@@ -39,6 +40,7 @@ export async function chatSetup(
   data?: {
     assistant_message: string;
     proposal: ConversationSetupPlan | null;
+    ui_component: SetupChatUiComponent | null;
   };
 }> {
   try {
@@ -55,6 +57,7 @@ export async function chatSetup(
       data?: {
         assistant_message: string;
         proposal: ConversationSetupPlan | null;
+        ui_component: SetupChatUiComponent | null;
       };
     }>(response);
   } catch {

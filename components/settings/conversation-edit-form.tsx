@@ -5,6 +5,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 
 import { saveConversation } from "@/actions/conversations";
 import { ConversationIcPreview } from "@/components/settings/conversation-ic-preview";
+import { ScheduleDaysPicker } from "@/components/settings/schedule-days-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,16 +23,6 @@ import {
   groupTimezonesByRegion,
   TIMEZONE_OPTIONS,
 } from "@/lib/schedule/timezones";
-
-const DAY_OPTIONS = [
-  { value: 0, label: "Sun" },
-  { value: 1, label: "Mon" },
-  { value: 2, label: "Tue" },
-  { value: 3, label: "Wed" },
-  { value: 4, label: "Thu" },
-  { value: 5, label: "Fri" },
-  { value: 6, label: "Sat" },
-] as const;
 
 type QuestionDraft = {
   key: string;
@@ -101,14 +92,6 @@ export function ConversationEditForm({
       enabled: question.enabled,
     }),
   );
-
-  const toggleDay = (day: number) => {
-    setDaysOfWeek((current) =>
-      current.includes(day)
-        ? current.filter((value) => value !== day)
-        : [...current, day].sort((a, b) => a - b),
-    );
-  };
 
   const updateQuestion = (
     key: string,
@@ -247,28 +230,10 @@ export function ConversationEditForm({
         </div>
 
         {frequency === "specific_days" ? (
-          <div className="space-y-2">
-            <Label>Days</Label>
-            <div className="flex flex-wrap gap-2">
-              {DAY_OPTIONS.map((day) => {
-                const selected = daysOfWeek.includes(day.value);
-                return (
-                  <button
-                    key={day.value}
-                    type="button"
-                    onClick={() => toggleDay(day.value)}
-                    className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
-                      selected
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border bg-background text-muted-foreground hover:bg-muted/50"
-                    }`}
-                  >
-                    {day.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <ScheduleDaysPicker
+            daysOfWeek={daysOfWeek}
+            onChange={setDaysOfWeek}
+          />
         ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2">

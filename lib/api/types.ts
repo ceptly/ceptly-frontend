@@ -45,6 +45,8 @@ export interface ProposedConversation {
   purpose: string;
   schedule: ProposedSchedule;
   questions: string[];
+  /** Present on chat proposals when this entry matches an existing saved conversation. */
+  unchanged_from_existing?: boolean;
 }
 
 export interface ConversationSetupPlan {
@@ -52,9 +54,16 @@ export interface ConversationSetupPlan {
   summary: string;
 }
 
+export interface SetupChatUiComponent {
+  type: "day_picker";
+  days_of_week: number[];
+  resolved?: boolean;
+}
+
 export interface SetupChatMessage {
   role: "user" | "assistant";
   content: string;
+  ui_component?: SetupChatUiComponent;
 }
 
 export interface AuthUser {
