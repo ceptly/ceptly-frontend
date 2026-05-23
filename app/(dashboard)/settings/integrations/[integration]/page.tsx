@@ -5,6 +5,7 @@ import { LinearIntegrationPanel } from "@/components/settings/integrations/linea
 import { SlackIntegrationPanel } from "@/components/settings/integrations/slack-integration-panel";
 import { buttonVariants } from "@/components/ui/button";
 import { listIntegrations } from "@/lib/api/integrations";
+import { resolveIntegration } from "@/lib/integrations/catalog";
 import { getLinearConnectionStatus } from "@/lib/api/linear";
 import { getSlackConnectionStatus } from "@/lib/api/slack";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
@@ -34,9 +35,11 @@ export default async function IntegrationDetailPage({
       ? await listIntegrations(token, workspace.id)
       : null;
 
-  const integration = integrationsResult?.data?.integrations.find(
+  const integrationFromApi = integrationsResult?.data?.integrations.find(
     (item) => item.id === integrationId,
   );
+
+  const integration = resolveIntegration(integrationId, integrationFromApi);
 
   if (!integration) {
     notFound();

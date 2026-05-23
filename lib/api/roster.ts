@@ -7,6 +7,7 @@ export interface RosterMember {
   display_name: string;
   paused: boolean;
   created_at: string;
+  data_sources: ("slack" | "linear")[];
 }
 
 async function parseJsonResponse<T>(
