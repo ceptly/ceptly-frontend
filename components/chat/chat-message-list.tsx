@@ -3,20 +3,25 @@
 import { Loader2, Sparkles } from "lucide-react";
 import { useEffect, useRef } from "react";
 
+import { ScheduleDaysPicker } from "@/components/settings/schedule-days-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
 import type { SetupChatMessage } from "@/lib/api/types";
+import { cn } from "@/lib/utils";
 
 interface ChatMessageListProps {
   messages: SetupChatMessage[];
   pending?: boolean;
   className?: string;
+  onDaysChange?: (messageIndex: number, days: number[]) => void;
+  interactiveDisabled?: boolean;
 }
 
 export function ChatMessageList({
   messages,
   pending = false,
   className,
+  onDaysChange,
+  interactiveDisabled = false,
 }: ChatMessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -28,6 +33,10 @@ export function ChatMessageList({
     <div className={cn("flex flex-col gap-4", className)}>
       {messages.map((message, index) => {
         const isUser = message.role === "user";
+        const dayPicker =
+          !isUser && message.ui_component?.type === "day_picker"
+            ? message.ui_component
+            : null;
 
         return (
           <div
@@ -47,7 +56,7 @@ export function ChatMessageList({
 
             <div
               className={cn(
-                "flex max-w-[min(85%,32rem)] flex-col gap-1",
+                "flex max-w-[min(85%,32rem)] flex-col gap-2",
                 isUser ? "items-end" : "items-start",
               )}
             >
@@ -64,6 +73,17 @@ export function ChatMessageList({
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
               </div>
+
+              {dayPicker ? (
+                <div className="w-full rounded-2xl border border-border bg-card p-4 shadow-sm dark:border-white/20">
+                  <ScheduleDaysPicker
+                    daysOfWeek={dayPicker.days_of_week}
+                    onChange={(days) => onDaysChange?.(index, days)}
+                    disabled={interactiveDisabled}
+                    showLabel={false}
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
         );
