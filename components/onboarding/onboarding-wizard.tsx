@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { AlertCircle, Loader2, Mail, X } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
+import { AlertCircle, CheckCircle2, Loader2, Mail, MessageSquare, X } from "lucide-react";
 
 import { completeOnboarding } from "@/actions/onboarding";
+import { fetchSlackInstallUrl } from "@/actions/slack";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,14 +31,14 @@ import {
   type ReferralSource,
 } from "@/lib/onboarding-schemas";
 
-const TOTAL_STEPS = 5;
+const ONBOARDING_DRAFT_KEY = "ceptly-onboarding-draft";
 
 interface OnboardingWizardProps {
   user: AuthUser;
   initialOrganizationName?: string;
 }
 
-function getStepTitle(step: number): string {
+function getStepTitle(step: number, slackSelected: boolean): string {
   switch (step) {
     case 1:
       return "What is your role?";
@@ -48,12 +50,14 @@ function getStepTitle(step: number): string {
       return "Which tools does your team use?";
     case 5:
       return "What's your organization name?";
+    case 6:
+      return slackSelected ? "Connect Ceptly to Slack" : "";
     default:
       return "";
   }
 }
 
-function getStepDescription(step: number): string {
+function getStepDescription(step: number, slackSelected: boolean): string {
   switch (step) {
     case 1:
       return "This helps us tailor Ceptly to how you work.";
@@ -65,6 +69,10 @@ function getStepDescription(step: number): string {
       return "Select all that apply. We'll prioritize integrations accordingly.";
     case 5:
       return "This is how your workspace will appear in Ceptly.";
+    case 6:
+      return slackSelected
+        ? "Check-ins run in Slack DMs. Connect your workspace now or skip and set this up later in Settings."
+        : "";
     default:
       return "";
   }
@@ -74,22 +82,72 @@ export function OnboardingWizard({
   user,
   initialOrganizationName = "",
 }: OnboardingWizardProps) {
+  const searchParams = useSearchParams();
+  const slackConnectedFromOAuth = searchParams.get("slack") === "connected";
+
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [slackConnectError, setSlackConnectError] = useState<string | null>(null);
   const [inviteInput, setInviteInput] = useState("");
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isSlackPending, startSlackTransition] = useTransition();
 
-  const [formData, setFormData] = useState<OnboardingFormData>({
-    role: null,
-    referralSource: null,
-    referralSourceOther: "",
-    inviteEmails: [],
-    toolsUsed: [],
-    organizationName: initialOrganizationName,
+  const [formData, setFormData] = useState<OnboardingFormData>(() => {
+    if (typeof window === "undefined") {
+      return {
+        role: null,
+        referralSource: null,
+        referralSourceOther: "",
+        inviteEmails: [],
+        toolsUsed: [],
+        organizationName: initialOrganizationName,
+      };
+    }
+
+    try {
+      const saved = sessionStorage.getItem(ONBOARDING_DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as OnboardingFormData;
+        return {
+          ...parsed,
+          organizationName:
+            parsed.organizationName || initialOrganizationName,
+        };
+      }
+    } catch {
+      // ignore invalid draft
+    }
+
+    return {
+      role: null,
+      referralSource: null,
+      referralSourceOther: "",
+      inviteEmails: [],
+      toolsUsed: [],
+      organizationName: initialOrganizationName,
+    };
   });
 
-  const progressValue = (step / TOTAL_STEPS) * 100;
+  const slackSelected =
+    formData.toolsUsed.includes("slack") ||
+    slackConnectedFromOAuth ||
+    searchParams.get("step") === "6";
+  const totalSteps = slackSelected ? 6 : 5;
+  const progressValue = (step / totalSteps) * 100;
+  const workspaceId = user.workspaces?.[0]?.id;
+
+  useEffect(() => {
+    sessionStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    const stepParam = searchParams.get("step");
+    const parsedStep = stepParam ? Number.parseInt(stepParam, 10) : NaN;
+    if (Number.isInteger(parsedStep) && parsedStep >= 1 && parsedStep <= 6) {
+      setStep(parsedStep);
+    }
+  }, [searchParams]);
 
   const updateForm = (patch: Partial<OnboardingFormData>) => {
     setFormData((prev) => ({ ...prev, ...patch }));
@@ -127,22 +185,14 @@ export function OnboardingWizard({
           return false;
         }
         return true;
+      case 6:
+        return true;
       default:
         return false;
     }
   };
 
-  const handleContinue = () => {
-    if (!validateStep()) {
-      return;
-    }
-
-    if (step < TOTAL_STEPS) {
-      setStep((s) => s + 1);
-      setError(null);
-      return;
-    }
-
+  const finishOnboarding = () => {
     if (!formData.role || !formData.referralSource) {
       return;
     }
@@ -170,8 +220,25 @@ export function OnboardingWizard({
 
       if (result?.error) {
         setError(result.error);
+        return;
       }
+
+      sessionStorage.removeItem(ONBOARDING_DRAFT_KEY);
     });
+  };
+
+  const handleContinue = () => {
+    if (!validateStep()) {
+      return;
+    }
+
+    if (step < totalSteps) {
+      setStep((s) => s + 1);
+      setError(null);
+      return;
+    }
+
+    finishOnboarding();
   };
 
   const handleBack = () => {
@@ -184,6 +251,27 @@ export function OnboardingWizard({
   const handleSkipInvites = () => {
     setStep(4);
     setError(null);
+  };
+
+  const handleConnectSlack = () => {
+    if (!workspaceId) {
+      setSlackConnectError("No workspace found. Please try again.");
+      return;
+    }
+
+    setSlackConnectError(null);
+    sessionStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify(formData));
+    startSlackTransition(async () => {
+      const result = await fetchSlackInstallUrl(
+        workspaceId,
+        "/onboarding?step=6",
+      );
+      if (result.error || !result.url) {
+        setSlackConnectError(result.error ?? "Failed to start Slack install.");
+        return;
+      }
+      window.location.href = result.url;
+    });
   };
 
   const addInviteEmail = () => {
@@ -219,12 +307,20 @@ export function OnboardingWizard({
     });
   };
 
+  const isLastStep = step === totalSteps;
+  const continueLabel =
+    step === 5 && slackSelected
+      ? "Continue"
+      : isLastStep
+        ? "Finish setup"
+        : "Continue";
+
   return (
     <Card className="w-full dark:border-white/20">
       <CardHeader className="space-y-4">
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Step {step} of {TOTAL_STEPS}
+            Step {step} of {totalSteps}
           </p>
           <Progress value={progressValue}>
             <ProgressTrack className="h-1.5">
@@ -234,9 +330,11 @@ export function OnboardingWizard({
         </div>
         <div className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">
-            {getStepTitle(step)}
+            {getStepTitle(step, slackSelected)}
           </CardTitle>
-          <CardDescription>{getStepDescription(step)}</CardDescription>
+          <CardDescription>
+            {getStepDescription(step, slackSelected)}
+          </CardDescription>
         </div>
       </CardHeader>
 
@@ -362,6 +460,51 @@ export function OnboardingWizard({
           </div>
         ) : null}
 
+        {step === 6 && slackSelected ? (
+          <div className="space-y-4">
+            {slackConnectedFromOAuth ? (
+              <Alert>
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertDescription>
+                  Slack connected successfully. You can add team members from
+                  Settings after setup.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 rounded-lg border border-border px-4 py-4 dark:border-white/10">
+                  <MessageSquare className="h-8 w-8 shrink-0" />
+                  <p className="text-sm text-muted-foreground">
+                    Install Ceptly in your Slack workspace so scheduled check-ins
+                    reach your team in DMs.
+                  </p>
+                </div>
+
+                {slackConnectError ? (
+                  <Alert variant="destructive">
+                    <AlertDescription>{slackConnectError}</AlertDescription>
+                  </Alert>
+                ) : null}
+
+                <Button
+                  type="button"
+                  onClick={handleConnectSlack}
+                  disabled={isSlackPending || !workspaceId}
+                >
+                  {isSlackPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Redirecting...
+                    </>
+                  ) : (
+                    "Add to Slack"
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
+        ) : null}
+
         <div className="flex items-center justify-between gap-3 pt-2">
           {step > 1 ? (
             <Button
@@ -387,16 +530,24 @@ export function OnboardingWizard({
                 Skip
               </Button>
             ) : null}
+            {step === 6 && slackSelected && !slackConnectedFromOAuth ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={finishOnboarding}
+                disabled={isPending}
+              >
+                Skip for now
+              </Button>
+            ) : null}
             <Button type="button" onClick={handleContinue} disabled={isPending}>
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Finishing...
                 </>
-              ) : step === TOTAL_STEPS ? (
-                "Finish"
               ) : (
-                "Continue"
+                continueLabel
               )}
             </Button>
           </div>

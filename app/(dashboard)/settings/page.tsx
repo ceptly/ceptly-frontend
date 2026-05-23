@@ -1,17 +1,26 @@
 import Link from "next/link";
 
+import { SlackConnectionCard } from "@/components/settings/slack-connection-card";
+import { TeamRosterCard } from "@/components/settings/team-roster-card";
 import { ThemeSettings } from "@/components/settings/theme-settings";
 import { WorkspaceNameForm } from "@/components/settings/workspace-name-form";
 import { WorkspaceTimezoneForm } from "@/components/settings/workspace-timezone-form";
 import { buttonVariants } from "@/components/ui/button";
 import { getWorkspaceTimezone } from "@/lib/api/conversations";
+import { listRosterMembers } from "@/lib/api/roster";
+import { getSlackConnectionStatus } from "@/lib/api/slack";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { cn } from "@/lib/utils";
 
 const ADMIN_ROLES = new Set(["founder", "admin"]);
 
-export default async function SettingsPage() {
+interface SettingsPageProps {
+  searchParams: Promise<{ slack?: string }>;
+}
+
+export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const user = await requireAuth();
+  const params = await searchParams;
 
   const workspace = user.workspaces?.[0];
   const canEdit = workspace ? ADMIN_ROLES.has(workspace.role) : false;
@@ -21,6 +30,22 @@ export default async function SettingsPage() {
     workspace?.id && token
       ? await getWorkspaceTimezone(token, workspace.id)
       : null;
+
+  const slackStatusResult =
+    workspace?.id && token
+      ? await getSlackConnectionStatus(token, workspace.id)
+      : null;
+
+  const rosterResult =
+    workspace?.id && token
+      ? await listRosterMembers(token, workspace.id)
+      : null;
+
+  const slackStatus = slackStatusResult?.data ?? { connected: false };
+  const rosterMembers = rosterResult?.data?.members ?? [];
+
+  const showConnectedAlert = params.slack === "connected";
+  const showErrorAlert = params.slack === "error";
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">
@@ -48,6 +73,21 @@ export default async function SettingsPage() {
               canEdit={canEdit}
             />
           ) : null}
+
+          <SlackConnectionCard
+            workspaceId={workspace.id}
+            canEdit={canEdit}
+            status={slackStatus}
+            showConnectedAlert={showConnectedAlert}
+            showErrorAlert={showErrorAlert}
+          />
+
+          <TeamRosterCard
+            workspaceId={workspace.id}
+            canEdit={canEdit}
+            slackConnected={slackStatus.connected}
+            members={rosterMembers}
+          />
 
           <div className="rounded-lg border border-border bg-muted/20 px-4 py-4 dark:border-white/10">
             <h2 className="text-base font-semibold">Scheduled conversations</h2>
