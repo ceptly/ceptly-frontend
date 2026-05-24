@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { TeamRoster } from "@/components/team/team-roster";
 import { buttonVariants } from "@/components/ui/button";
+import { getLinearConnectionStatus } from "@/lib/api/linear";
 import { listRosterMembers } from "@/lib/api/roster";
 import { getSlackConnectionStatus } from "@/lib/api/slack";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
@@ -22,12 +23,18 @@ export default async function TeamPage() {
       ? await getSlackConnectionStatus(token, workspace.id)
       : null;
 
+  const linearStatusResult =
+    workspace?.id && token
+      ? await getLinearConnectionStatus(token, workspace.id)
+      : null;
+
   const rosterResult =
     workspace?.id && token
       ? await listRosterMembers(token, workspace.id)
       : null;
 
   const slackStatus = slackStatusResult?.data ?? { connected: false };
+  const linearStatus = linearStatusResult?.data ?? { connected: false };
   const rosterMembers = rosterResult?.data?.members ?? [];
 
   return (
@@ -46,6 +53,7 @@ export default async function TeamPage() {
           workspaceId={workspace.id}
           canEdit={canEdit}
           slackConnected={slackStatus.connected}
+          linearConnected={linearStatus.connected}
           members={rosterMembers}
         />
       ) : (

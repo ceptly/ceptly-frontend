@@ -21,6 +21,7 @@ interface TeamRosterProps {
   workspaceId: string;
   canEdit: boolean;
   slackConnected: boolean;
+  linearConnected: boolean;
   members: RosterMember[];
 }
 
@@ -28,6 +29,7 @@ export function TeamRoster({
   workspaceId,
   canEdit,
   slackConnected,
+  linearConnected,
   members,
 }: TeamRosterProps) {
   const [addState, addAction, addPending] = useActionState(
@@ -75,6 +77,28 @@ export function TeamRoster({
       cell: ({ row }) => (
         <span className="text-muted-foreground">{row.getValue("email")}</span>
       ),
+    },
+    {
+      id: "data_sources",
+      header: "Data sources",
+      cell: ({ row }) => {
+        const sources = row.original.data_sources ?? [];
+
+        if (sources.length === 0) {
+          return <span className="text-muted-foreground">—</span>;
+        }
+
+        return (
+          <div className="flex flex-wrap gap-1">
+            {sources.includes("slack") ? (
+              <Badge variant="secondary">Slack</Badge>
+            ) : null}
+            {sources.includes("linear") ? (
+              <Badge variant="secondary">Linear</Badge>
+            ) : null}
+          </div>
+        );
+      },
     },
     {
       id: "status",
@@ -144,6 +168,17 @@ export function TeamRoster({
         <Alert>
           <AlertDescription>
             Add team members to receive check-ins.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {linearConnected &&
+      members.some((member) => !member.data_sources?.includes("linear")) ? (
+        <Alert>
+          <AlertDescription>
+            Some roster emails may not match a Linear account. Check the Data
+            sources column — members without a Linear badge need the same email
+            in Slack and Linear.
           </AlertDescription>
         </Alert>
       ) : null}

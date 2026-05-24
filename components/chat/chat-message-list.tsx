@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 
 import { ScheduleDaysPicker } from "@/components/settings/schedule-days-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import type { SetupChatMessage } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,7 @@ interface ChatMessageListProps {
   pending?: boolean;
   className?: string;
   onDaysChange?: (messageIndex: number, days: number[]) => void;
+  onMembersChange?: (messageIndex: number, memberIds: string[]) => void;
   interactiveDisabled?: boolean;
 }
 
@@ -21,6 +23,7 @@ export function ChatMessageList({
   pending = false,
   className,
   onDaysChange,
+  onMembersChange,
   interactiveDisabled = false,
 }: ChatMessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -35,6 +38,10 @@ export function ChatMessageList({
         const isUser = message.role === "user";
         const dayPicker =
           !isUser && message.ui_component?.type === "day_picker"
+            ? message.ui_component
+            : null;
+        const memberPicker =
+          !isUser && message.ui_component?.type === "member_picker"
             ? message.ui_component
             : null;
 
@@ -82,6 +89,53 @@ export function ChatMessageList({
                     disabled={interactiveDisabled}
                     showLabel={false}
                   />
+                </div>
+              ) : null}
+
+              {memberPicker ? (
+                <div className="w-full space-y-3 rounded-2xl border border-border bg-card p-4 shadow-sm dark:border-white/20">
+                  <p className="text-sm font-medium">Confirm who to message</p>
+                  <div className="flex flex-col gap-2">
+                    {memberPicker.members.map((member) => {
+                      const selected = memberPicker.selected_member_ids.includes(
+                        member.id,
+                      );
+
+                      return (
+                        <button
+                          key={member.id}
+                          type="button"
+                          disabled={interactiveDisabled}
+                          className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
+                          onClick={() => {
+                            const nextIds = selected
+                              ? memberPicker.selected_member_ids.filter(
+                                  (id) => id !== member.id,
+                                )
+                              : [
+                                  ...new Set([
+                                    ...memberPicker.selected_member_ids,
+                                    member.id,
+                                  ]),
+                                ];
+                            onMembersChange?.(index, nextIds);
+                          }}
+                        >
+                          <div>
+                            <p className="text-sm font-medium">
+                              {member.display_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {member.email}
+                            </p>
+                          </div>
+                          <Badge variant={selected ? "default" : "outline"}>
+                            {selected ? "Selected" : "Select"}
+                          </Badge>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : null}
             </div>

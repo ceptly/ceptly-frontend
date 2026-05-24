@@ -54,10 +54,37 @@ export interface ConversationSetupPlan {
   summary: string;
 }
 
-export interface SetupChatUiComponent {
+export interface DayPickerUiComponent {
   type: "day_picker";
   days_of_week: number[];
   resolved?: boolean;
+}
+
+export interface MemberPickerUiComponent {
+  type: "member_picker";
+  members: {
+    id: string;
+    display_name: string;
+    email: string;
+  }[];
+  selected_member_ids: string[];
+}
+
+export type SetupChatUiComponent = DayPickerUiComponent | MemberPickerUiComponent;
+
+export interface AdhocConversationMember {
+  id: string;
+  display_name: string;
+  email: string;
+}
+
+export interface AdhocConversationProposal {
+  roster_member_ids: string[];
+  members: AdhocConversationMember[];
+  intent: "gather" | "inform";
+  topic: string;
+  summary: string;
+  conversation_name: string;
 }
 
 export interface SetupChatMessage {
@@ -66,7 +93,10 @@ export interface SetupChatMessage {
   ui_component?: SetupChatUiComponent;
 }
 
-export type ChatAgentId = "conversation_setup" | "team_qa";
+export type ChatAgentId =
+  | "conversation_setup"
+  | "team_qa"
+  | "adhoc_conversation";
 
 export interface AuthUser {
   id: string;

@@ -2,6 +2,7 @@
 
 import { chatWorkspace } from "@/lib/api/workspace-chat";
 import type {
+  AdhocConversationProposal,
   ChatAgentId,
   ConversationSetupPlan,
   SetupChatMessage,
@@ -26,6 +27,7 @@ export async function sendChatMessage(
   assistant_message?: string;
   agent?: ChatAgentId;
   proposal?: ConversationSetupPlan | null;
+  adhoc_proposal?: AdhocConversationProposal | null;
   ui_component?: SetupChatUiComponent | null;
 }> {
   try {
@@ -41,6 +43,7 @@ export async function sendChatMessage(
       assistant_message: result.data?.assistant_message,
       agent: result.data?.agent,
       proposal: result.data?.proposal ?? null,
+      adhoc_proposal: result.data?.adhoc_proposal ?? null,
       ui_component: result.data?.ui_component ?? null,
     };
   } catch (error) {
