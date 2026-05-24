@@ -1,11 +1,13 @@
 import Link from "next/link";
 
 import { WorkspaceInvites } from "@/components/settings/workspace-invites";
+import { WorkspaceMembersTable } from "@/components/settings/workspace-members";
 import { WorkspaceNameForm } from "@/components/settings/workspace-name-form";
 import { WorkspaceTimezoneForm } from "@/components/settings/workspace-timezone-form";
 import { buttonVariants } from "@/components/ui/button";
 import { getWorkspaceTimezone } from "@/lib/api/conversations";
 import { listInvites } from "@/lib/api/invites";
+import { listWorkspaceMembers } from "@/lib/api/members";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { cn } from "@/lib/utils";
 
@@ -30,8 +32,15 @@ export default async function SettingsPage() {
 
   const pendingInvites = invitesResult?.data?.invites ?? [];
 
+  const membersResult =
+    workspace?.id && token
+      ? await listWorkspaceMembers(token, workspace.id)
+      : null;
+
+  const members = membersResult?.data?.members ?? [];
+
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-8">
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Team settings</h1>
@@ -57,6 +66,13 @@ export default async function SettingsPage() {
             />
           ) : null}
 
+          <WorkspaceMembersTable
+            workspaceId={workspace.id}
+            canEdit={canEdit}
+            currentUserId={user.id}
+            members={members}
+          />
+
           <WorkspaceInvites
             workspaceId={workspace.id}
             canEdit={canEdit}
@@ -64,45 +80,6 @@ export default async function SettingsPage() {
             invites={pendingInvites}
           />
 
-          <div className="rounded-lg border border-border bg-muted/20 px-4 py-4 dark:border-white/10">
-            <h2 className="text-base font-semibold">Integrations</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Connect Slack and other tools your team uses.
-            </p>
-            <Link
-              href="/settings/integrations"
-              className={cn(buttonVariants({ variant: "outline" }), "mt-4")}
-            >
-              Manage integrations
-            </Link>
-          </div>
-
-          <div className="rounded-lg border border-border bg-muted/20 px-4 py-4 dark:border-white/10">
-            <h2 className="text-base font-semibold">Team roster</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Manage who receives scheduled check-in DMs in Slack.
-            </p>
-            <Link
-              href="/team"
-              className={cn(buttonVariants({ variant: "outline" }), "mt-4")}
-            >
-              Manage roster
-            </Link>
-          </div>
-
-          <div className="rounded-lg border border-border bg-muted/20 px-4 py-4 dark:border-white/10">
-            <h2 className="text-base font-semibold">Scheduled conversations</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              View your published check-in schedule. Edit it from the home page
-              with AI.
-            </p>
-            <Link
-              href="/settings/conversations"
-              className={cn(buttonVariants({ variant: "outline" }), "mt-4")}
-            >
-              Manage conversations
-            </Link>
-          </div>
         </>
       ) : (
         <p className="text-sm text-muted-foreground">
