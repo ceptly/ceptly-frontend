@@ -41,6 +41,7 @@ function AuthPageContent() {
   const inviteToken = searchParams.get("invite") ?? undefined;
   const initialMode = searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
   const prefilledEmail = searchParams.get("email") ?? "";
+  const checkoutSuccess = searchParams.get("checkout") === "success";
 
   const [mode, setMode] = useState<"sign-in" | "sign-up">(initialMode);
   const [signInState, signInAction] = useActionState(signIn, undefined);
@@ -48,6 +49,9 @@ function AuthPageContent() {
 
   useEffect(() => {
     if (searchParams.get("mode") === "sign-up") {
+      setMode("sign-up");
+    }
+    if (searchParams.get("checkout") === "success") {
       setMode("sign-up");
     }
   }, [searchParams]);
@@ -84,6 +88,15 @@ function AuthPageContent() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {checkoutSuccess && isSignUp ? (
+              <Alert>
+                <AlertDescription>
+                  Payment successful. Create your account with the same email
+                  you used in Stripe to unlock your workspace.
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
             {formState?.errors?._form && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />

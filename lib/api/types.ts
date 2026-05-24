@@ -113,6 +113,18 @@ export interface WorkspaceMembership {
   id: string;
   name: string;
   role: "founder" | "admin" | "lead" | "ic";
+  subscriptionStatus?:
+    | "none"
+    | "trialing"
+    | "active"
+    | "past_due"
+    | "canceled"
+    | "unpaid"
+    | "incomplete";
+  hasActiveSubscription?: boolean;
+  trialEndsAt?: string | null;
+  currentPeriodEnd?: string | null;
+  cancelAtPeriodEnd?: boolean;
 }
 
 export interface WorkspaceInvite {

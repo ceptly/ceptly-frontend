@@ -5,6 +5,11 @@ import { redirect } from "next/navigation";
 import { AUTH_ENDPOINTS, resolveApiBaseUrl } from "@/lib/api/auth";
 import type { AuthUser } from "@/lib/api/types";
 import { fetchOnboardingStatus } from "@/lib/api/onboarding";
+import {
+  getPrimaryWorkspace,
+  userCanManageBilling,
+  workspaceHasActiveSubscription,
+} from "@/lib/subscription";
 
 function cookieOptions() {
   const isSecure =
@@ -59,6 +64,41 @@ export async function clearOnboardingCompleteCookie() {
   cookieStore.set("onboarding_complete", "", { ...options, maxAge: 0 });
 }
 
+export async function setSubscriptionCookies(user: AuthUser) {
+  const cookieStore = await cookies();
+  const options = cookieOptions();
+  const workspace = getPrimaryWorkspace(user);
+  const active = workspaceHasActiveSubscription(workspace);
+  const canManage = userCanManageBilling(workspace);
+
+  cookieStore.set("subscription_active", active ? "1" : "0", {
+    ...options,
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60,
+  });
+
+  cookieStore.set("billing_role", workspace?.role ?? "founder", {
+    ...options,
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60,
+  });
+
+  cookieStore.set("billing_can_manage", canManage ? "1" : "0", {
+    ...options,
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60,
+  });
+}
+
+export async function clearSubscriptionCookies() {
+  const cookieStore = await cookies();
+  const options = cookieOptions();
+
+  cookieStore.set("subscription_active", "", { ...options, maxAge: 0 });
+  cookieStore.set("billing_role", "", { ...options, maxAge: 0 });
+  cookieStore.set("billing_can_manage", "", { ...options, maxAge: 0 });
+}
+
 export async function setWorkspaceNameCookie(name: string) {
   const cookieStore = await cookies();
   const options = cookieOptions();
@@ -78,6 +118,9 @@ export async function clearAuthCookies() {
   cookieStore.set("refresh_token", "", { ...options, maxAge: 0 });
   cookieStore.set("onboarding_complete", "", { ...options, maxAge: 0 });
   cookieStore.set("workspace_name", "", { ...options, maxAge: 0 });
+  cookieStore.set("subscription_active", "", { ...options, maxAge: 0 });
+  cookieStore.set("billing_role", "", { ...options, maxAge: 0 });
+  cookieStore.set("billing_can_manage", "", { ...options, maxAge: 0 });
 }
 
 export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
