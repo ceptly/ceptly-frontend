@@ -10,6 +10,7 @@ import {
   toggleRosterMemberPaused,
 } from "@/actions/roster";
 import { RosterDataTable } from "@/components/team/roster-data-table";
+import { RosterImportButtons } from "@/components/team/roster-import-buttons";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -199,6 +200,14 @@ export function TeamRoster({
         <Alert variant="destructive">
           <AlertDescription>{actionError}</AlertDescription>
         </Alert>
+      ) : null}
+
+      {canEdit ? (
+        <RosterImportButtons
+          workspaceId={workspaceId}
+          slackConnected={slackConnected}
+          linearConnected={linearConnected}
+        />
       ) : null}
 
       <RosterDataTable columns={columns} data={members} />

@@ -6,6 +6,8 @@ import { z } from "zod";
 import {
   addRosterMember,
   deleteRosterMember,
+  importRosterFromLinear,
+  importRosterFromSlack,
   updateRosterMember,
 } from "@/lib/api/roster";
 import { getAccessToken } from "@/lib/auth/server";
@@ -117,4 +119,72 @@ export async function removeRosterMemberAction(
   revalidatePath("/settings");
   revalidatePath("/team");
   return { success: true };
+}
+
+function formatImportResult(data: {
+  added: number;
+  skipped: number;
+  failed: number;
+}): string {
+  const parts: string[] = [];
+
+  if (data.added > 0) {
+    parts.push(
+      `Added ${data.added} member${data.added === 1 ? "" : "s"}`,
+    );
+  }
+
+  if (data.skipped > 0) {
+    parts.push(
+      `Skipped ${data.skipped} already on roster or without a match`,
+    );
+  }
+
+  if (data.failed > 0) {
+    parts.push(`Failed to add ${data.failed}`);
+  }
+
+  if (parts.length === 0) {
+    return "No new members to import.";
+  }
+
+  return parts.join(". ") + ".";
+}
+
+export async function importRosterFromSlackAction(
+  workspaceId: string,
+): Promise<{ error?: string; message?: string }> {
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: "You must be signed in to manage the roster." };
+  }
+
+  const result = await importRosterFromSlack(token, workspaceId);
+
+  if (!result.success || !result.data) {
+    return { error: result.error ?? "Failed to import from Slack." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/team");
+  return { message: formatImportResult(result.data) };
+}
+
+export async function importRosterFromLinearAction(
+  workspaceId: string,
+): Promise<{ error?: string; message?: string }> {
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: "You must be signed in to manage the roster." };
+  }
+
+  const result = await importRosterFromLinear(token, workspaceId);
+
+  if (!result.success || !result.data) {
+    return { error: result.error ?? "Failed to import from Linear." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/team");
+  return { message: formatImportResult(result.data) };
 }

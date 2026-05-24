@@ -13,7 +13,9 @@ import {
   clearAuthCookies,
   setAuthCookies,
   setOnboardingCompleteCookie,
+  setSubscriptionCookies,
 } from "@/lib/auth/server";
+import { userNeedsSubscribe } from "@/lib/subscription";
 
 async function resolvePostAuthRedirect(
   accessToken: string,
@@ -38,9 +40,18 @@ async function resolvePostAuthRedirect(
     }
 
     const result = (await response.json()) as AuthMeResponse;
-    const onboardingCompleted = result.data?.user.onboardingCompleted ?? false;
+    const user = result.data?.user;
+    const onboardingCompleted = user?.onboardingCompleted ?? false;
 
     await setOnboardingCompleteCookie(onboardingCompleted);
+
+    if (user) {
+      await setSubscriptionCookies(user);
+    }
+
+    if (onboardingCompleted && user && userNeedsSubscribe(user)) {
+      return "/subscribe";
+    }
 
     return onboardingCompleted ? "/chat" : "/onboarding";
   } catch {
@@ -83,6 +94,10 @@ async function authenticate(
     }
 
     await setAuthCookies(result.data.session);
+
+    if (result.data.user) {
+      await setSubscriptionCookies(result.data.user);
+    }
 
     if (options?.inviteToken && options.isRegister) {
       await setOnboardingCompleteCookie(true);

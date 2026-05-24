@@ -7,8 +7,10 @@ import type { OnboardingCompleteInput } from "@/lib/onboarding-schemas";
 import {
   getAccessToken,
   setOnboardingCompleteCookie,
+  setSubscriptionCookies,
   setWorkspaceNameCookie,
 } from "@/lib/auth/server";
+import { userNeedsSubscribe } from "@/lib/subscription";
 
 export type OnboardingActionState = {
   error?: string;
@@ -33,6 +35,24 @@ export async function completeOnboarding(
 
     await setOnboardingCompleteCookie(true);
     await setWorkspaceNameCookie(payload.organizationName.trim());
+
+    const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+    if (base) {
+      const meResponse = await fetch(`${base}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      if (meResponse.ok) {
+        const meResult = await meResponse.json();
+        const user = meResult.data?.user;
+        if (user) {
+          await setSubscriptionCookies(user);
+          if (userNeedsSubscribe(user)) {
+            redirect("/subscribe");
+          }
+        }
+      }
+    }
   } catch {
     return { error: "An unexpected error occurred. Please try again." };
   }
