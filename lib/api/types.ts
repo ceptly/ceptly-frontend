@@ -133,6 +133,14 @@ export interface InvitePreview {
   status: "pending" | "expired" | "accepted";
 }
 
+export interface WorkspaceMember {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+  role: WorkspaceMembership["role"];
+  joined_at: string;
+}
+
 export interface AuthMeResponse {
   success: boolean;
   data?: {
