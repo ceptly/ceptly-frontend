@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { createConversationFromTemplate } from "@/lib/api/conversations";
-import type { WorkspaceSchedule } from "@/lib/api/types";
+import type {
+  ConversationResultDestination,
+  WorkspaceSchedule,
+} from "@/lib/api/types";
 import { getAccessToken } from "@/lib/auth/server";
 
 const scheduleSchema = z.object({
@@ -22,6 +25,25 @@ const schema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
   rosterMemberIds: z.array(z.string().uuid()).min(1),
   contextIntegrations: z.array(z.enum(["linear", "jira", "monday"])).optional(),
+  resultDestinations: z
+    .array(
+      z.discriminatedUnion("type", [
+        z.object({
+          type: z.literal("slack_channel"),
+          channel_id: z.string().trim().min(1).max(64),
+          name: z.string().trim().max(200).optional(),
+        }),
+        z.object({
+          type: z.literal("roster_dm"),
+          roster_member_id: z.string().uuid(),
+        }),
+        z.object({
+          type: z.literal("workspace_digest"),
+        }),
+      ]),
+    )
+    .max(20)
+    .optional(),
   schedule: scheduleSchema,
 });
 
@@ -31,6 +53,7 @@ export async function publishConversationFromTemplate(input: {
   name?: string;
   rosterMemberIds: string[];
   contextIntegrations?: string[];
+  resultDestinations?: ConversationResultDestination[];
   schedule: WorkspaceSchedule;
 }): Promise<{ error?: string; conversationId?: string }> {
   const parsed = schema.safeParse(input);
@@ -51,6 +74,7 @@ export async function publishConversationFromTemplate(input: {
       name: parsed.data.name,
       roster_member_ids: parsed.data.rosterMemberIds,
       context_integrations: parsed.data.contextIntegrations,
+      result_destinations: parsed.data.resultDestinations,
       schedule: parsed.data.schedule,
     },
   );

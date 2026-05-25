@@ -13,7 +13,10 @@ import {
   updateConversation,
   updateConversationQuestion,
 } from "@/lib/api/conversations";
-import type { WorkspaceSchedule } from "@/lib/api/types";
+import type {
+  ConversationResultDestination,
+  WorkspaceSchedule,
+} from "@/lib/api/types";
 import { getAccessToken } from "@/lib/auth/server";
 
 const scheduleFrequencySchema = z.enum(["daily", "specific_days"]);
@@ -51,6 +54,25 @@ const saveConversationSchema = z.object({
   summary: z.string().trim().max(200).optional().nullable(),
   roster_member_ids: z.array(z.string().uuid()).min(1).optional(),
   context_integrations: z.array(z.enum(["linear", "jira", "monday"])).optional(),
+  resultDestinations: z
+    .array(
+      z.discriminatedUnion("type", [
+        z.object({
+          type: z.literal("slack_channel"),
+          channel_id: z.string().trim().min(1).max(64),
+          name: z.string().trim().max(200).optional(),
+        }),
+        z.object({
+          type: z.literal("roster_dm"),
+          roster_member_id: z.string().uuid(),
+        }),
+        z.object({
+          type: z.literal("workspace_digest"),
+        }),
+      ]),
+    )
+    .max(20)
+    .optional(),
   schedule: workspaceScheduleSchema,
   questions: z.array(conversationQuestionInputSchema).min(1),
 });
@@ -106,6 +128,7 @@ export async function saveConversation(input: {
   summary?: string | null;
   roster_member_ids?: string[];
   context_integrations?: string[];
+  resultDestinations?: ConversationResultDestination[];
   schedule: WorkspaceSchedule;
   questions: { id?: string; prompt_text: string; enabled: boolean }[];
 }): Promise<{ error?: string }> {
@@ -157,6 +180,7 @@ export async function saveConversation(input: {
       summary: parsed.data.summary,
       roster_member_ids: parsed.data.roster_member_ids,
       context_integrations: parsed.data.context_integrations,
+      result_destinations: parsed.data.resultDestinations,
       schedule: schedule as WorkspaceSchedule,
     },
   );

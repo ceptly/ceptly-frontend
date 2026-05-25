@@ -6,6 +6,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { saveConversation } from "@/actions/conversations";
 import { AppContextPicker } from "@/components/settings/app-context-picker";
 import { ConversationIcPreview } from "@/components/settings/conversation-ic-preview";
+import { ResultDestinationsPicker } from "@/components/settings/result-destinations-picker";
 import { ScheduleDaysPicker } from "@/components/settings/schedule-days-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,12 +16,15 @@ import { OptionSelector } from "@/components/ui/option-selector";
 import { Textarea } from "@/components/ui/textarea";
 import { RosterMemberPicker } from "@/components/settings/roster-member-picker";
 import type { RosterMember } from "@/lib/api/roster";
+import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
   AppContextOption,
   ConversationQuestion,
+  ConversationResultDestination,
   ScheduleFrequency,
   ScheduledConversation,
 } from "@/lib/api/types";
+import { buildResultDestinations, parseResultDestinations } from "@/lib/result-destinations";
 import { conversationToSchedule } from "@/lib/api/conversations";
 import { formatSchedulePreview } from "@/lib/schedule/preview";
 import {
@@ -40,6 +44,8 @@ interface ConversationEditFormProps {
   workspaceId: string;
   rosterMembers: RosterMember[];
   appContextOptions: AppContextOption[];
+  slackChannels: SlackChannel[];
+  slackChannelsError?: string | null;
   onCancel: () => void;
   onSaved: () => void;
 }
@@ -60,6 +66,8 @@ export function ConversationEditForm({
   workspaceId,
   rosterMembers,
   appContextOptions,
+  slackChannels,
+  slackChannelsError,
   onCancel,
   onSaved,
 }: ConversationEditFormProps) {
@@ -85,10 +93,36 @@ export function ConversationEditForm({
   const [contextIntegrations, setContextIntegrations] = useState<string[]>(
     conversation.context_integrations ?? [],
   );
+  const initialDestinations = parseResultDestinations(
+    conversation.result_destinations,
+  );
+  const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>(
+    initialDestinations.channelIds,
+  );
+  const [selectedRosterDmIds, setSelectedRosterDmIds] = useState<string[]>(
+    initialDestinations.rosterDmIds,
+  );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const timezoneGroups = useMemo(() => groupTimezonesByRegion(), []);
+
+  const slackChannelsForPicker = useMemo(() => {
+    const byId = new Map(slackChannels.map((channel) => [channel.id, channel]));
+    for (const destination of conversation.result_destinations ?? []) {
+      if (
+        destination.type === "slack_channel" &&
+        !byId.has(destination.channel_id)
+      ) {
+        byId.set(destination.channel_id, {
+          id: destination.channel_id,
+          name: destination.name ?? destination.channel_id,
+          is_private: false,
+        });
+      }
+    }
+    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [slackChannels, conversation.result_destinations]);
   const hasTimezoneInList = TIMEZONE_OPTIONS.some(
     (option) => option.value === timezone,
   );
@@ -161,6 +195,13 @@ export function ConversationEditForm({
       return;
     }
 
+    const resultDestinations: ConversationResultDestination[] =
+      buildResultDestinations({
+        channelIds: selectedChannelIds,
+        channels: slackChannelsForPicker,
+        rosterDmIds: selectedRosterDmIds,
+      });
+
     startTransition(async () => {
       const result = await saveConversation({
         workspaceId,
@@ -169,6 +210,7 @@ export function ConversationEditForm({
         summary: summary.trim() || null,
         roster_member_ids: selectedMemberIds,
         context_integrations: contextIntegrations,
+        resultDestinations,
         schedule: {
           ...conversationToSchedule(conversation),
           timezone,
@@ -243,6 +285,17 @@ export function ConversationEditForm({
           options={appContextOptions}
           selectedIds={contextIntegrations}
           onChange={setContextIntegrations}
+          disabled={isPending}
+        />
+
+        <ResultDestinationsPicker
+          slackChannels={slackChannelsForPicker}
+          slackChannelsError={slackChannelsError}
+          rosterMembers={rosterMembers}
+          selectedChannelIds={selectedChannelIds}
+          selectedRosterDmIds={selectedRosterDmIds}
+          onChannelIdsChange={setSelectedChannelIds}
+          onRosterDmIdsChange={setSelectedRosterDmIds}
           disabled={isPending}
         />
 
