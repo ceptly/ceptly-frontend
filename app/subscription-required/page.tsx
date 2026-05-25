@@ -1,6 +1,6 @@
 import { signOut } from "@/actions/auth";
 import { SyncSubscriptionCookies } from "@/components/subscribe/sync-subscription-cookies";
-import { requireAuth } from "@/lib/auth/server";
+import { requireAuth, setSubscriptionCookies } from "@/lib/auth/server";
 import {
   getPrimaryWorkspace,
   userCanManageBilling,
@@ -13,6 +13,7 @@ export default async function SubscriptionRequiredPage() {
   const workspace = getPrimaryWorkspace(user);
 
   if (workspaceHasActiveSubscription(workspace)) {
+    await setSubscriptionCookies(user);
     redirect("/chat");
   }
 
