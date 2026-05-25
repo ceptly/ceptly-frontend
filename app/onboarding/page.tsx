@@ -7,6 +7,7 @@ import {
   getAccessToken,
   getCurrentUser,
   setOnboardingCompleteCookie,
+  setSubscriptionCookies,
 } from "@/lib/auth/server";
 
 export default async function OnboardingPage() {
@@ -18,6 +19,7 @@ export default async function OnboardingPage() {
 
   if (user.onboardingCompleted) {
     await setOnboardingCompleteCookie(true);
+    await setSubscriptionCookies(user);
     redirect("/chat");
   }
 
