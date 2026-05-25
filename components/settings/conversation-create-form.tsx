@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 
 import { publishConversationFromTemplate } from "@/actions/create-conversation";
 import { AppContextPicker } from "@/components/settings/app-context-picker";
+import { ResultDestinationsPicker } from "@/components/settings/result-destinations-picker";
 import { RosterMemberPicker } from "@/components/settings/roster-member-picker";
 import { ScheduleDaysPicker } from "@/components/settings/schedule-days-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,11 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OptionSelector } from "@/components/ui/option-selector";
 import type { RosterMember } from "@/lib/api/roster";
+import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
   AppContextOption,
+  ConversationResultDestination,
   ConversationTemplate,
   ScheduleFrequency,
 } from "@/lib/api/types";
+import { buildResultDestinations } from "@/lib/result-destinations";
 import {
   groupTimezonesByRegion,
   TIMEZONE_OPTIONS,
@@ -41,6 +45,8 @@ interface ConversationCreateFormProps {
   templates: ConversationTemplate[];
   rosterMembers: RosterMember[];
   appContextOptions: AppContextOption[];
+  slackChannels: SlackChannel[];
+  slackChannelsError?: string | null;
 }
 
 export function ConversationCreateForm({
@@ -49,6 +55,8 @@ export function ConversationCreateForm({
   templates,
   rosterMembers,
   appContextOptions,
+  slackChannels,
+  slackChannelsError,
 }: ConversationCreateFormProps) {
   const dailyStandup =
     templates.find((template) => template.id === "daily_standup") ??
@@ -74,6 +82,8 @@ export function ConversationCreateForm({
   const [contextIntegrations, setContextIntegrations] = useState<string[]>(() =>
     defaultContextIntegrations(dailyStandup, appContextOptions),
   );
+  const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
+  const [selectedRosterDmIds, setSelectedRosterDmIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -108,6 +118,13 @@ export function ConversationCreateForm({
       return;
     }
 
+    const resultDestinations: ConversationResultDestination[] =
+      buildResultDestinations({
+        channelIds: selectedChannelIds,
+        channels: slackChannels,
+        rosterDmIds: selectedRosterDmIds,
+      });
+
     startTransition(async () => {
       const result = await publishConversationFromTemplate({
         workspaceId,
@@ -115,6 +132,7 @@ export function ConversationCreateForm({
         name: name.trim() || template.name,
         rosterMemberIds: selectedMemberIds,
         contextIntegrations,
+        resultDestinations,
         schedule: {
           timezone,
           frequency,
@@ -196,6 +214,17 @@ export function ConversationCreateForm({
           options={appContextOptions}
           selectedIds={contextIntegrations}
           onChange={setContextIntegrations}
+          disabled={isPending}
+        />
+
+        <ResultDestinationsPicker
+          slackChannels={slackChannels}
+          slackChannelsError={slackChannelsError}
+          rosterMembers={rosterMembers}
+          selectedChannelIds={selectedChannelIds}
+          selectedRosterDmIds={selectedRosterDmIds}
+          onChannelIdsChange={setSelectedChannelIds}
+          onRosterDmIdsChange={setSelectedRosterDmIds}
           disabled={isPending}
         />
 

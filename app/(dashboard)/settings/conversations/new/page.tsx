@@ -7,9 +7,10 @@ import { DEFAULT_CONVERSATION_TEMPLATES } from "@/lib/conversation-templates";
 import {
   listAppContextOptions,
   listConversationTemplates,
+  getWorkspaceTimezone,
 } from "@/lib/api/conversations";
 import { listRosterMembers } from "@/lib/api/roster";
-import { getWorkspaceTimezone } from "@/lib/api/conversations";
+import { listSlackChannels } from "@/lib/api/slack-channels";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { cn } from "@/lib/utils";
 
@@ -29,13 +30,19 @@ export default async function NewConversationPage() {
     );
   }
 
-  const [templatesResult, rosterResult, timezoneResult, appContextsResult] =
-    await Promise.all([
-      listConversationTemplates(token, workspace.id),
-      listRosterMembers(token, workspace.id),
-      getWorkspaceTimezone(token, workspace.id),
-      listAppContextOptions(token, workspace.id),
-    ]);
+  const [
+    templatesResult,
+    rosterResult,
+    timezoneResult,
+    appContextsResult,
+    slackChannelsResult,
+  ] = await Promise.all([
+    listConversationTemplates(token, workspace.id),
+    listRosterMembers(token, workspace.id),
+    getWorkspaceTimezone(token, workspace.id),
+    listAppContextOptions(token, workspace.id),
+    listSlackChannels(token, workspace.id),
+  ]);
 
   const apiTemplates = templatesResult.data?.templates ?? [];
   const templates =
@@ -46,7 +53,11 @@ export default async function NewConversationPage() {
   const rosterMembers = rosterResult.data?.members ?? [];
   const timezone = timezoneResult.data?.timezone ?? "America/Chicago";
   const appContextOptions = appContextsResult.data?.app_contexts ?? [];
-
+  const slackChannels = slackChannelsResult.data?.channels ?? [];
+  const slackChannelsError = slackChannelsResult.success
+    ? null
+    : (slackChannelsResult.error ??
+      "Could not load Slack channels. You can still publish and add destinations when editing.");
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">
       <div className="space-y-4">
@@ -64,8 +75,9 @@ export default async function NewConversationPage() {
             Add conversation
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Start from a template, then choose who receives check-in DMs. A
-            short summary is generated automatically after you publish.
+            Start from a template, choose who receives check-in DMs, and where
+            standup rollups are posted. A short summary is generated automatically
+            after you publish.
           </p>
         </div>
       </div>
@@ -94,6 +106,8 @@ export default async function NewConversationPage() {
         templates={templates}
         rosterMembers={rosterMembers}
         appContextOptions={appContextOptions}
+        slackChannels={slackChannels}
+        slackChannelsError={slackChannelsError}
       />
     </div>
   );

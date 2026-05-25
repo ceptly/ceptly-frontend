@@ -3,6 +3,7 @@ import type {
   AppContextOption,
   ConversationPreview,
   ConversationQuestion,
+  ConversationResultDestination,
   ConversationTemplate,
   ScheduledConversation,
   ScheduleFrequency,
@@ -106,6 +107,7 @@ export async function createConversationFromTemplate(
     schedule?: WorkspaceSchedule;
     roster_member_ids?: string[];
     context_integrations?: string[];
+    result_destinations?: ConversationResultDestination[];
   },
 ): Promise<{
   success: boolean;
@@ -237,6 +239,7 @@ export async function updateConversation(
     schedule?: WorkspaceSchedule;
     roster_member_ids?: string[];
     context_integrations?: string[];
+    result_destinations?: ConversationResultDestination[];
   },
 ): Promise<{
   success: boolean;

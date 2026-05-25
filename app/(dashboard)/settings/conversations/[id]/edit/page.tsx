@@ -7,6 +7,7 @@ import {
   listAppContextOptions,
 } from "@/lib/api/conversations";
 import { listRosterMembers } from "@/lib/api/roster";
+import { listSlackChannels } from "@/lib/api/slack-channels";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { cn } from "@/lib/utils";
 
@@ -39,12 +40,17 @@ export default async function ConversationEditPage({
     );
   }
 
-  const [conversationResult, rosterResult, appContextsResult] =
-    await Promise.all([
-      getConversation(token, workspace.id, id),
-      listRosterMembers(token, workspace.id),
-      listAppContextOptions(token, workspace.id),
-    ]);
+  const [
+    conversationResult,
+    rosterResult,
+    appContextsResult,
+    slackChannelsResult,
+  ] = await Promise.all([
+    getConversation(token, workspace.id, id),
+    listRosterMembers(token, workspace.id),
+    listAppContextOptions(token, workspace.id),
+    listSlackChannels(token, workspace.id),
+  ]);
 
   if (!conversationResult.success || !conversationResult.data?.conversation) {
     return (
@@ -56,7 +62,10 @@ export default async function ConversationEditPage({
 
   const rosterMembers = rosterResult.data?.members ?? [];
   const appContextOptions = appContextsResult.data?.app_contexts ?? [];
-
+  const slackChannels = slackChannelsResult.data?.channels ?? [];
+  const slackChannelsError = slackChannelsResult.success
+    ? null
+    : (slackChannelsResult.error ?? "Could not load Slack channels.");
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">
       <div className="space-y-4">
@@ -79,6 +88,8 @@ export default async function ConversationEditPage({
         workspaceId={workspace.id}
         rosterMembers={rosterMembers}
         appContextOptions={appContextOptions}
+        slackChannels={slackChannels}
+        slackChannelsError={slackChannelsError}
       />
     </div>
   );

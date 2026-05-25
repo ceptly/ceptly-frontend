@@ -15,6 +15,20 @@ export interface ConversationQuestion {
   enabled: boolean;
 }
 
+export type ConversationResultDestination =
+  | {
+      type: "slack_channel";
+      channel_id: string;
+      name?: string;
+    }
+  | {
+      type: "roster_dm";
+      roster_member_id: string;
+    }
+  | {
+      type: "workspace_digest";
+    };
+
 export interface ScheduledConversation {
   id: string;
   name: string;
@@ -29,6 +43,7 @@ export interface ScheduledConversation {
   questions?: ConversationQuestion[];
   roster_member_ids?: string[];
   context_integrations?: string[];
+  result_destinations?: ConversationResultDestination[];
 }
 
 export interface ConversationTemplate {
