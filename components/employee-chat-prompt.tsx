@@ -2,18 +2,18 @@
 
 import {
   ArrowUp,
-  CalendarDays,
   ChevronDown,
   Loader2,
-  MessageCircle,
-  MessageCircleQuestion,
+  Mic,
+  // Plus,
   RefreshCw,
-  TrendingUp,
-  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useStatsigClient } from "@statsig/react-bindings";
 import { useMemo, useState } from "react";
+
+import { useSpeechDictation } from "@/hooks/use-speech-dictation";
+import { cn } from "@/lib/utils";
 
 import {
   abandonActiveCheckinAction,
@@ -33,7 +33,9 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Textarea } from "@/components/ui/textarea";
+import { ChatMentionTextarea } from "@/components/chat/chat-mention-textarea";
+import { formatMessageWithMentionContext } from "@/lib/chat-mentions";
+import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
   AdhocConversationProposal,
@@ -49,84 +51,6 @@ import {
   streamChatWorkspace,
   type AgentActivityState,
 } from "@/lib/api/workspace-chat-stream";
-
-const setupSuggestions = [
-  {
-    label: "Mon & Thu sprint check-in",
-    icon: CalendarDays,
-    agent: "conversation_setup" as const,
-    prompt:
-      "Mon and Thu at 9am — ask about sprint progress, what they shipped, and blockers.",
-  },
-  {
-    label: "Friday team pulse",
-    icon: TrendingUp,
-    agent: "conversation_setup" as const,
-    prompt:
-      "Friday at 4pm — quick team energy pulse and anything to flag before the weekend.",
-  },
-  {
-    label: "Daily standup",
-    icon: MessageCircleQuestion,
-    agent: "conversation_setup" as const,
-    prompt:
-      "Set up a daily standup using Ceptly's standup template — weekdays, team members, Linear context, and where to post results.",
-  },
-];
-
-const adhocSuggestions = [
-  {
-    label: "Ask about a blocker",
-    icon: MessageCircle,
-    agent: "adhoc_conversation" as const,
-    prompt: "Have a conversation with Michael about his blocker.",
-  },
-];
-
-const teamSuggestions = [
-  {
-    label: "Who's blocked?",
-    icon: Users,
-    agent: "team_qa" as const,
-    prompt: "Is anyone blocked right now?",
-  },
-  {
-    label: "Team pulse summary",
-    icon: TrendingUp,
-    agent: "team_qa" as const,
-    prompt: "What did the team share in their most recent check-ins?",
-  },
-  {
-    label: "Recurring blockers",
-    icon: MessageCircleQuestion,
-    agent: "team_qa" as const,
-    prompt: "Are there any recurring blockers across the team?",
-  },
-];
-
-const linearTeamSuggestions = [
-  {
-    label: "What is the team working on?",
-    icon: TrendingUp,
-    agent: "team_qa" as const,
-    prompt: "What is each team member working on based on Linear and check-ins?",
-  },
-  {
-    label: "Open Linear issues",
-    icon: MessageCircleQuestion,
-    agent: "team_qa" as const,
-    prompt: "What open Linear issues are assigned to the team?",
-  },
-];
-
-const slackTeamSuggestions = [
-  {
-    label: "Slack team discussion",
-    icon: MessageCircle,
-    agent: "team_qa" as const,
-    prompt: "What did the team discuss in Slack this week?",
-  },
-];
 
 const AGENT_LABELS: Record<ChatAgentId, string> = {
   conversation_setup: "Scheduling",
@@ -145,10 +69,10 @@ interface EmployeeChatPromptProps {
   workspaceId: string;
   canEdit?: boolean;
   linearConnected?: boolean;
-  slackSearchEnabled?: boolean;
   appContextOptions?: AppContextOption[];
   slackChannels?: SlackChannel[];
   slackChannelsError?: string | null;
+  rosterMembers?: RosterMember[];
 }
 
 function getEditableConversationIndex(plan: ConversationSetupPlan): number {
@@ -251,10 +175,10 @@ export function EmployeeChatPrompt({
   workspaceId,
   canEdit = true,
   linearConnected = false,
-  slackSearchEnabled = false,
   appContextOptions = [],
   slackChannels = [],
   slackChannelsError = null,
+  rosterMembers = [],
 }: EmployeeChatPromptProps) {
   const { client } = useStatsigClient();
 
@@ -364,29 +288,18 @@ export function EmployeeChatPrompt({
     return adhocProposal.roster_member_ids.length === 0;
   }, [adhocProposal, adhocPending, chatPending, isAdhocAgent]);
 
-  const suggestions = useMemo(() => {
-    const linearAwareTeamSuggestions = linearConnected
-      ? [...linearTeamSuggestions, ...teamSuggestions]
-      : teamSuggestions;
-    const contextAwareTeamSuggestions = slackSearchEnabled
-      ? [...slackTeamSuggestions, ...linearAwareTeamSuggestions]
-      : linearAwareTeamSuggestions;
-
-    if (activeAgent === "team_qa") {
-      return contextAwareTeamSuggestions;
-    }
-    if (activeAgent === "conversation_setup") {
-      return setupSuggestions;
-    }
-    if (activeAgent === "adhoc_conversation") {
-      return adhocSuggestions;
-    }
-    return [
-      ...setupSuggestions,
-      ...adhocSuggestions,
-      ...contextAwareTeamSuggestions,
-    ];
-  }, [activeAgent, linearConnected, slackSearchEnabled]);
+  const {
+    supported: dictationSupported,
+    listening: dictationListening,
+    error: dictationError,
+    toggle: toggleDictation,
+    stop: stopDictation,
+    clearError: clearDictationError,
+  } = useSpeechDictation({
+    value: input,
+    onChange: setInput,
+    disabled: chatDisabled,
+  });
 
   async function handleSend(content: string, agentOverride?: ChatAgentId) {
     const trimmed = content.trim();
@@ -395,6 +308,7 @@ export function EmployeeChatPrompt({
     }
 
     client.logEvent("employee_chat_submit");
+    stopDictation();
 
     const nextMessages: SetupChatMessage[] = [
       ...messages,
@@ -421,7 +335,13 @@ export function EmployeeChatPrompt({
 
     const streamResult = await streamChatWorkspace(
       workspaceId,
-      nextMessages,
+      [
+        ...messages,
+        {
+          role: "user",
+          content: formatMessageWithMentionContext(trimmed, rosterMembers),
+        },
+      ],
       agentToSend,
       {
         onActivity: (activity) => {
@@ -702,94 +622,116 @@ export function EmployeeChatPrompt({
           </Badge>
         </div>
       ) : null}
-      <Textarea
+      <ChatMentionTextarea
         variant="chat"
-        placeholder={
-          linearConnected
-            ? "Ask about your team, reach out in Slack, or describe a check-in schedule…"
-            : "Ask about your team, reach out in Slack, or describe a check-in schedule…"
-        }
+        placeholder="Ask about your team — @ to mention someone. Enter to send, Shift+Enter for new line."
         rows={3}
         value={input}
+        rosterMembers={rosterMembers}
         disabled={chatDisabled}
-        onChange={(event) => setInput(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            void handleSend(input);
+        onChange={setInput}
+        onEnter={(value) => {
+          if (!value.trim() || chatDisabled) {
+            return;
           }
+          void handleSend(value);
         }}
       />
-      <div className="flex items-center justify-between px-3 pb-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 gap-1.5 px-2 text-muted-foreground"
-                disabled={chatDisabled}
-              />
-            }
-          >
-            {AGENT_MENU_LABELS[agentPreference]}
-            <ChevronDown className="size-3.5 opacity-60" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuRadioGroup
-              value={agentPreference}
-              onValueChange={(value) =>
-                setAgentPreference(value as ChatAgentId | "auto")
+      <div className="flex items-center justify-end px-3 pb-3">
+        {/* <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="rounded-full text-muted-foreground"
+          disabled={chatDisabled}
+          aria-label="Add attachment"
+        >
+          <Plus />
+        </Button> */}
+        <div className="flex items-center gap-1.5">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5 px-2 text-muted-foreground"
+                  disabled={chatDisabled}
+                />
               }
             >
-              <DropdownMenuRadioItem value="auto">Auto</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="conversation_setup">
-                Scheduling
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="team_qa">
-                Team insights
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="adhoc_conversation">
-                Reach out
-              </DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <Button
-          type="submit"
-          variant="default"
-          size="icon-sm"
-          className="rounded-full"
-          disabled={!input.trim() || chatDisabled}
-          aria-label="Send message"
-        >
-          {chatPending ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <ArrowUp />
-          )}
-        </Button>
+              {AGENT_MENU_LABELS[agentPreference]}
+              <ChevronDown className="size-3.5 opacity-60" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuRadioGroup
+                value={agentPreference}
+                onValueChange={(value) =>
+                  setAgentPreference(value as ChatAgentId | "auto")
+                }
+              >
+                <DropdownMenuRadioItem value="auto">Auto</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="conversation_setup">
+                  Scheduling
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="team_qa">
+                  Team insights
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="adhoc_conversation">
+                  Reach out
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {dictationSupported ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              className={cn(
+                "rounded-full",
+                dictationListening &&
+                  "border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive",
+              )}
+              disabled={chatDisabled}
+              aria-label={
+                dictationListening ? "Stop dictation" : "Start dictation"
+              }
+              aria-pressed={dictationListening}
+              title={
+                dictationError ??
+                (dictationListening ? "Stop dictation" : "Dictate message")
+              }
+              onClick={() => {
+                clearDictationError();
+                toggleDictation();
+              }}
+            >
+              <Mic className={cn(dictationListening && "animate-pulse")} />
+            </Button>
+          ) : null}
+          <Button
+            type="submit"
+            variant="default"
+            size="icon-sm"
+            className="rounded-full"
+            disabled={!input.trim() || chatDisabled}
+            aria-label="Send message"
+          >
+            {chatPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <ArrowUp />
+            )}
+          </Button>
+        </div>
       </div>
     </form>
   );
 
-  const suggestionChips = (
-    <div className="flex flex-wrap items-center justify-center gap-2">
-      {suggestions.map(({ label, icon: Icon, prompt, agent }) => (
-        <Badge
-          key={label}
-          variant="outline"
-          className="h-8 cursor-pointer gap-1.5 rounded-full px-3 py-1.5 text-sm font-normal transition-colors hover:bg-muted"
-          onClick={() => {
-            client.logEvent("employee_chat_suggestion_click", label);
-            void handleSend(prompt, agent);
-          }}
-        >
-          <Icon />
-          {label}
-        </Badge>
-      ))}
+  const newChatButton = (
+    <div className="flex justify-center">
       <Button
         type="button"
         variant="outline"
@@ -828,7 +770,6 @@ export function EmployeeChatPrompt({
           What can I do for you?
         </h1>
         {promptForm}
-        {suggestionChips}
       </div>
     );
   }
@@ -847,6 +788,7 @@ export function EmployeeChatPrompt({
             appContextOptions={appContextOptions}
             slackChannels={slackChannels}
             slackChannelsError={slackChannelsError}
+            rosterMembers={rosterMembers}
             interactiveDisabled={interactiveDisabled()}
           />
         </div>
@@ -939,7 +881,7 @@ export function EmployeeChatPrompt({
       ) : null}
 
       {promptForm}
-      {suggestionChips}
+      {newChatButton}
     </div>
   );
 }
