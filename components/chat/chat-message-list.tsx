@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { AgentActivityFeed } from "@/components/chat/agent-activity-feed";
+import { MentionMessageContent } from "@/components/chat/mention-message-content";
 import { SetupRecapPickers } from "@/components/chat/setup-recap-pickers";
 import { ScheduleDaysPicker } from "@/components/settings/schedule-days-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -33,6 +34,7 @@ interface ChatMessageListProps {
   slackChannels?: SlackChannel[];
   slackChannelsError?: string | null;
   interactiveDisabled?: boolean;
+  rosterMembers?: RosterMember[];
 }
 
 export function ChatMessageList({
@@ -47,6 +49,7 @@ export function ChatMessageList({
   slackChannels = [],
   slackChannelsError,
   interactiveDisabled = false,
+  rosterMembers = [],
 }: ChatMessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -109,7 +112,14 @@ export function ChatMessageList({
                     : "rounded-bl-md border border-border bg-card text-card-foreground",
                 )}
               >
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                {isUser ? (
+                  <MentionMessageContent
+                    content={message.content}
+                    rosterMembers={rosterMembers}
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                )}
               </div>
 
               {dayPicker ? (

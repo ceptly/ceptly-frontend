@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../ceptly-backend"
+		},
+		{
+			"path": "../../../ceptly-public"
+		}
+	],
+	"settings": {}
+}
