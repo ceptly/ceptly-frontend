@@ -1,10 +1,10 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, MessageSquare } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { AdhocConversationProposal } from "@/lib/api/types";
+import { cn } from "@/lib/utils";
 
 interface AdhocConversationProposalCardProps {
   proposal: AdhocConversationProposal;
@@ -13,15 +13,31 @@ interface AdhocConversationProposalCardProps {
   disabled?: boolean;
 }
 
-function intentLabel(intent: AdhocConversationProposal["intent"]): string {
+function intentEyebrow(intent: AdhocConversationProposal["intent"]): string {
   return intent === "gather" ? "Gather information" : "Teach / inform";
 }
 
-function intentDescription(intent: AdhocConversationProposal["intent"]): string {
+function intentFooter(intent: AdhocConversationProposal["intent"]): string {
   if (intent === "inform") {
-    return "Ceptly will explain the topic in Slack and keep going until the IC understands.";
+    return "Ceptly explains in Slack and checks understanding before closing out.";
   }
-  return "Ceptly will ask follow-ups in Slack until the information is clear enough.";
+  return "Follow-ups in Slack until Ceptly has a clear picture.";
+}
+
+function formatMemberNames(
+  members: AdhocConversationProposal["members"],
+): string {
+  return members.map((member) => member.display_name).join(", ");
+}
+
+function startButtonLabel(
+  members: AdhocConversationProposal["members"],
+): string {
+  if (members.length === 1) {
+    const firstName = members[0]!.display_name.split(/\s+/)[0] ?? members[0]!.display_name;
+    return `Message ${firstName} in Slack`;
+  }
+  return "Start conversations in Slack";
 }
 
 export function AdhocConversationProposalCard({
@@ -30,63 +46,59 @@ export function AdhocConversationProposalCard({
   pending = false,
   disabled = false,
 }: AdhocConversationProposalCardProps) {
+  const recipientNames = formatMemberNames(proposal.members);
+
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:border-white/20">
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-sm font-medium">Reach out in Slack</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{proposal.summary}</p>
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Who will be messaged
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {proposal.members.map((member) => (
-              <Badge key={member.id} variant="secondary">
-                {member.display_name}
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Conversation type
-          </p>
-          <Badge variant="outline">{intentLabel(proposal.intent)}</Badge>
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Topic
-          </p>
-          <p className="text-sm">{proposal.topic}</p>
-          {proposal.intent === "inform" && proposal.delivery_facts ? (
-            <div className="rounded-lg border border-border bg-muted/40 p-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                What Ceptly will share
-              </p>
-              <p className="mt-1 text-sm">{proposal.delivery_facts}</p>
-            </div>
-          ) : null}
-          <p className="text-sm text-muted-foreground">
-            {intentDescription(proposal.intent)}
-          </p>
-        </div>
-
-        <Button onClick={onStart} disabled={disabled || pending}>
-          {pending ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Starting…
-            </>
-          ) : (
-            "Start conversation"
-          )}
-        </Button>
+    <div
+      className={cn(
+        "rounded-lg border border-dashed p-4",
+        "border-[#56FF3C]/30 bg-[#E6F9E6]/70",
+        "dark:border-[#56FF3C]/40 dark:bg-[#56FF3C]/10",
+      )}
+    >
+      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        <MessageSquare className="size-3.5 shrink-0" aria-hidden="true" />
+        Reach out · Slack DM
       </div>
+
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {intentEyebrow(proposal.intent)}
+      </p>
+
+      <p className="mt-2 text-sm">
+        <span className="font-medium">To {recipientNames}</span>
+        {" → "}
+        {proposal.topic}
+      </p>
+
+      <p className="mt-2 text-sm leading-relaxed">{proposal.summary}</p>
+
+      {proposal.intent === "inform" && proposal.delivery_facts ? (
+        <p className="mt-2 text-sm leading-relaxed">
+          <span className="font-medium">Will share:</span> {proposal.delivery_facts}
+        </p>
+      ) : null}
+
+      <p className="mt-2 text-sm text-muted-foreground">{intentFooter(proposal.intent)}</p>
+
+      <Button
+        className="mt-4 gap-2"
+        size="sm"
+        onClick={onStart}
+        disabled={disabled || pending}
+      >
+        {pending ? (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            Starting…
+          </>
+        ) : (
+          <>
+            {startButtonLabel(proposal.members)}
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </>
+        )}
+      </Button>
     </div>
   );
 }
