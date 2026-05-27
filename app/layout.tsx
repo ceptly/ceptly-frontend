@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth/server";
 import { THEME_COOKIE_NAME, resolveTheme } from "@/lib/theme";
 import { THEME_COOKIE_SEED_SCRIPT } from "@/lib/theme-cookie-script";
 import { cn } from "@/lib/utils";
+import { createSiteMetadata } from "@/lib/site-metadata";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import MyStatsig from "./my-statsig";
@@ -27,11 +28,7 @@ const montserrat = Montserrat({
   weight: ["400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  title: "Ceptly - AI Chief of Staff",
-  description:
-    "Your team's AI chief of staff — so people focus on real work.",
-};
+export const metadata: Metadata = createSiteMetadata();
 
 export default async function RootLayout({
   children,

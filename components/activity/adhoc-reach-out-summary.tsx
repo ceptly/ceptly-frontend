@@ -9,6 +9,7 @@ interface AdhocReachOutSummaryProps {
   intentLabel: string;
   topic?: string | null;
   deliveryFacts?: string | null;
+  agentPrompt?: string | null;
   compact?: boolean;
 }
 
@@ -16,9 +17,11 @@ export function AdhocReachOutSummary({
   intentLabel,
   topic,
   deliveryFacts,
+  agentPrompt,
   compact = false,
 }: AdhocReachOutSummaryProps) {
   const [promptOpen, setPromptOpen] = useState(false);
+  const promptText = agentPrompt ?? deliveryFacts;
 
   return (
     <div className="space-y-2">
@@ -28,11 +31,24 @@ export function AdhocReachOutSummary({
       {topic ? (
         <p className={compact ? "text-sm font-medium" : "text-sm"}>{topic}</p>
       ) : null}
-      {deliveryFacts ? (
+      {deliveryFacts && !agentPrompt ? (
         compact ? (
           <p className="line-clamp-3 whitespace-pre-wrap text-sm text-muted-foreground">
             {deliveryFacts}
           </p>
+        ) : null
+      ) : null}
+      {promptText ? (
+        compact ? (
+          agentPrompt ? (
+            <p className="line-clamp-3 whitespace-pre-wrap font-mono text-xs text-muted-foreground">
+              {agentPrompt}
+            </p>
+          ) : (
+            <p className="line-clamp-3 whitespace-pre-wrap text-sm text-muted-foreground">
+              {deliveryFacts}
+            </p>
+          )
         ) : (
           <div className="space-y-2">
             <button
@@ -47,12 +63,12 @@ export function AdhocReachOutSummary({
                   promptOpen && "rotate-180",
                 )}
               />
-              view prompt
+              view agent prompt
             </button>
             {promptOpen ? (
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                {deliveryFacts}
-              </p>
+              <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-3 font-mono text-xs leading-relaxed text-muted-foreground dark:border-white/10">
+                {promptText}
+              </pre>
             ) : null}
           </div>
         )

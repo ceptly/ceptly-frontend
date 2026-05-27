@@ -123,6 +123,7 @@ export function ConversationSessionsClient({
               intentLabel={selectedSummary.intent_label}
               topic={selectedSummary.topic}
               deliveryFacts={selectedSummary.delivery_facts}
+              agentPrompt={selectedSummary.agent_prompt}
             />
           </section>
 
