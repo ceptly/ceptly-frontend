@@ -41,7 +41,7 @@ export function WorkspaceNameForm({
         <CardHeader>
           <CardTitle>Team</CardTitle>
           <CardDescription>
-            Only founders and admins can change the team name.
+            Only workspace owners, admins, and members can change the team name.
           </CardDescription>
         </CardHeader>
         <CardContent>

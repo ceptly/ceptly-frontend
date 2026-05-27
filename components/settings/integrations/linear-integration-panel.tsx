@@ -200,7 +200,7 @@ export function LinearIntegrationPanel({
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Linear is not connected. Ask a founder or admin to connect Linear for
+          Linear is not connected. Ask a workspace owner or admin to connect Linear for
           your team.
         </p>
       )}

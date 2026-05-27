@@ -48,3 +48,7 @@ export function groupTimezonesByRegion(): Record<string, TimezoneOption[]> {
     {},
   );
 }
+
+export function getTimezoneLabel(value: string): string {
+  return TIMEZONE_OPTIONS.find((timezone) => timezone.value === value)?.label ?? value;
+}

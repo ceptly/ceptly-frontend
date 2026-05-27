@@ -2,24 +2,42 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Loader2, Pause, Play, Trash2 } from "lucide-react";
+import { Loader2, Ellipsis, Pause, Play, Trash2 } from "lucide-react";
 
 import {
   addRosterMemberAction,
   removeRosterMemberAction,
   toggleRosterMemberPaused,
+  updateRosterMemberLocale,
 } from "@/actions/roster";
 import { RosterDataTable } from "@/components/team/roster-data-table";
 import { RosterImportButtons } from "@/components/team/roster-import-buttons";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { RosterMember } from "@/lib/api/roster";
+import { getLanguageLabel, SUPPORTED_LANGUAGES } from "@/lib/i18n/languages";
+import {
+  getTimezoneLabel,
+  groupTimezonesByRegion,
+  TIMEZONE_OPTIONS,
+} from "@/lib/schedule/timezones";
+
+const selectClassName =
+  "flex h-9 w-full min-w-[9rem] rounded-md border border-input bg-background px-2 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 interface TeamRosterProps {
   workspaceId: string;
+  workspaceTimezone: string;
+  workspaceLanguage: string;
   canEdit: boolean;
   slackConnected: boolean;
   linearConnected: boolean;
@@ -28,6 +46,8 @@ interface TeamRosterProps {
 
 export function TeamRoster({
   workspaceId,
+  workspaceTimezone,
+  workspaceLanguage,
   canEdit,
   slackConnected,
   linearConnected,
@@ -39,6 +59,7 @@ export function TeamRoster({
   );
   const [actionError, setActionError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const timezoneGroups = groupTimezonesByRegion();
 
   const handleTogglePaused = (member: RosterMember) => {
     setActionError(null);
@@ -64,6 +85,40 @@ export function TeamRoster({
     });
   };
 
+  const handleTimezoneChange = (member: RosterMember, value: string) => {
+    setActionError(null);
+    const timezone = value === workspaceTimezone ? null : value;
+    if (timezone === member.timezone) {
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await updateRosterMemberLocale(workspaceId, member.id, {
+        timezone,
+      });
+      if (result.error) {
+        setActionError(result.error);
+      }
+    });
+  };
+
+  const handleLanguageChange = (member: RosterMember, value: string) => {
+    setActionError(null);
+    const language = value === workspaceLanguage ? null : value;
+    if (language === member.language) {
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await updateRosterMemberLocale(workspaceId, member.id, {
+        language,
+      });
+      if (result.error) {
+        setActionError(result.error);
+      }
+    });
+  };
+
   const columns: ColumnDef<RosterMember>[] = [
     {
       accessorKey: "display_name",
@@ -80,8 +135,94 @@ export function TeamRoster({
       ),
     },
     {
+      id: "timezone",
+      header: "Timezone",
+      cell: ({ row }) => {
+        const member = row.original;
+        const effective = member.effective_timezone;
+
+        if (!canEdit) {
+          return (
+            <span className="text-muted-foreground">
+              {getTimezoneLabel(effective)}
+            </span>
+          );
+        }
+
+        const hasEffectiveInList = TIMEZONE_OPTIONS.some(
+          (timezone) => timezone.value === effective,
+        );
+
+        return (
+          <select
+            aria-label={`Timezone for ${member.display_name}`}
+            className={selectClassName}
+            value={effective}
+            disabled={isPending || !slackConnected}
+            onChange={(event) =>
+              handleTimezoneChange(member, event.target.value)
+            }
+          >
+            {!hasEffectiveInList ? (
+              <option value={effective}>{getTimezoneLabel(effective)}</option>
+            ) : null}
+            {Object.entries(timezoneGroups).map(([region, options]) => (
+              <optgroup key={region} label={region}>
+                {options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        );
+      },
+    },
+    {
+      id: "language",
+      header: "Language",
+      cell: ({ row }) => {
+        const member = row.original;
+        const effective = member.effective_language;
+
+        if (!canEdit) {
+          return (
+            <span className="text-muted-foreground">
+              {getLanguageLabel(effective)}
+            </span>
+          );
+        }
+
+        const hasEffectiveInList = SUPPORTED_LANGUAGES.some(
+          (language) => language.code === effective,
+        );
+
+        return (
+          <select
+            aria-label={`Language for ${member.display_name}`}
+            className={selectClassName}
+            value={effective}
+            disabled={isPending || !slackConnected}
+            onChange={(event) =>
+              handleLanguageChange(member, event.target.value)
+            }
+          >
+            {!hasEffectiveInList ? (
+              <option value={effective}>{getLanguageLabel(effective)}</option>
+            ) : null}
+            {SUPPORTED_LANGUAGES.map((language) => (
+              <option key={language.code} value={language.code}>
+                {language.label}
+              </option>
+            ))}
+          </select>
+        );
+      },
+    },
+    {
       id: "data_sources",
-      header: "Data sources",
+      header: "Apps",
       cell: ({ row }) => {
         const sources = row.original.data_sources ?? [];
 
@@ -101,16 +242,6 @@ export function TeamRoster({
         );
       },
     },
-    {
-      id: "status",
-      header: "Status",
-      cell: ({ row }) =>
-        row.original.paused ? (
-          <Badge variant="secondary">Paused</Badge>
-        ) : (
-          <Badge variant="outline">Active</Badge>
-        ),
-    },
     ...(canEdit
       ? [
           {
@@ -120,35 +251,42 @@ export function TeamRoster({
               const member = row.original;
 
               return (
-                <div className="flex justify-end gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={isPending || !slackConnected}
-                    onClick={() => handleTogglePaused(member)}
-                    aria-label={
-                      member.paused
-                        ? `Resume check-ins for ${member.display_name}`
-                        : `Pause check-ins for ${member.display_name}`
-                    }
-                  >
-                    {member.paused ? (
-                      <Play className="h-4 w-4" />
-                    ) : (
-                      <Pause className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={isPending || !slackConnected}
-                    onClick={() => handleRemove(member.id)}
-                    aria-label={`Remove ${member.display_name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="flex justify-end">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          className="text-muted-foreground"
+                          disabled={isPending || !slackConnected}
+                          aria-label={`Actions for ${member.display_name}`}
+                        />
+                      }
+                    >
+                      {isPending ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Ellipsis className="size-4" />
+                      )}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => handleTogglePaused(member)}
+                      >
+                        {member.paused ? <Play /> : <Pause />}
+                        {member.paused ? "Resume check-ins" : "Pause check-ins"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => handleRemove(member.id)}
+                      >
+                        <Trash2 />
+                        Remove
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               );
             },
@@ -177,9 +315,9 @@ export function TeamRoster({
       members.some((member) => !member.data_sources?.includes("linear")) ? (
         <Alert>
           <AlertDescription>
-            Some roster emails may not match a Linear account. Check the Data
-            sources column — members without a Linear badge need the same email
-            in Slack and Linear.
+            Some roster emails may not match a Linear account. Check the Apps
+            column — members without a Linear badge need the same email in Slack
+            and Linear.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -245,7 +383,7 @@ export function TeamRoster({
         </form>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Only founders and admins can manage the team roster.
+          Only workspace owners, admins, and members can manage the team roster.
         </p>
       )}
     </div>

@@ -35,8 +35,7 @@ export function WorkspaceInvites({
   invites,
   billing,
 }: WorkspaceInvitesProps) {
-  const atCapacity =
-    billing?.hasActiveSubscription === true && billing.seatsAvailable <= 0;
+  const isTrial = billing?.subscriptionStatus === "trialing";
   const [createState, createAction, createPending] = useActionState(
     createInviteAction,
     {},
@@ -69,8 +68,8 @@ export function WorkspaceInvites({
     <div className="rounded-lg border border-border bg-muted/20 px-4 py-4 dark:border-white/10">
       <h2 className="text-base font-semibold">Invite teammates</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Invite people by email. They receive a link to join your workspace; you
-        can also copy the link below if needed.
+        Invite people by email. Members join without a paid seat; admins use a
+        seat when invited.
       </p>
 
       {canEdit ? (
@@ -90,7 +89,7 @@ export function WorkspaceInvites({
                   required
                 />
               </div>
-              <Button type="submit" disabled={createPending || atCapacity}>
+              <Button type="submit" disabled={createPending}>
                 {createPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -105,12 +104,12 @@ export function WorkspaceInvites({
           {createState.error ? (
             <div className="space-y-2">
               <p className="text-sm text-destructive">{createState.error}</p>
-              {createState.seatLimitReached ? (
+              {createState.seatLimitReached && !isTrial ? (
                 <Link
-                  href="/settings/billing"
+                  href="/settings/billing?manageSeats=1#seats"
                   className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
                 >
-                  Add seats in billing settings
+                  Add seats
                 </Link>
               ) : null}
             </div>

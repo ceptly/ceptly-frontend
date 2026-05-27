@@ -1,10 +1,18 @@
 import { BillingSettingsClient } from "@/components/settings/billing-settings-client";
 import { fetchBillingStatus } from "@/lib/api/billing";
+import { listInvites } from "@/lib/api/invites";
+import { listWorkspaceMembers } from "@/lib/api/members";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { getPrimaryWorkspace } from "@/lib/subscription";
+import { canManageBilling, roleCountsTowardSeats } from "@/lib/roles";
 import { redirect } from "next/navigation";
 
-export default async function BillingSettingsPage() {
+export default async function BillingSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ manageSeats?: string }>;
+}) {
+  const { manageSeats } = await searchParams;
   const user = await requireAuth();
   const token = await getAccessToken();
   const workspace = getPrimaryWorkspace(user);
@@ -13,7 +21,24 @@ export default async function BillingSettingsPage() {
     redirect("/auth");
   }
 
-  const status = await fetchBillingStatus(token, workspace.id);
+  if (!canManageBilling(workspace.role)) {
+    redirect("/settings");
+  }
+
+  const [status, membersResult, invitesResult] = await Promise.all([
+    fetchBillingStatus(token, workspace.id),
+    listWorkspaceMembers(token, workspace.id),
+    listInvites(token, workspace.id),
+  ]);
+
+  const members = membersResult?.data?.members ?? [];
+  const pendingInvites = invitesResult?.data?.invites ?? [];
+  const seatMemberCount = members.filter((member) =>
+    roleCountsTowardSeats(member.role),
+  ).length;
+  const seatInviteCount = pendingInvites.filter((invite) =>
+    roleCountsTowardSeats(invite.role),
+  ).length;
 
   return (
     <div className="mx-auto w-full max-w-3xl px-6 py-8">
@@ -31,6 +56,10 @@ export default async function BillingSettingsPage() {
             pricePerSeatCents: null,
           }
         }
+        canManage
+        memberCount={seatMemberCount}
+        pendingInviteCount={seatInviteCount}
+        autoOpenManage={manageSeats === "1"}
       />
     </div>
   );

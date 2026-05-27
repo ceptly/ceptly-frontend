@@ -51,7 +51,7 @@ export async function updateWorkspaceMemberRole(
   accessToken: string,
   workspaceId: string,
   userId: string,
-  role: "admin" | "lead" | "ic",
+  role: "admin" | "member",
 ): Promise<{
   success: boolean;
   error?: string;
@@ -94,6 +94,35 @@ export async function removeWorkspaceMember(
       `${base}/api/workspaces/${workspaceId}/members/${userId}`,
       {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    return parseJsonResponse<Record<string, never>>(response);
+  } catch {
+    return {
+      success: false,
+      error: "Could not reach the API. Is the backend running?",
+    };
+  }
+}
+
+export async function transferWorkspaceOwnership(
+  accessToken: string,
+  workspaceId: string,
+  userId: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/members/${userId}/transfer-ownership`,
+      {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },

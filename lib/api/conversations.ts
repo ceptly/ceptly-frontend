@@ -464,3 +464,44 @@ export async function patchWorkspaceTimezone(
     return { success: false, error: "Could not reach the API. Is the backend running?" };
   }
 }
+
+export async function getWorkspaceLanguage(
+  accessToken: string,
+  workspaceId: string,
+): Promise<{ success: boolean; error?: string; data?: { language: string } }> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/language`,
+      {
+        method: "GET",
+        headers: authHeaders(accessToken),
+        cache: "no-store",
+      },
+    );
+    return parseJsonResponse<{ data?: { language: string } }>(response);
+  } catch {
+    return { success: false, error: "Could not reach the API. Is the backend running?" };
+  }
+}
+
+export async function patchWorkspaceLanguage(
+  accessToken: string,
+  workspaceId: string,
+  language: string,
+): Promise<{ success: boolean; error?: string; data?: { language: string } }> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/language`,
+      {
+        method: "PATCH",
+        headers: authHeaders(accessToken, true),
+        body: JSON.stringify({ language }),
+      },
+    );
+    return parseJsonResponse<{ data?: { language: string } }>(response);
+  } catch {
+    return { success: false, error: "Could not reach the API. Is the backend running?" };
+  }
+}

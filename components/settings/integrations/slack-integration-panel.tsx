@@ -203,7 +203,7 @@ export function SlackIntegrationPanel({
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Slack is not connected. Ask a founder or admin to install Ceptly for
+          Slack is not connected. Ask a workspace owner or admin to install Ceptly for
           your team.
         </p>
       )}

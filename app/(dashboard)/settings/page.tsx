@@ -1,30 +1,30 @@
-import Link from "next/link";
-
 import { WorkspaceInvites } from "@/components/settings/workspace-invites";
+import { WorkspaceLanguageForm } from "@/components/settings/workspace-language-form";
 import { WorkspaceMembersTable } from "@/components/settings/workspace-members";
 import { WorkspaceNameForm } from "@/components/settings/workspace-name-form";
 import { WorkspaceTimezoneForm } from "@/components/settings/workspace-timezone-form";
-import { buttonVariants } from "@/components/ui/button";
-import { getWorkspaceTimezone } from "@/lib/api/conversations";
-import { SeatUsageBanner } from "@/components/settings/seat-usage-banner";
 import { fetchBillingStatus } from "@/lib/api/billing";
+import { getWorkspaceLanguage, getWorkspaceTimezone } from "@/lib/api/conversations";
 import { listInvites } from "@/lib/api/invites";
 import { listWorkspaceMembers } from "@/lib/api/members";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
-import { cn } from "@/lib/utils";
-
-const ADMIN_ROLES = new Set(["founder", "admin"]);
+import { canManageWorkspace } from "@/lib/roles";
 
 export default async function SettingsPage() {
   const user = await requireAuth();
 
   const workspace = user.workspaces?.[0];
-  const canEdit = workspace ? ADMIN_ROLES.has(workspace.role) : false;
+  const canEdit = workspace ? canManageWorkspace(workspace.role) : false;
 
   const token = await getAccessToken();
   const timezoneResult =
     workspace?.id && token
       ? await getWorkspaceTimezone(token, workspace.id)
+      : null;
+
+  const languageResult =
+    workspace?.id && token
+      ? await getWorkspaceLanguage(token, workspace.id)
       : null;
 
   const invitesResult =
@@ -73,15 +73,19 @@ export default async function SettingsPage() {
             />
           ) : null}
 
-          <SeatUsageBanner
-            billing={billingStatus}
-            canManageBilling={canEdit}
-          />
+          {languageResult?.success && languageResult.data?.language ? (
+            <WorkspaceLanguageForm
+              workspaceId={workspace.id}
+              initialLanguage={languageResult.data.language}
+              canEdit={canEdit}
+            />
+          ) : null}
 
           <WorkspaceMembersTable
             workspaceId={workspace.id}
             canEdit={canEdit}
             currentUserId={user.id}
+            currentUserRole={workspace.role}
             members={members}
           />
 
@@ -92,7 +96,6 @@ export default async function SettingsPage() {
             invites={pendingInvites}
             billing={billingStatus}
           />
-
         </>
       ) : (
         <p className="text-sm text-muted-foreground">

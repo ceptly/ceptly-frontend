@@ -293,7 +293,7 @@ export interface AuthUser {
 export interface WorkspaceMembership {
   id: string;
   name: string;
-  role: "founder" | "admin" | "lead" | "ic";
+  role: "owner" | "admin" | "member";
   subscriptionStatus?:
     | "none"
     | "trialing"

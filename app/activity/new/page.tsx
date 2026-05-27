@@ -12,27 +12,25 @@ import {
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
-import { isLeadershipRole } from "@/lib/roles";
+import { canManageWorkspace } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import { redirect } from "next/navigation";
-
-const ADMIN_ROLES = new Set(["founder", "admin"]);
 
 export default async function NewActivityConversationPage() {
   const user = await requireAuth();
   const workspace = user.workspaces?.[0];
 
-  if (!isLeadershipRole(workspace?.role)) {
+  if (!canManageWorkspace(workspace?.role)) {
     redirect("/chat");
   }
 
-  const canEdit = workspace ? ADMIN_ROLES.has(workspace.role) : false;
+  const canEdit = workspace ? canManageWorkspace(workspace.role) : false;
   const token = await getAccessToken();
 
   if (!canEdit || !workspace?.id || !token) {
     return (
       <p className="px-6 py-8 text-sm text-muted-foreground">
-        Only founders and admins can create conversations.
+        Only workspace owners, admins, and members can create conversations.
       </p>
     );
   }

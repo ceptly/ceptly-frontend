@@ -1,7 +1,7 @@
 import type { AuthUser, WorkspaceMembership } from "@/lib/api/types";
 
 const BILLING_ADMIN_ROLES = new Set<WorkspaceMembership["role"]>([
-  "founder",
+  "owner",
   "admin",
 ]);
 

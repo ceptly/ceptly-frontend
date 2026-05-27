@@ -7,18 +7,16 @@ import { ActivityConversationCard } from "@/components/activity/activity-convers
 import { buttonVariants } from "@/components/ui/button";
 import { getWorkspaceActivity } from "@/lib/api/activity";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
-import { isLeadershipRole } from "@/lib/roles";
+import { canManageWorkspace } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-
-const ADMIN_ROLES = new Set(["founder", "admin"]);
 
 export default async function ActivityPage() {
   const user = await requireAuth();
   const workspace = user.workspaces?.[0];
   const role = workspace?.role;
-  const canManageConversations = role ? ADMIN_ROLES.has(role) : false;
+  const canManageConversations = role ? canManageWorkspace(role) : false;
 
-  if (!isLeadershipRole(role)) {
+  if (!canManageWorkspace(role)) {
     redirect("/chat");
   }
 

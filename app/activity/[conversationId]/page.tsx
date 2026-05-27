@@ -23,10 +23,8 @@ import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { formatSchedulePreview } from "@/lib/schedule/preview";
-import { isLeadershipRole } from "@/lib/roles";
+import { canManageWorkspace } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-
-const ADMIN_ROLES = new Set(["founder", "admin"]);
 
 interface ActivityConversationPageProps {
   params: Promise<{ conversationId: string }>;
@@ -42,7 +40,7 @@ export default async function ActivityConversationPage({
   const user = await requireAuth();
   const workspace = user.workspaces?.[0];
 
-  if (!isLeadershipRole(workspace?.role)) {
+  if (!canManageWorkspace(workspace?.role)) {
     redirect("/chat");
   }
 
@@ -66,7 +64,7 @@ export default async function ActivityConversationPage({
 
   const conversation = conversationResult.data.conversation;
   const isAdhoc = conversation.kind === "adhoc";
-  const canEdit = ADMIN_ROLES.has(workspace.role);
+  const canEdit = canManageWorkspace(workspace.role);
   const isEditing = edit === "1" && canEdit && !isAdhoc;
 
   if (isAdhoc) {
