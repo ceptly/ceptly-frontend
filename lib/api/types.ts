@@ -164,6 +164,7 @@ export interface ActivityAdhocSession {
   intent_label: string;
   topic: string | null;
   delivery_facts: string | null;
+  agent_prompt: string | null;
 }
 
 export interface WorkspaceActivity {
@@ -185,6 +186,7 @@ export interface ConversationSessionSummary {
   intent_label: string;
   topic: string | null;
   delivery_facts: string | null;
+  agent_prompt: string | null;
 }
 
 export interface ConversationPreview {

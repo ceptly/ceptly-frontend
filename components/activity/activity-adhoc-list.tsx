@@ -52,6 +52,7 @@ export function ActivityAdhocList({ sessions }: ActivityAdhocListProps) {
                   intentLabel={session.intent_label}
                   topic={session.topic}
                   deliveryFacts={session.delivery_facts}
+                  agentPrompt={session.agent_prompt}
                   compact
                 />
                 <p className="mt-2 text-sm text-muted-foreground">
