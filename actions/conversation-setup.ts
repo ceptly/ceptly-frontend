@@ -64,7 +64,7 @@ export async function commitSetupPlan(
       return { error: result.error ?? "Failed to publish schedule." };
     }
 
-    revalidatePath("/settings/conversations");
+    revalidatePath("/activity");
     revalidatePath("/settings");
 
     return { conversations: result.data?.conversations };

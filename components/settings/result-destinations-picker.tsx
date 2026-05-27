@@ -7,6 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -93,23 +94,25 @@ export function ResultDestinationsPicker({
               <ChevronDown className="size-4 shrink-0 opacity-50" />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="max-h-64 w-[var(--anchor-width)]">
-              <DropdownMenuLabel className="text-xs">
-                Channels for this conversation
-              </DropdownMenuLabel>
-              {slackChannels.map((channel) => (
-                <DropdownMenuCheckboxItem
-                  key={channel.id}
-                  checked={selectedChannelIds.includes(channel.id)}
-                  onCheckedChange={() =>
-                    onChannelIdsChange(
-                      toggleId(selectedChannelIds, channel.id),
-                    )
-                  }
-                >
-                  #{channel.name}
-                  {channel.is_private ? " (private)" : ""}
-                </DropdownMenuCheckboxItem>
-              ))}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-xs">
+                  Channels for this conversation
+                </DropdownMenuLabel>
+                {slackChannels.map((channel) => (
+                  <DropdownMenuCheckboxItem
+                    key={channel.id}
+                    checked={selectedChannelIds.includes(channel.id)}
+                    onCheckedChange={() =>
+                      onChannelIdsChange(
+                        toggleId(selectedChannelIds, channel.id),
+                      )
+                    }
+                  >
+                    #{channel.name}
+                    {channel.is_private ? " (private)" : ""}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         )}

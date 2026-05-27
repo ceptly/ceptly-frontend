@@ -116,7 +116,7 @@ export async function updateWorkspaceTimezone(
   }
 
   revalidatePath("/settings");
-  revalidatePath("/settings/conversations");
+  revalidatePath("/activity");
 
   return { success: true };
 }
@@ -299,7 +299,8 @@ export async function saveConversation(input: {
     }
   }
 
-  revalidatePath("/settings/conversations");
+  revalidatePath("/activity");
+  revalidatePath(`/activity/${conversationId}`);
   revalidatePath("/settings");
   revalidatePath("/chat");
 
@@ -336,7 +337,7 @@ export async function removeConversation(input: {
     return { error: result.error ?? "Failed to delete conversation." };
   }
 
-  revalidatePath("/settings/conversations");
+  revalidatePath("/activity");
   revalidatePath("/settings");
   revalidatePath("/chat");
 
