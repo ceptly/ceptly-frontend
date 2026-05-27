@@ -11,9 +11,8 @@ import { resolveIntegration } from "@/lib/integrations/catalog";
 import { getLinearConnectionStatus } from "@/lib/api/linear";
 import { getSlackConnectionStatus } from "@/lib/api/slack";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
+import { canManageWorkspace } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-
-const ADMIN_ROLES = new Set(["founder", "admin"]);
 
 interface IntegrationDetailPageProps {
   params: Promise<{ integration: string }>;
@@ -29,7 +28,7 @@ export default async function IntegrationDetailPage({
   const query = await searchParams;
 
   const workspace = user.workspaces?.[0];
-  const canEdit = workspace ? ADMIN_ROLES.has(workspace.role) : false;
+  const canEdit = workspace ? canManageWorkspace(workspace.role) : false;
   const token = await getAccessToken();
 
   const integrationsResult =

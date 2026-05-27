@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { isLeadershipRole } from "@/lib/roles";
+import { canManageWorkspace } from "@/lib/roles";
 
 const baseNavigationItems = [
   { label: "Chat", path: "/chat" },
@@ -57,7 +57,7 @@ export function AccountHeader({ user }: AccountHeaderProps) {
   const [attentionCount, setAttentionCount] = useState(0);
 
   const workspace = user.workspaces?.[0];
-  const showActivity = isLeadershipRole(workspace?.role);
+  const showActivity = canManageWorkspace(workspace?.role);
   const navigationItems = baseNavigationItems.filter(
     (item) => !item.leadershipOnly || showActivity,
   );

@@ -1,22 +1,45 @@
 import type { WorkspaceMembership } from "@/lib/api/types";
 
 const ROLE_LABELS: Record<WorkspaceMembership["role"], string> = {
-  founder: "Founder",
+  owner: "Workspace owner",
   admin: "Admin",
-  lead: "Team lead",
-  ic: "Individual contributor",
+  member: "Member",
 };
 
-export const LEADERSHIP_ROLES = new Set<WorkspaceMembership["role"]>([
-  "founder",
+export const BILLING_ROLES = new Set<WorkspaceMembership["role"]>([
+  "owner",
   "admin",
-  "lead",
 ]);
 
+export const WORKSPACE_MANAGE_ROLES = new Set<WorkspaceMembership["role"]>([
+  "owner",
+  "admin",
+  "member",
+]);
+
+export function canManageBilling(
+  role: WorkspaceMembership["role"] | undefined,
+): boolean {
+  return role ? BILLING_ROLES.has(role) : false;
+}
+
+export function canManageWorkspace(
+  role: WorkspaceMembership["role"] | undefined,
+): boolean {
+  return role ? WORKSPACE_MANAGE_ROLES.has(role) : false;
+}
+
+export function roleCountsTowardSeats(
+  role: WorkspaceMembership["role"],
+): boolean {
+  return role === "owner" || role === "admin";
+}
+
+/** @deprecated Use canManageWorkspace */
 export function isLeadershipRole(
   role: WorkspaceMembership["role"] | undefined,
 ): boolean {
-  return role ? LEADERSHIP_ROLES.has(role) : false;
+  return canManageWorkspace(role);
 }
 
 export function formatWorkspaceRole(role: WorkspaceMembership["role"]): string {

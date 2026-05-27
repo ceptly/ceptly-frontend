@@ -8,6 +8,10 @@ export interface RosterMember {
   paused: boolean;
   created_at: string;
   data_sources: ("slack" | "linear")[];
+  timezone: string | null;
+  language: string | null;
+  effective_timezone: string;
+  effective_language: string;
 }
 
 export interface RosterImportResult {
@@ -96,7 +100,12 @@ export async function updateRosterMember(
   accessToken: string,
   workspaceId: string,
   memberId: string,
-  payload: { display_name?: string; paused?: boolean },
+  payload: {
+    display_name?: string;
+    paused?: boolean;
+    timezone?: string | null;
+    language?: string | null;
+  },
 ): Promise<{
   success: boolean;
   error?: string;

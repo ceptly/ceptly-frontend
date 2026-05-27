@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import {
   removeWorkspaceMember,
+  transferWorkspaceOwnership,
   updateWorkspaceMemberRole,
 } from "@/lib/api/members";
 import { getAccessToken } from "@/lib/auth/server";
@@ -12,7 +13,7 @@ import { getAccessToken } from "@/lib/auth/server";
 const roleSchema = z.object({
   workspaceId: z.string().uuid(),
   userId: z.string().uuid(),
-  role: z.enum(["admin", "lead", "ic"]),
+  role: z.enum(["admin", "member"]),
 });
 
 const removeSchema = z.object({
@@ -20,10 +21,15 @@ const removeSchema = z.object({
   userId: z.string().uuid(),
 });
 
+const transferSchema = z.object({
+  workspaceId: z.string().uuid(),
+  userId: z.string().uuid(),
+});
+
 export async function updateMemberRoleAction(
   workspaceId: string,
   userId: string,
-  role: "admin" | "lead" | "ic",
+  role: "admin" | "member",
 ): Promise<{ error?: string; success?: boolean }> {
   const parsed = roleSchema.safeParse({ workspaceId, userId, role });
   if (!parsed.success) {
@@ -44,6 +50,34 @@ export async function updateMemberRoleAction(
 
   if (!result.success) {
     return { error: result.error ?? "Failed to update member role." };
+  }
+
+  revalidatePath("/settings");
+  return { success: true };
+}
+
+export async function transferOwnershipAction(
+  workspaceId: string,
+  userId: string,
+): Promise<{ error?: string; success?: boolean }> {
+  const parsed = transferSchema.safeParse({ workspaceId, userId });
+  if (!parsed.success) {
+    return { error: "Invalid member." };
+  }
+
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: "You must be signed in to transfer ownership." };
+  }
+
+  const result = await transferWorkspaceOwnership(
+    token,
+    parsed.data.workspaceId,
+    parsed.data.userId,
+  );
+
+  if (!result.success) {
+    return { error: result.error ?? "Failed to transfer ownership." };
   }
 
   revalidatePath("/settings");

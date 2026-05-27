@@ -4,13 +4,12 @@ import { getLinearConnectionStatus } from "@/lib/api/linear";
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
-
-const ADMIN_ROLES = new Set(["founder", "admin"]);
+import { canManageWorkspace } from "@/lib/roles";
 
 export default async function ChatPage() {
   const user = await requireAuth();
   const workspace = user.workspaces?.[0];
-  const canEdit = workspace ? ADMIN_ROLES.has(workspace.role) : false;
+  const canEdit = workspace ? canManageWorkspace(workspace.role) : false;
   const token = await getAccessToken();
 
   const [linearStatusResult, appContextsResult, slackChannelsResult, rosterResult] =

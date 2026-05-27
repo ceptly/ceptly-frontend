@@ -36,6 +36,10 @@ export function SetupRecapPickers({
     slack_user_id: "",
     created_at: "",
     data_sources: [],
+    timezone: null,
+    language: null,
+    effective_timezone: "America/Chicago",
+    effective_language: "en",
   }));
 
   return (

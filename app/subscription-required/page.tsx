@@ -30,7 +30,7 @@ export default async function SubscriptionRequiredPage() {
         </h1>
         <p className="text-muted-foreground">
           {workspace?.name ?? "This workspace"} doesn&apos;t have an active
-          Ceptly subscription. Ask your workspace founder or admin to start a
+          Ceptly subscription. Ask your workspace owner or admin to start a
           trial or renew billing.
         </p>
         <form action={signOut}>

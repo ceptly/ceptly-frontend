@@ -1,14 +1,21 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import { Ellipsis, Loader2, Trash2 } from "lucide-react";
 
 import {
   removeMemberAction,
+  transferOwnershipAction,
   updateMemberRoleAction,
 } from "@/actions/members";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -21,12 +28,13 @@ import type { WorkspaceMember } from "@/lib/api/types";
 import { formatWorkspaceRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
-const EDITABLE_ROLES = ["admin", "lead", "ic"] as const;
+const EDITABLE_ROLES = ["admin", "member"] as const;
 
 interface WorkspaceMembersProps {
   workspaceId: string;
   canEdit: boolean;
   currentUserId: string;
+  currentUserRole: WorkspaceMember["role"];
   members: WorkspaceMember[];
 }
 
@@ -46,12 +54,20 @@ export function WorkspaceMembersTable({
   workspaceId,
   canEdit,
   currentUserId,
+  currentUserRole,
   members,
 }: WorkspaceMembersProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingTransfer, setPendingTransfer] = useState<{
+    userId: string;
+    name: string;
+  } | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const handleRoleChange = (userId: string, role: "admin" | "lead" | "ic") => {
+  const isWorkspaceOwner = currentUserRole === "owner";
+
+  const handleRoleChange = (userId: string, role: "admin" | "member") => {
     setActionError(null);
     startTransition(async () => {
       const result = await updateMemberRoleAction(workspaceId, userId, role);
@@ -59,6 +75,22 @@ export function WorkspaceMembersTable({
         setActionError(result.error);
       }
     });
+  };
+
+  const handleRoleSelect = (member: WorkspaceMember, value: string) => {
+    if (value === "owner") {
+      if (!isWorkspaceOwner || member.role !== "admin") {
+        return;
+      }
+      setPendingTransfer({
+        userId: member.user_id,
+        name: displayName(member),
+      });
+      dialogRef.current?.showModal();
+      return;
+    }
+
+    handleRoleChange(member.user_id, value as "admin" | "member");
   };
 
   const handleRemove = (userId: string) => {
@@ -71,18 +103,45 @@ export function WorkspaceMembersTable({
     });
   };
 
+  const closeTransferDialog = () => {
+    setPendingTransfer(null);
+    dialogRef.current?.close();
+  };
+
+  const confirmTransferOwnership = () => {
+    if (!pendingTransfer) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await transferOwnershipAction(
+        workspaceId,
+        pendingTransfer.userId,
+      );
+      if (result.error) {
+        setActionError(result.error);
+        return;
+      }
+      closeTransferDialog();
+    });
+  };
+
   return (
-    <div className="rounded-lg border border-border bg-muted/20 px-4 py-4 dark:border-white/10">
-      <h2 className="text-base font-semibold">Workspace members</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        People who have access to this Ceptly workspace.
-      </p>
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-base font-semibold">Workspace members</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          People with access to this workspace. Workspace owners and admins use a
+          paid seat; members have full product access without billing.
+        </p>
+      </div>
 
       {actionError ? (
-        <p className="mt-3 text-sm text-destructive">{actionError}</p>
+        <p className="text-sm text-destructive">{actionError}</p>
       ) : null}
 
-      <div className="mt-4 overflow-hidden rounded-lg border border-border dark:border-white/10">
+      <div className="overflow-hidden rounded-lg border border-border dark:border-white/10">
         <Table>
           <TableHeader>
             <TableRow>
@@ -90,16 +149,18 @@ export function WorkspaceMembersTable({
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Joined</TableHead>
-              {canEdit ? <TableHead className="w-[100px]">Actions</TableHead> : null}
+              {canEdit ? <TableHead className="w-12" /> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
             {members.length ? (
               members.map((member) => {
                 const isSelf = member.user_id === currentUserId;
-                const isFounder = member.role === "founder";
+                const isOwner = member.role === "owner";
                 const canManageMember =
-                  canEdit && !isSelf && !isFounder && !isPending;
+                  canEdit && !isSelf && !isOwner && !isPending;
+                const canOfferOwnership =
+                  isWorkspaceOwner && member.role === "admin" && !isSelf;
 
                 return (
                   <TableRow key={member.user_id}>
@@ -121,10 +182,7 @@ export function WorkspaceMembersTable({
                         <select
                           value={member.role}
                           onChange={(e) =>
-                            handleRoleChange(
-                              member.user_id,
-                              e.target.value as "admin" | "lead" | "ic",
-                            )
+                            handleRoleSelect(member, e.target.value)
                           }
                           disabled={isPending}
                           className={cn(
@@ -137,6 +195,11 @@ export function WorkspaceMembersTable({
                               {formatWorkspaceRole(role)}
                             </option>
                           ))}
+                          {canOfferOwnership ? (
+                            <option value="owner">
+                              {formatWorkspaceRole("owner")}
+                            </option>
+                          ) : null}
                         </select>
                       ) : (
                         formatWorkspaceRole(member.role)
@@ -148,22 +211,35 @@ export function WorkspaceMembersTable({
                     {canEdit ? (
                       <TableCell>
                         {canManageMember ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRemove(member.user_id)}
-                            disabled={isPending}
-                          >
-                            {isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Trash2 className="mr-2 h-4 w-4" />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="text-muted-foreground"
+                                  disabled={isPending}
+                                  aria-label={`Actions for ${displayName(member)}`}
+                                />
+                              }
+                            >
+                              {isPending ? (
+                                <Loader2 className="size-4 animate-spin" />
+                              ) : (
+                                <Ellipsis className="size-4" />
+                              )}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => handleRemove(member.user_id)}
+                              >
+                                <Trash2 />
                                 Remove
-                              </>
-                            )}
-                          </Button>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         ) : null}
                       </TableCell>
                     ) : null}
@@ -183,6 +259,53 @@ export function WorkspaceMembersTable({
           </TableBody>
         </Table>
       </div>
-    </div>
+
+      {isWorkspaceOwner ? (
+        <dialog
+          ref={dialogRef}
+          className="fixed top-1/2 left-1/2 z-50 w-[min(calc(100%-2rem),28rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-background p-0 shadow-2xl open:flex open:flex-col [&::backdrop]:bg-black/60"
+          onClose={() => setPendingTransfer(null)}
+        >
+          <form
+            method="dialog"
+            className="flex flex-col"
+            onSubmit={(event) => event.preventDefault()}
+          >
+            <div className="border-b border-border px-5 py-4">
+              <h3 className="text-base font-semibold">Transfer ownership</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Are you sure you want to make{" "}
+                <span className="font-medium text-foreground">
+                  {pendingTransfer?.name}
+                </span>{" "}
+                the workspace owner? You will become an admin.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-border px-5 py-4">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isPending}
+                onClick={closeTransferDialog}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={isPending || !pendingTransfer}
+                onClick={confirmTransferOwnership}
+              >
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Make owner"
+                )}
+              </Button>
+            </div>
+          </form>
+        </dialog>
+      ) : null}
+    </section>
   );
 }

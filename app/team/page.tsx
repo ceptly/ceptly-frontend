@@ -2,19 +2,19 @@ import Link from "next/link";
 
 import { TeamRoster } from "@/components/team/team-roster";
 import { buttonVariants } from "@/components/ui/button";
+import { getWorkspaceLanguage, getWorkspaceTimezone } from "@/lib/api/conversations";
 import { getLinearConnectionStatus } from "@/lib/api/linear";
 import { listRosterMembers } from "@/lib/api/roster";
 import { getSlackConnectionStatus } from "@/lib/api/slack";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
+import { canManageWorkspace } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-
-const ADMIN_ROLES = new Set(["founder", "admin"]);
 
 export default async function TeamPage() {
   const user = await requireAuth();
 
   const workspace = user.workspaces?.[0];
-  const canEdit = workspace ? ADMIN_ROLES.has(workspace.role) : false;
+  const canEdit = workspace ? canManageWorkspace(workspace.role) : false;
 
   const token = await getAccessToken();
 
@@ -33,9 +33,22 @@ export default async function TeamPage() {
       ? await listRosterMembers(token, workspace.id)
       : null;
 
+  const timezoneResult =
+    workspace?.id && token
+      ? await getWorkspaceTimezone(token, workspace.id)
+      : null;
+
+  const languageResult =
+    workspace?.id && token
+      ? await getWorkspaceLanguage(token, workspace.id)
+      : null;
+
   const slackStatus = slackStatusResult?.data ?? { connected: false };
   const linearStatus = linearStatusResult?.data ?? { connected: false };
   const rosterMembers = rosterResult?.data?.members ?? [];
+  const workspaceTimezone =
+    timezoneResult?.data?.timezone ?? "America/Chicago";
+  const workspaceLanguage = languageResult?.data?.language ?? "en";
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-8">
@@ -51,6 +64,8 @@ export default async function TeamPage() {
       {workspace?.id ? (
         <TeamRoster
           workspaceId={workspace.id}
+          workspaceTimezone={workspaceTimezone}
+          workspaceLanguage={workspaceLanguage}
           canEdit={canEdit}
           slackConnected={slackStatus.connected}
           linearConnected={linearStatus.connected}

@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Minus, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
-import {
-  openBillingPortalAction,
-  updateSubscriptionSeatsAction,
-} from "@/actions/billing";
+import { openBillingPortalAction } from "@/actions/billing";
+import { SeatManagement } from "@/components/settings/seat-management";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,8 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { WorkspaceBillingStatus } from "@/lib/api/billing";
 import { formatPricePerSeat } from "@/lib/api/billing";
 import { formatSubscriptionStatus } from "@/lib/subscription";
@@ -33,19 +29,22 @@ function formatDate(value: string | null | undefined) {
 
 export function BillingSettingsClient({
   initialStatus,
+  canManage,
+  memberCount,
+  pendingInviteCount,
+  autoOpenManage = false,
 }: {
   initialStatus: WorkspaceBillingStatus;
+  canManage: boolean;
+  memberCount: number;
+  pendingInviteCount: number;
+  autoOpenManage?: boolean;
 }) {
-  const [status, setStatus] = useState(initialStatus);
+  const [status] = useState(initialStatus);
   const [portalPending, setPortalPending] = useState(false);
-  const [seatsPending, setSeatsPending] = useState(false);
-  const [targetSeats, setTargetSeats] = useState(
-    Math.max(status.paidSeats, status.seatUsage, 1),
-  );
   const [error, setError] = useState<string | null>(null);
 
   const priceLabel = formatPricePerSeat(status.pricePerSeatCents);
-  const minSeats = Math.max(1, status.seatUsage);
 
   async function handleManageBilling() {
     setPortalPending(true);
@@ -62,32 +61,28 @@ export function BillingSettingsClient({
     }
   }
 
-  async function handleUpdateSeats() {
-    setSeatsPending(true);
-    setError(null);
-
-    const result = await updateSubscriptionSeatsAction(targetSeats);
-    setSeatsPending(false);
-
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-
-    setStatus((prev) => ({
-      ...prev,
-      paidSeats: targetSeats,
-      seatsAvailable: Math.max(0, targetSeats - prev.seatUsage),
-    }));
-  }
-
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Seats, payment method, invoices, and subscription status.
+        </p>
+      </div>
+
+      <SeatManagement
+        billing={status}
+        canManage={canManage}
+        memberCount={memberCount}
+        pendingInviteCount={pendingInviteCount}
+        autoOpenManage={autoOpenManage}
+      />
+
       <Card>
         <CardHeader>
-          <CardTitle>Billing</CardTitle>
+          <CardTitle>Subscription</CardTitle>
           <CardDescription>
-            Per-seat subscription for workspace members and pending invites.
+            Per-seat plan at {priceLabel}/month per teammate.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -113,13 +108,17 @@ export function BillingSettingsClient({
               <dd className="font-medium">{formatDate(status.trialEndsAt)}</dd>
             </div>
             <div>
-              <dt className="text-sm text-muted-foreground">Current period ends</dt>
+              <dt className="text-sm text-muted-foreground">
+                Current period ends
+              </dt>
               <dd className="font-medium">
                 {formatDate(status.currentPeriodEnd)}
               </dd>
             </div>
             <div>
-              <dt className="text-sm text-muted-foreground">Cancel at period end</dt>
+              <dt className="text-sm text-muted-foreground">
+                Cancel at period end
+              </dt>
               <dd className="font-medium">
                 {status.cancelAtPeriodEnd ? "Yes" : "No"}
               </dd>
@@ -156,75 +155,6 @@ export function BillingSettingsClient({
           ) : null}
         </CardContent>
       </Card>
-
-      {status.hasActiveSubscription ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Seats</CardTitle>
-            <CardDescription>
-              Each workspace member and pending invite uses one seat. Removing
-              teammates or revoking invites lowers your seat count on the next
-              sync (prorated in Stripe).
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="paid-seats">Paid seats</Label>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  disabled={seatsPending || targetSeats <= minSeats}
-                  onClick={() =>
-                    setTargetSeats((value) => Math.max(minSeats, value - 1))
-                  }
-                >
-                  <Minus className="size-4" />
-                </Button>
-                <Input
-                  id="paid-seats"
-                  type="number"
-                  min={minSeats}
-                  value={targetSeats}
-                  onChange={(event) => {
-                    const next = Number.parseInt(event.target.value, 10);
-                    if (!Number.isNaN(next)) {
-                      setTargetSeats(Math.max(minSeats, next));
-                    }
-                  }}
-                  className="w-24 text-center"
-                  disabled={seatsPending}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  disabled={seatsPending}
-                  onClick={() => setTargetSeats((value) => value + 1)}
-                >
-                  <Plus className="size-4" />
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => void handleUpdateSeats()}
-                  disabled={seatsPending || targetSeats === status.paidSeats}
-                >
-                  {seatsPending ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    "Update seats"
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Minimum {minSeats} seat{minSeats === 1 ? "" : "s"} based on
-                current usage.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>

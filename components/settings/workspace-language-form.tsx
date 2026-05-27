@@ -4,8 +4,8 @@ import { useActionState } from "react";
 import { Loader2 } from "lucide-react";
 
 import {
-  updateWorkspaceTimezone,
-  type WorkspaceTimezoneFormState,
+  updateWorkspaceLanguage,
+  type WorkspaceLanguageFormState,
 } from "@/actions/conversations";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -18,54 +18,54 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
-  groupTimezonesByRegion,
-  TIMEZONE_OPTIONS,
-} from "@/lib/schedule/timezones";
+  getLanguageLabel,
+  SUPPORTED_LANGUAGES,
+} from "@/lib/i18n/languages";
 
-interface WorkspaceTimezoneFormProps {
+interface WorkspaceLanguageFormProps {
   workspaceId: string;
-  initialTimezone: string;
+  initialLanguage: string;
   canEdit: boolean;
 }
 
-export function WorkspaceTimezoneForm({
+export function WorkspaceLanguageForm({
   workspaceId,
-  initialTimezone,
+  initialLanguage,
   canEdit,
-}: WorkspaceTimezoneFormProps) {
+}: WorkspaceLanguageFormProps) {
   const [state, formAction, pending] = useActionState<
-    WorkspaceTimezoneFormState,
+    WorkspaceLanguageFormState,
     FormData
-  >(updateWorkspaceTimezone, {});
+  >(updateWorkspaceLanguage, {});
 
   if (!canEdit) {
     return (
       <Card className="dark:border-white/20">
         <CardHeader>
-          <CardTitle>Team timezone</CardTitle>
+          <CardTitle>Team language</CardTitle>
           <CardDescription>
-            Default timezone for new conversations and team roster members.
+            Default language for check-in conversations with roster members.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm font-medium">{initialTimezone}</p>
+          <p className="text-sm font-medium">
+            {getLanguageLabel(initialLanguage)}
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  const timezoneGroups = groupTimezonesByRegion();
-  const hasTimezoneInList = TIMEZONE_OPTIONS.some(
-    (tz) => tz.value === initialTimezone,
+  const hasLanguageInList = SUPPORTED_LANGUAGES.some(
+    (language) => language.code === initialLanguage,
   );
 
   return (
     <Card className="dark:border-white/20">
       <CardHeader>
-        <CardTitle>Team timezone</CardTitle>
+        <CardTitle>Team language</CardTitle>
         <CardDescription>
-          Used as the default for new scheduled conversations and team roster
-          members.
+          Default language for check-in conversations with roster members.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -80,29 +80,27 @@ export function WorkspaceTimezoneForm({
 
           {state.success ? (
             <Alert>
-              <AlertDescription>Timezone updated.</AlertDescription>
+              <AlertDescription>Language updated.</AlertDescription>
             </Alert>
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="workspace-timezone">Timezone</Label>
+            <Label htmlFor="workspace-language">Language</Label>
             <select
-              id="workspace-timezone"
-              name="timezone"
-              defaultValue={initialTimezone}
+              id="workspace-language"
+              name="language"
+              defaultValue={initialLanguage}
               className="flex h-9 w-full max-w-md rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              {!hasTimezoneInList ? (
-                <option value={initialTimezone}>{initialTimezone}</option>
+              {!hasLanguageInList ? (
+                <option value={initialLanguage}>
+                  {getLanguageLabel(initialLanguage)}
+                </option>
               ) : null}
-              {Object.entries(timezoneGroups).map(([region, options]) => (
-                <optgroup key={region} label={region}>
-                  {options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </optgroup>
+              {SUPPORTED_LANGUAGES.map((language) => (
+                <option key={language.code} value={language.code}>
+                  {language.label}
+                </option>
               ))}
             </select>
           </div>
@@ -114,7 +112,7 @@ export function WorkspaceTimezoneForm({
                 Saving...
               </>
             ) : (
-              "Save timezone"
+              "Save language"
             )}
           </Button>
         </form>

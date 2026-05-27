@@ -6,7 +6,7 @@ import { CreditCard, Plug, Settings2, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-export const settingsNavItems = [
+const baseSettingsNavItems = [
   {
     label: "Team Settings",
     href: "/settings",
@@ -30,6 +30,7 @@ export const settingsNavItems = [
     href: "/settings/billing",
     icon: CreditCard,
     exact: false,
+    billingOnly: true,
   },
 ] as const;
 
@@ -40,8 +41,15 @@ function isActive(pathname: string, href: string, exact?: boolean) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function SettingsSidebar() {
+interface SettingsSidebarProps {
+  showBilling: boolean;
+}
+
+export function SettingsSidebar({ showBilling }: SettingsSidebarProps) {
   const pathname = usePathname();
+  const settingsNavItems = baseSettingsNavItems.filter(
+    (item) => !("billingOnly" in item && item.billingOnly) || showBilling,
+  );
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">

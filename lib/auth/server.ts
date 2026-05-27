@@ -77,7 +77,7 @@ export async function setSubscriptionCookies(user: AuthUser) {
     maxAge: 7 * 24 * 60 * 60,
   });
 
-  cookieStore.set("billing_role", workspace?.role ?? "founder", {
+  cookieStore.set("billing_role", workspace?.role ?? "owner", {
     ...options,
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60,
@@ -158,7 +158,7 @@ export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
     if (workspaceName) {
       return {
         ...user,
-        workspaces: [{ id: "", name: workspaceName, role: "founder" }],
+        workspaces: [{ id: "", name: workspaceName, role: "owner" }],
       };
     }
 
@@ -170,7 +170,7 @@ export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
           {
             id: onboarding.workspaceId ?? "",
             name: onboarding.organizationName,
-            role: "founder",
+            role: "owner",
           },
         ],
       };

@@ -50,7 +50,11 @@ export async function openBillingPortalAction(): Promise<{ error?: string }> {
 
 export async function updateSubscriptionSeatsAction(
   quantity: number,
-): Promise<{ error?: string; success?: boolean }> {
+): Promise<{
+  error?: string;
+  success?: boolean;
+  data?: Awaited<ReturnType<typeof updateSubscriptionSeats>>["data"];
+}> {
   const user = await requireAuth();
   const token = await getAccessToken();
   const workspace = getPrimaryWorkspace(user);
@@ -72,7 +76,7 @@ export async function updateSubscriptionSeatsAction(
   revalidatePath("/settings");
   revalidatePath("/settings/billing");
 
-  return { success: true };
+  return { success: true, data: result.data };
 }
 
 export { refreshSubscriptionCookiesAction };
