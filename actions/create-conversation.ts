@@ -83,6 +83,6 @@ export async function publishConversationFromTemplate(input: {
     return { error: result.error ?? "Failed to create conversation." };
   }
 
-  revalidatePath("/settings/conversations");
-  redirect(`/settings/conversations/${result.data.conversation.id}`);
+  revalidatePath("/activity");
+  redirect(`/activity/${result.data.conversation.id}`);
 }

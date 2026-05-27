@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CreditCard, MessageSquare, Plug, Settings2, User } from "lucide-react";
+import { CreditCard, Plug, Settings2, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -23,12 +23,6 @@ export const settingsNavItems = [
     label: "Integrations",
     href: "/settings/integrations",
     icon: Plug,
-    exact: false,
-  },
-  {
-    label: "Conversations",
-    href: "/settings/conversations",
-    icon: MessageSquare,
     exact: false,
   },
   {

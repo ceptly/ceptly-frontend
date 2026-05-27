@@ -752,10 +752,10 @@ export function EmployeeChatPrompt({
           Check-in schedules are managed by your workspace admin. View the
           current schedule in{" "}
           <Link
-            href="/settings/conversations"
+            href="/activity"
             className="font-medium text-foreground underline-offset-4 hover:underline"
           >
-            Settings
+            Activity
           </Link>
           .
         </p>
@@ -865,10 +865,10 @@ export function EmployeeChatPrompt({
         <p className="text-center text-sm text-muted-foreground">
           Schedule published.{" "}
           <Link
-            href="/settings/conversations"
+            href="/activity"
             className="font-medium text-foreground underline-offset-4 hover:underline"
           >
-            View in Settings
+            View in Activity
           </Link>
         </p>
       ) : null}

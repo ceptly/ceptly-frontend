@@ -10,10 +10,13 @@ import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { isLeadershipRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
+const ADMIN_ROLES = new Set(["founder", "admin"]);
+
 export default async function ActivityPage() {
   const user = await requireAuth();
   const workspace = user.workspaces?.[0];
   const role = workspace?.role;
+  const canManageConversations = role ? ADMIN_ROLES.has(role) : false;
 
   if (!isLeadershipRole(role)) {
     redirect("/chat");
@@ -56,24 +59,41 @@ export default async function ActivityPage() {
       <ActivityAttentionList items={activity.attention_items} />
 
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold">Scheduled check-ins</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold">Scheduled check-ins</h2>
+          {canManageConversations ? (
+            <Link
+              href="/activity/new"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+              )}
+            >
+              Add conversation
+            </Link>
+          ) : null}
+        </div>
         {activity.scheduled_conversations.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No scheduled conversations yet.{" "}
-            <Link
-              href="/settings/conversations/new"
-              className="font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              Add a conversation
-            </Link>{" "}
-            or{" "}
-            <Link
-              href="/chat"
-              className="font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              set one up in Chat
-            </Link>
-            .
+            No scheduled conversations yet.
+            {canManageConversations ? (
+              <>
+                {" "}
+                <Link
+                  href="/activity/new"
+                  className="font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  Add a conversation
+                </Link>{" "}
+                or{" "}
+                <Link
+                  href="/chat"
+                  className="font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  set one up in Chat
+                </Link>
+                .
+              </>
+            ) : null}
           </p>
         ) : (
           <div className="space-y-3">
@@ -92,17 +112,6 @@ export default async function ActivityPage() {
         <ActivityAdhocList sessions={activity.adhoc_sessions} />
       </section>
 
-      <div>
-        <Link
-          href="/settings/conversations"
-          className={cn(
-            buttonVariants({ variant: "ghost", size: "sm" }),
-            "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          Manage conversations in Settings
-        </Link>
-      </div>
     </div>
   );
 }

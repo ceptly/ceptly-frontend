@@ -63,8 +63,8 @@ export function WorkspaceInvites({
     <div className="rounded-lg border border-border bg-muted/20 px-4 py-4 dark:border-white/10">
       <h2 className="text-base font-semibold">Invite teammates</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Invite people to join your Ceptly workspace. Share the invite link with
-        them directly.
+        Invite people by email. They receive a link to join your workspace; you
+        can also copy the link below if needed.
       </p>
 
       {canEdit ? (

@@ -25,6 +25,7 @@ export function ConversationEditPageClient({
   slackChannelsError,
 }: ConversationEditPageClientProps) {
   const router = useRouter();
+  const activityHref = `/activity/${conversation.id}`;
 
   return (
     <ConversationEditForm
@@ -34,9 +35,9 @@ export function ConversationEditPageClient({
       appContextOptions={appContextOptions}
       slackChannels={slackChannels}
       slackChannelsError={slackChannelsError}
-      onCancel={() => router.push("/settings/conversations")}
+      onCancel={() => router.push(activityHref)}
       onSaved={() => {
-        router.push(`/settings/conversations/${conversation.id}`);
+        router.push(activityHref);
         router.refresh();
       }}
     />
