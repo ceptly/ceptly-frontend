@@ -146,7 +146,12 @@ function AuthPageContent() {
               </Alert>
             )}
 
-            <Button variant="outline" className="w-full" render={<a href={googleAuthUrl} />}>
+            <Button
+              variant="outline"
+              className="w-full"
+              nativeButton={false}
+              render={<a href={googleAuthUrl} />}
+            >
               <GoogleIcon className="mr-2 h-4 w-4" />
               Continue with Google
             </Button>

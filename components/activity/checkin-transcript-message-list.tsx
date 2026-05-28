@@ -21,6 +21,40 @@ function icFirstName(displayName: string): string {
   return displayName.split(/\s+/)[0] ?? displayName;
 }
 
+function formatMessageTimestamp(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function MessageMeta({
+  label,
+  timestamp,
+  alignEnd,
+}: {
+  label: string;
+  timestamp?: string;
+  alignEnd?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-x-2 gap-y-0.5 px-1 text-xs text-muted-foreground",
+        alignEnd ? "justify-end" : "justify-start",
+      )}
+    >
+      <span className="font-medium">{label}</span>
+      {timestamp ? (
+        <time dateTime={timestamp}>{formatMessageTimestamp(timestamp)}</time>
+      ) : null}
+    </div>
+  );
+}
+
 export function CheckinTranscriptMessageList({
   transcript = [],
   legacyResponses = [],
@@ -70,9 +104,11 @@ export function CheckinTranscriptMessageList({
                 isIc ? "items-end" : "items-start",
               )}
             >
-              <span className="px-1 text-xs font-medium text-muted-foreground">
-                {isIc ? icLabel : "Ceptly"}
-              </span>
+              <MessageMeta
+                label={isIc ? icLabel : "Ceptly"}
+                timestamp={message.created_at}
+                alignEnd={isIc}
+              />
 
               <div
                 className={cn(
@@ -98,9 +134,10 @@ export function CheckinTranscriptMessageList({
               </AvatarFallback>
             </Avatar>
             <div className="flex max-w-[min(85%,32rem)] flex-col items-start gap-2">
-              <span className="px-1 text-xs font-medium text-muted-foreground">
-                Ceptly
-              </span>
+              <MessageMeta
+                label="Ceptly"
+                timestamp={response.question_at}
+              />
               <div className="rounded-2xl rounded-bl-md border border-border bg-card px-4 py-2.5 text-sm leading-relaxed text-card-foreground shadow-sm">
                 <p className="whitespace-pre-wrap">
                   {response.question_prompt}
@@ -111,9 +148,11 @@ export function CheckinTranscriptMessageList({
 
           <div className="flex flex-row-reverse gap-2.5">
             <div className="flex max-w-[min(85%,32rem)] flex-col items-end gap-2">
-              <span className="px-1 text-xs font-medium text-muted-foreground">
-                {icLabel}
-              </span>
+              <MessageMeta
+                label={icLabel}
+                timestamp={response.answered_at}
+                alignEnd
+              />
               <div className="rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm leading-relaxed text-primary-foreground shadow-sm">
                 <p className="whitespace-pre-wrap">{response.answer_text}</p>
               </div>

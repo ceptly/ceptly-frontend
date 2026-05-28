@@ -26,6 +26,16 @@ function formatRunLabel(firedAt: string): string {
   });
 }
 
+function formatMessageTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function MemberResponse({
   member,
 }: {
@@ -57,20 +67,44 @@ export function MemberResponse({
         <div className="space-y-3 border-t border-border px-4 py-3 text-sm dark:border-white/10">
           {member.transcript?.map((message, index) => (
             <div key={index}>
-              <p className="text-xs font-medium text-muted-foreground">
-                {message.role === "user" ? member.display_name : "Ceptly"}
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium">
+                  {message.role === "user" ? member.display_name : "Ceptly"}
+                </span>
+                {" · "}
+                <time dateTime={message.created_at}>
+                  {formatMessageTime(message.created_at)}
+                </time>
               </p>
               <p className="mt-0.5 whitespace-pre-wrap">{message.content}</p>
             </div>
           ))}
           {member.legacy_responses?.map((response, index) => (
-            <div key={index}>
-              <p className="text-xs font-medium text-muted-foreground">
-                Q: {response.question_prompt}
-              </p>
-              <p className="mt-0.5 whitespace-pre-wrap">
-                {response.answer_text}
-              </p>
+            <div key={index} className="space-y-2">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Ceptly</span>
+                  {" · "}
+                  <time dateTime={response.question_at}>
+                    {formatMessageTime(response.question_at)}
+                  </time>
+                </p>
+                <p className="mt-0.5 whitespace-pre-wrap">
+                  {response.question_prompt}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">{member.display_name}</span>
+                  {" · "}
+                  <time dateTime={response.answered_at}>
+                    {formatMessageTime(response.answered_at)}
+                  </time>
+                </p>
+                <p className="mt-0.5 whitespace-pre-wrap">
+                  {response.answer_text}
+                </p>
+              </div>
             </div>
           ))}
         </div>

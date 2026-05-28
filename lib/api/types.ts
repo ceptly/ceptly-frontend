@@ -87,11 +87,14 @@ export interface ConversationRunMemberRef {
 export interface ConversationRunTranscriptMessage {
   role: "user" | "assistant";
   content: string;
+  created_at: string;
 }
 
 export interface ConversationRunLegacyResponse {
   question_prompt: string;
   answer_text: string;
+  question_at: string;
+  answered_at: string;
 }
 
 export interface ConversationRunRespondedMember {
