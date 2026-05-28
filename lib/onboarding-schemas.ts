@@ -21,6 +21,7 @@ export const onboardingToolSchema = z.enum([
   "discord",
   "ms_teams",
   "linear",
+  "jira",
   "clickup",
   "monday",
   "notion",

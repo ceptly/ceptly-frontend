@@ -17,6 +17,12 @@ export const KNOWN_INTEGRATIONS: Record<string, KnownIntegration> = {
     description:
       "Connect Linear so standup check-ins reference assigned issues (with links) and can update ticket status when someone finishes or starts work. Reconnect after upgrading to enable status updates.",
   },
+  jira: {
+    id: "jira",
+    name: "Jira",
+    description:
+      "Connect Jira Cloud so standup check-ins reference assigned issues (with links) and can update ticket status when someone finishes or starts work.",
+  },
 };
 
 export function resolveIntegration(

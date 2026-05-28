@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   addRosterMember,
   deleteRosterMember,
+  importRosterFromJira,
   importRosterFromLinear,
   importRosterFromSlack,
   updateRosterMember,
@@ -239,6 +240,25 @@ export async function importRosterFromLinearAction(
 
   if (!result.success || !result.data) {
     return { error: result.error ?? "Failed to import from Linear." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/team");
+  return { message: formatImportResult(result.data) };
+}
+
+export async function importRosterFromJiraAction(
+  workspaceId: string,
+): Promise<{ error?: string; message?: string }> {
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: "You must be signed in to manage the roster." };
+  }
+
+  const result = await importRosterFromJira(token, workspaceId);
+
+  if (!result.success || !result.data) {
+    return { error: result.error ?? "Failed to import from Jira." };
   }
 
   revalidatePath("/settings");

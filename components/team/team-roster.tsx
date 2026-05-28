@@ -41,6 +41,7 @@ interface TeamRosterProps {
   canEdit: boolean;
   slackConnected: boolean;
   linearConnected: boolean;
+  jiraConnected: boolean;
   members: RosterMember[];
 }
 
@@ -51,6 +52,7 @@ export function TeamRoster({
   canEdit,
   slackConnected,
   linearConnected,
+  jiraConnected,
   members,
 }: TeamRosterProps) {
   const [addState, addAction, addPending] = useActionState(
@@ -238,6 +240,9 @@ export function TeamRoster({
             {sources.includes("linear") ? (
               <Badge variant="secondary">Linear</Badge>
             ) : null}
+            {sources.includes("jira") ? (
+              <Badge variant="secondary">Jira</Badge>
+            ) : null}
           </div>
         );
       },
@@ -311,13 +316,17 @@ export function TeamRoster({
         </Alert>
       ) : null}
 
-      {linearConnected &&
-      members.some((member) => !member.data_sources?.includes("linear")) ? (
+      {(linearConnected || jiraConnected) &&
+      members.some(
+        (member) =>
+          (linearConnected && !member.data_sources?.includes("linear")) ||
+          (jiraConnected && !member.data_sources?.includes("jira")),
+      ) ? (
         <Alert>
           <AlertDescription>
-            Some roster emails may not match a Linear account. Check the Apps
-            column — members without a Linear badge need the same email in Slack
-            and Linear.
+            Some roster emails may not match a connected issue tracker account.
+            Check the Apps column — members without a Linear or Jira badge need
+            the same email in Slack and your tracker.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -345,6 +354,7 @@ export function TeamRoster({
           workspaceId={workspaceId}
           slackConnected={slackConnected}
           linearConnected={linearConnected}
+          jiraConnected={jiraConnected}
         />
       ) : null}
 

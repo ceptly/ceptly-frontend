@@ -1,8 +1,12 @@
 import { resolveApiBaseUrl } from "./auth";
-import type {
-  ConversationRunRespondedMember,
-  ConversationSessionSummary,
-} from "./types";
+
+export interface JiraConnectionStatus {
+  connected: boolean;
+  cloudId?: string | null;
+  siteName?: string | null;
+  siteUrl?: string | null;
+  connectedAt?: string | null;
+}
 
 async function parseJsonResponse<T>(
   response: Response,
@@ -18,32 +22,28 @@ async function parseJsonResponse<T>(
   return (await response.json()) as T & { success: boolean; error?: string };
 }
 
-function authHeaders(accessToken: string): HeadersInit {
-  return { Authorization: `Bearer ${accessToken}` };
-}
-
-export async function listConversationSessions(
+export async function getJiraConnectionStatus(
   accessToken: string,
   workspaceId: string,
-  conversationId: string,
 ): Promise<{
   success: boolean;
   error?: string;
-  data?: { sessions: ConversationSessionSummary[] };
+  data?: JiraConnectionStatus;
 }> {
   try {
     const base = await resolveApiBaseUrl();
     const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/conversations/${conversationId}/sessions`,
+      `${base}/api/workspaces/${workspaceId}/jira/status`,
       {
         method: "GET",
-        headers: authHeaders(accessToken),
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
         cache: "no-store",
       },
     );
-    return parseJsonResponse<{
-      data?: { sessions: ConversationSessionSummary[] };
-    }>(response);
+
+    return parseJsonResponse<{ data?: JiraConnectionStatus }>(response);
   } catch {
     return {
       success: false,
@@ -52,29 +52,30 @@ export async function listConversationSessions(
   }
 }
 
-export async function getConversationSession(
+export async function getJiraInstallUrl(
   accessToken: string,
   workspaceId: string,
-  conversationId: string,
-  sessionId: string,
+  returnTo: string,
 ): Promise<{
   success: boolean;
   error?: string;
-  data?: { session: ConversationRunRespondedMember };
+  data?: { url: string };
 }> {
   try {
     const base = await resolveApiBaseUrl();
+    const params = new URLSearchParams({ return_to: returnTo });
     const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/conversations/${conversationId}/sessions/${sessionId}`,
+      `${base}/api/workspaces/${workspaceId}/jira/install-url?${params.toString()}`,
       {
         method: "GET",
-        headers: authHeaders(accessToken),
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
         cache: "no-store",
       },
     );
-    return parseJsonResponse<{
-      data?: { session: ConversationRunRespondedMember };
-    }>(response);
+
+    return parseJsonResponse<{ data?: { url: string } }>(response);
   } catch {
     return {
       success: false,
@@ -83,31 +84,27 @@ export async function getConversationSession(
   }
 }
 
-export async function abandonConversationSession(
+export async function disconnectJira(
   accessToken: string,
   workspaceId: string,
-  conversationId: string,
-  sessionId: string,
 ): Promise<{
   success: boolean;
   error?: string;
-  data?: { session_id: string; status: "abandoned" };
 }> {
   try {
     const base = await resolveApiBaseUrl();
     const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/conversations/${conversationId}/sessions/${sessionId}/abandon`,
+      `${base}/api/workspaces/${workspaceId}/jira/disconnect`,
       {
         method: "POST",
         headers: {
-          ...authHeaders(accessToken),
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
+        cache: "no-store",
       },
     );
-    return parseJsonResponse<{
-      data?: { session_id: string; status: "abandoned" };
-    }>(response);
+
+    return parseJsonResponse<Record<string, never>>(response);
   } catch {
     return {
       success: false,
