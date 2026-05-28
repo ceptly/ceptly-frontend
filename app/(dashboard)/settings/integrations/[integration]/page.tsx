@@ -56,13 +56,11 @@ export default async function IntegrationDetailPage({
   let panel: React.ReactNode = null;
 
   if (integration.id === "slack" && workspace?.id && token) {
-    const slackStatusResult = await getSlackConnectionStatus(
-      token,
-      workspace.id,
-    );
+    const [slackStatusResult, digestResult] = await Promise.all([
+      getSlackConnectionStatus(token, workspace.id),
+      getDigestSlackChannel(token, workspace.id),
+    ]);
     const slackStatus = slackStatusResult?.data ?? { connected: false };
-
-    const digestResult = await getDigestSlackChannel(token, workspace.id);
     const digestChannelId = digestResult.data?.digest_slack_channel_id ?? null;
 
     panel = (

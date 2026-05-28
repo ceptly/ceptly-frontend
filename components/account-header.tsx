@@ -27,10 +27,15 @@ import { canManageWorkspace } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
 const baseNavigationItems = [
-  { label: "Chat", path: "/chat" },
-  { label: "Activity", path: "/activity", leadershipOnly: true },
-  { label: "Team", path: "/team" },
-  { label: "Settings", path: "/settings", matchPrefix: "/settings" },
+  { label: "Chat", path: "/chat", prefetch: true },
+  { label: "Activity", path: "/activity", leadershipOnly: true, prefetch: false },
+  { label: "Team", path: "/team", prefetch: false },
+  {
+    label: "Settings",
+    path: "/settings",
+    matchPrefix: "/settings",
+    prefetch: false,
+  },
 ];
 
 function getInitials(user: AuthUser) {
@@ -117,7 +122,7 @@ export function AccountHeader({ user }: AccountHeaderProps) {
             <nav className="flex items-center gap-1">
               <Link
                 href="/settings"
-                prefetch
+                prefetch={false}
                 className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
                 onClick={() => client.logEvent("workspace_nav_click")}
               >
@@ -132,7 +137,7 @@ export function AccountHeader({ user }: AccountHeaderProps) {
                   <Link
                     key={item.path}
                     href={item.path}
-                    prefetch
+                    prefetch={item.prefetch}
                     className={cn(
                       buttonVariants({
                         variant: active ? "default" : "ghost",

@@ -1,16 +1,8 @@
-import { WorkspaceInvites } from "@/components/settings/workspace-invites";
-import { WorkspaceLanguageForm } from "@/components/settings/workspace-language-form";
-import { WorkspaceMembersTable } from "@/components/settings/workspace-members";
-import { WorkspaceNameForm } from "@/components/settings/workspace-name-form";
-import { WorkspaceTimezoneForm } from "@/components/settings/workspace-timezone-form";
-import { fetchBillingStatus } from "@/lib/api/billing";
-import {
-  getWorkspaceLanguage,
-  getWorkspaceTimezone,
-} from "@/lib/api/conversations";
-import { listInvites } from "@/lib/api/invites";
-import { listWorkspaceMembers } from "@/lib/api/members";
-import { getAccessToken, requireAuth } from "@/lib/auth/server";
+import { Suspense } from "react";
+
+import { SettingsPageContent } from "@/components/settings/settings-page-content";
+import { SettingsPageContentSkeleton } from "@/components/page-skeletons";
+import { requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
 
 export default async function SettingsPage() {
@@ -18,28 +10,6 @@ export default async function SettingsPage() {
 
   const workspace = user.workspaces?.[0];
   const canEdit = workspace ? canManageWorkspace(workspace.role) : false;
-
-  const token = await getAccessToken();
-
-  const [
-    timezoneResult,
-    languageResult,
-    invitesResult,
-    membersResult,
-    billingStatus,
-  ] =
-    workspace?.id && token
-      ? await Promise.all([
-          getWorkspaceTimezone(token, workspace.id),
-          getWorkspaceLanguage(token, workspace.id),
-          listInvites(token, workspace.id),
-          listWorkspaceMembers(token, workspace.id),
-          fetchBillingStatus(token, workspace.id),
-        ])
-      : [null, null, null, null, null];
-
-  const pendingInvites = invitesResult?.data?.invites ?? [];
-  const members = membersResult?.data?.members ?? [];
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-8">
@@ -55,45 +25,16 @@ export default async function SettingsPage() {
       </div>
 
       {workspace?.id ? (
-        <>
-          <WorkspaceNameForm
+        <Suspense fallback={<SettingsPageContentSkeleton />}>
+          <SettingsPageContent
             workspaceId={workspace.id}
-            initialName={workspace.name}
-            canEdit={canEdit}
-          />
-
-          {timezoneResult?.success && timezoneResult.data?.timezone ? (
-            <WorkspaceTimezoneForm
-              workspaceId={workspace.id}
-              initialTimezone={timezoneResult.data.timezone}
-              canEdit={canEdit}
-            />
-          ) : null}
-
-          {languageResult?.success && languageResult.data?.language ? (
-            <WorkspaceLanguageForm
-              workspaceId={workspace.id}
-              initialLanguage={languageResult.data.language}
-              canEdit={canEdit}
-            />
-          ) : null}
-
-          <WorkspaceMembersTable
-            workspaceId={workspace.id}
+            workspaceName={workspace.name}
+            workspaceRole={workspace.role}
             canEdit={canEdit}
             currentUserId={user.id}
-            currentUserRole={workspace.role}
-            members={members}
-          />
-
-          <WorkspaceInvites
-            workspaceId={workspace.id}
-            canEdit={canEdit}
             userEmail={user.email}
-            invites={pendingInvites}
-            billing={billingStatus}
           />
-        </>
+        </Suspense>
       ) : (
         <p className="text-sm text-muted-foreground">
           No team found for your account.

@@ -157,18 +157,9 @@ export function ConversationDetailSkeleton({ className }: PageSkeletonProps) {
   );
 }
 
-export function TeamPageSkeleton({ className }: PageSkeletonProps) {
+export function TeamPageContentSkeleton() {
   return (
-    <div
-      className={cn(
-        "mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-8",
-        className,
-      )}
-      aria-busy="true"
-      aria-label="Loading team roster"
-    >
-      <PageHeaderSkeleton />
-
+    <>
       <div className="flex flex-wrap gap-2">
         <Skeleton className="h-9 w-36 rounded-md" />
         <Skeleton className="h-9 w-36 rounded-md" />
@@ -187,6 +178,22 @@ export function TeamPageSkeleton({ className }: PageSkeletonProps) {
       </div>
 
       <TableSkeleton rows={6} />
+    </>
+  );
+}
+
+export function TeamPageSkeleton({ className }: PageSkeletonProps) {
+  return (
+    <div
+      className={cn(
+        "mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-8",
+        className,
+      )}
+      aria-busy="true"
+      aria-label="Loading team roster"
+    >
+      <PageHeaderSkeleton />
+      <TeamPageContentSkeleton />
     </div>
   );
 }
@@ -218,6 +225,21 @@ export function ChatPageSkeleton({ className }: PageSkeletonProps) {
   );
 }
 
+export function SettingsPageContentSkeleton() {
+  return (
+    <>
+      <FormSectionSkeleton />
+      <FormSectionSkeleton />
+      <FormSectionSkeleton />
+      <div className="space-y-4">
+        <Skeleton className="h-5 w-32" />
+        <TableSkeleton rows={4} />
+      </div>
+      <FormSectionSkeleton />
+    </>
+  );
+}
+
 export function SettingsPageSkeleton({ className }: PageSkeletonProps) {
   return (
     <div
@@ -229,14 +251,21 @@ export function SettingsPageSkeleton({ className }: PageSkeletonProps) {
       aria-label="Loading settings"
     >
       <PageHeaderSkeleton />
-      <FormSectionSkeleton />
-      <FormSectionSkeleton />
-      <FormSectionSkeleton />
-      <div className="space-y-4">
-        <Skeleton className="h-5 w-32" />
-        <TableSkeleton rows={4} />
+      <SettingsPageContentSkeleton />
+    </div>
+  );
+}
+
+export function ConversationFormSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Loading form">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-lg" />
       </div>
       <FormSectionSkeleton />
+      <FormSectionSkeleton />
+      <Skeleton className="h-9 w-32 rounded-md" />
     </div>
   );
 }

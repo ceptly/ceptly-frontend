@@ -1,20 +1,13 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
-import { ConversationCreateForm } from "@/components/settings/conversation-create-form";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { NewConversationContent } from "@/components/activity/new-conversation-content";
+import { ConversationFormSkeleton } from "@/components/page-skeletons";
 import { buttonVariants } from "@/components/ui/button";
-import { DEFAULT_CONVERSATION_TEMPLATES } from "@/lib/conversation-templates";
-import {
-  listAppContextOptions,
-  listConversationTemplates,
-  getWorkspaceTimezone,
-} from "@/lib/api/conversations";
-import { listRosterMembers } from "@/lib/api/roster";
-import { listSlackChannels } from "@/lib/api/slack-channels";
-import { getAccessToken, requireAuth } from "@/lib/auth/server";
+import { requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-import { redirect } from "next/navigation";
 
 export default async function NewActivityConversationPage() {
   const user = await requireAuth();
@@ -24,10 +17,7 @@ export default async function NewActivityConversationPage() {
     redirect("/chat");
   }
 
-  const canEdit = workspace ? canManageWorkspace(workspace.role) : false;
-  const token = await getAccessToken();
-
-  if (!canEdit || !workspace?.id || !token) {
+  if (!workspace?.id) {
     return (
       <p className="px-6 py-8 text-sm text-muted-foreground">
         Only workspace owners, admins, and members can create conversations.
@@ -35,34 +25,7 @@ export default async function NewActivityConversationPage() {
     );
   }
 
-  const [
-    templatesResult,
-    rosterResult,
-    timezoneResult,
-    appContextsResult,
-    slackChannelsResult,
-  ] = await Promise.all([
-    listConversationTemplates(token, workspace.id),
-    listRosterMembers(token, workspace.id),
-    getWorkspaceTimezone(token, workspace.id),
-    listAppContextOptions(token, workspace.id),
-    listSlackChannels(token, workspace.id),
-  ]);
-
-  const apiTemplates = templatesResult.data?.templates ?? [];
-  const templates =
-    apiTemplates.length > 0 ? apiTemplates : DEFAULT_CONVERSATION_TEMPLATES;
-  const templatesLoadFailed = !templatesResult.success;
-  const usedTemplateFallback =
-    templatesResult.success && apiTemplates.length === 0;
-  const rosterMembers = rosterResult.data?.members ?? [];
-  const timezone = timezoneResult.data?.timezone ?? "America/Chicago";
-  const appContextOptions = appContextsResult.data?.app_contexts ?? [];
-  const slackChannels = slackChannelsResult.data?.channels ?? [];
-  const slackChannelsError = slackChannelsResult.success
-    ? null
-    : (slackChannelsResult.error ??
-      "Could not load Slack channels. You can still publish and add destinations when editing.");
+  const workspaceId = workspace.id;
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">
@@ -88,32 +51,9 @@ export default async function NewActivityConversationPage() {
         </div>
       </div>
 
-      {templatesLoadFailed ? (
-        <Alert variant="destructive">
-          <AlertDescription>
-            {templatesResult.error ?? "Could not load templates from the API."}{" "}
-            Showing the default Daily standup template offline — publish may
-            fail until the backend is reachable.
-          </AlertDescription>
-        </Alert>
-      ) : usedTemplateFallback ? (
-        <Alert>
-          <AlertDescription>
-            The API returned no templates. Using the built-in Daily standup
-            template.
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
-      <ConversationCreateForm
-        workspaceId={workspace.id}
-        workspaceTimezone={timezone}
-        templates={templates}
-        rosterMembers={rosterMembers}
-        appContextOptions={appContextOptions}
-        slackChannels={slackChannels}
-        slackChannelsError={slackChannelsError}
-      />
+      <Suspense fallback={<ConversationFormSkeleton />}>
+        <NewConversationContent workspaceId={workspaceId} />
+      </Suspense>
     </div>
   );
 }

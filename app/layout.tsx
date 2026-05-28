@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono, Montserrat } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { AccountHeader } from "@/components/account-header";
+import { AccountHeaderSkeleton } from "@/components/account-header-skeleton";
 import { Providers } from "@/components/providers";
+import { StatsigIdentify } from "@/components/statsig-identify";
 import { getCurrentUser } from "@/lib/auth/server";
 import { THEME_COOKIE_NAME, resolveTheme } from "@/lib/theme";
 import { THEME_COOKIE_SEED_SCRIPT } from "@/lib/theme-cookie-script";
@@ -30,17 +33,33 @@ const montserrat = Montserrat({
 
 export const metadata: Metadata = createSiteMetadata();
 
+async function AccountHeaderSlot() {
+  const user = await getCurrentUser();
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <>
+      <StatsigIdentify
+        userId={user.id}
+        email={user.email}
+        fullName={user.fullName ?? undefined}
+      />
+      <AccountHeader user={user} />
+    </>
+  );
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getCurrentUser();
-  const headersList = await headers();
+  const [cookieStore, headersList] = await Promise.all([cookies(), headers()]);
   const pathname = headersList.get("x-pathname") ?? "";
   const hideHeader =
     pathname.startsWith("/auth") || pathname.startsWith("/onboarding");
-  const cookieStore = await cookies();
   const initialTheme = resolveTheme(cookieStore.get(THEME_COOKIE_NAME)?.value);
 
   return (
@@ -55,10 +74,14 @@ export default async function RootLayout({
         <script
           dangerouslySetInnerHTML={{ __html: THEME_COOKIE_SEED_SCRIPT }}
         />
-        <MyStatsig authUser={user}>
+        <MyStatsig>
           <Analytics />
           <Providers initialTheme={initialTheme}>
-            {user && !hideHeader ? <AccountHeader user={user} /> : null}
+            {hideHeader ? null : (
+              <Suspense fallback={<AccountHeaderSkeleton />}>
+                <AccountHeaderSlot />
+              </Suspense>
+            )}
             <main className="flex flex-1 flex-col">{children}</main>
           </Providers>
         </MyStatsig>

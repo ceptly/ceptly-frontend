@@ -6,10 +6,7 @@ import { ConversationEditPageClient } from "@/components/activity/conversation-e
 import { ConversationResultsClient } from "@/components/activity/conversation-results-client";
 import { ConversationSessionsClient } from "@/components/activity/conversation-sessions-client";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  getConversationSession,
-  listConversationSessions,
-} from "@/lib/api/conversation-sessions";
+import { listConversationSessions } from "@/lib/api/conversation-sessions";
 import {
   getConversation,
   listAppContextOptions,
@@ -78,17 +75,6 @@ export default async function ActivityConversationPage({
       conversationId,
     );
     const sessions = sessionsResult.data?.sessions ?? [];
-    const firstSessionId = sessions[0]?.session_id;
-    const initialSessionResult =
-      firstSessionId && token
-        ? await getConversationSession(
-            token,
-            workspace.id,
-            conversationId,
-            firstSessionId,
-          )
-        : null;
-    const initialSession = initialSessionResult?.data?.session ?? null;
 
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">
@@ -119,7 +105,6 @@ export default async function ActivityConversationPage({
           workspaceId={workspace.id}
           conversationId={conversationId}
           sessions={sessions}
-          initialSession={initialSession}
         />
       </div>
     );

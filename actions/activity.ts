@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   dismissActivityAttentionItem as dismissActivityAttentionItemApi,
   getWorkspaceActivity,
+  getWorkspaceAttentionCount,
 } from "@/lib/api/activity";
 import type { WorkspaceActivity } from "@/lib/api/types";
 import { getAccessToken } from "@/lib/auth/server";
@@ -59,6 +60,11 @@ export async function fetchWorkspaceActivity(input: {
 export async function fetchActivityAttentionCount(input: {
   workspaceId: string;
 }): Promise<number> {
-  const result = await fetchWorkspaceActivity(input);
-  return result.activity?.attention_count ?? 0;
+  const token = await getAccessToken();
+  if (!token) {
+    return 0;
+  }
+
+  const result = await getWorkspaceAttentionCount(token, input.workspaceId);
+  return result.data?.attention_count ?? 0;
 }

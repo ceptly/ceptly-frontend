@@ -48,6 +48,33 @@ export async function getWorkspaceActivity(
   }
 }
 
+export async function getWorkspaceAttentionCount(
+  accessToken: string,
+  workspaceId: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+  data?: { attention_count: number };
+}> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/activity/attention-count`,
+      {
+        method: "GET",
+        headers: authHeaders(accessToken),
+        cache: "no-store",
+      },
+    );
+    return parseJsonResponse<{ data?: { attention_count: number } }>(response);
+  } catch {
+    return {
+      success: false,
+      error: "Could not reach the API. Is the backend running?",
+    };
+  }
+}
+
 export async function dismissActivityAttentionItem(
   accessToken: string,
   workspaceId: string,
