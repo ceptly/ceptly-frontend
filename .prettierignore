@@ -4,7 +4,4 @@ out
 build
 dist
 coverage
-.yarn
 *.tsbuildinfo
-package-lock.json
-yarn.lock

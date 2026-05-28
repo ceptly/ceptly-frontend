@@ -12,15 +12,15 @@ Next.js app for Ceptly — workspace settings, check-ins, billing, and team chat
 cp .env.example .env.local
 # Edit .env.local — API URL, Statsig key, etc.
 
-yarn install
-yarn dev
+npm install
+npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
 ## Deploy (Amplify)
 
-Build settings are in [`amplify.yml`](./amplify.yml). Requires `packageManager` (Yarn 4) and **WEB_COMPUTE** platform for SSR/middleware.
+Build settings are in [`amplify.yml`](./amplify.yml). Requires **WEB_COMPUTE** platform for SSR/middleware.
 
 Set in Amplify Console → Environment variables:
 
