@@ -6,7 +6,7 @@ import type {
   SetupChatUiComponent,
 } from "./types";
 
-export type ChatIntegrationId = "slack" | "linear" | "ceptly";
+export type ChatIntegrationId = "slack" | "linear" | "jira" | "ceptly";
 
 export type ChatStreamEvent =
   | { type: "status"; label: string }
@@ -128,9 +128,11 @@ export function formatToolLabel(
   const integrationName =
     integration === "linear"
       ? "Linear"
-      : integration === "slack"
-        ? "Slack"
-        : "Ceptly";
+      : integration === "jira"
+        ? "Jira"
+        : integration === "slack"
+          ? "Slack"
+          : "Ceptly";
 
   const formatted = name
     .split("_")

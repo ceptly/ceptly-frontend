@@ -3,6 +3,7 @@ import Link from "next/link";
 import { TeamRoster } from "@/components/team/team-roster";
 import { buttonVariants } from "@/components/ui/button";
 import { getWorkspaceLanguage, getWorkspaceTimezone } from "@/lib/api/conversations";
+import { getJiraConnectionStatus } from "@/lib/api/jira";
 import { getLinearConnectionStatus } from "@/lib/api/linear";
 import { listRosterMembers } from "@/lib/api/roster";
 import { getSlackConnectionStatus } from "@/lib/api/slack";
@@ -28,6 +29,11 @@ export default async function TeamPage() {
       ? await getLinearConnectionStatus(token, workspace.id)
       : null;
 
+  const jiraStatusResult =
+    workspace?.id && token
+      ? await getJiraConnectionStatus(token, workspace.id)
+      : null;
+
   const rosterResult =
     workspace?.id && token
       ? await listRosterMembers(token, workspace.id)
@@ -45,6 +51,7 @@ export default async function TeamPage() {
 
   const slackStatus = slackStatusResult?.data ?? { connected: false };
   const linearStatus = linearStatusResult?.data ?? { connected: false };
+  const jiraStatus = jiraStatusResult?.data ?? { connected: false };
   const rosterMembers = rosterResult?.data?.members ?? [];
   const workspaceTimezone =
     timezoneResult?.data?.timezone ?? "America/Chicago";
@@ -69,6 +76,7 @@ export default async function TeamPage() {
           canEdit={canEdit}
           slackConnected={slackStatus.connected}
           linearConnected={linearStatus.connected}
+          jiraConnected={jiraStatus.connected}
           members={rosterMembers}
         />
       ) : (

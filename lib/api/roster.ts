@@ -7,7 +7,7 @@ export interface RosterMember {
   display_name: string;
   paused: boolean;
   created_at: string;
-  data_sources: ("slack" | "linear")[];
+  data_sources: ("slack" | "linear" | "jira")[];
   timezone: string | null;
   language: string | null;
   effective_timezone: string;
@@ -175,6 +175,35 @@ export async function importRosterFromLinear(
     const base = await resolveApiBaseUrl();
     const response = await fetch(
       `${base}/api/workspaces/${workspaceId}/roster/import/linear`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    return parseJsonResponse<{ data?: RosterImportResult }>(response);
+  } catch {
+    return {
+      success: false,
+      error: "Could not reach the API. Is the backend running?",
+    };
+  }
+}
+
+export async function importRosterFromJira(
+  accessToken: string,
+  workspaceId: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+  data?: RosterImportResult;
+}> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/roster/import/jira`,
       {
         method: "POST",
         headers: {
