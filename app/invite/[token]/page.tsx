@@ -21,8 +21,10 @@ interface InvitePageProps {
 
 export default async function InvitePage({ params }: InvitePageProps) {
   const { token } = await params;
-  const previewResult = await fetchInvitePreview(token);
-  const user = await getCurrentUser();
+  const [previewResult, user] = await Promise.all([
+    fetchInvitePreview(token),
+    getCurrentUser(),
+  ]);
 
   const preview = previewResult.data?.preview;
   const authInviteUrl = `/auth?invite=${encodeURIComponent(token)}`;

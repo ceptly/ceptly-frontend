@@ -51,7 +51,6 @@ export async function updateUserName(
     };
   }
 
-  revalidatePath("/", "layout");
   revalidatePath("/settings/account");
 
   return { success: true };

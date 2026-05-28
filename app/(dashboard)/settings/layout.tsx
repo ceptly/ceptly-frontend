@@ -1,15 +1,14 @@
+import { cookies } from "next/headers";
+
 import { SettingsSidebar } from "./settings-sidebar";
-import { requireAuth } from "@/lib/auth/server";
-import { getPrimaryWorkspace, userCanManageBilling } from "@/lib/subscription";
 
 export default async function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await requireAuth();
-  const workspace = getPrimaryWorkspace(user);
-  const showBilling = userCanManageBilling(workspace);
+  const cookieStore = await cookies();
+  const showBilling = cookieStore.get("billing_can_manage")?.value === "1";
 
   return (
     <div className="flex min-h-0 flex-1">

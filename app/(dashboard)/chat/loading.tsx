@@ -1,5 +1,5 @@
 import { ChatPageSkeleton } from "@/components/page-skeletons";
 
-export default function DashboardLoading() {
+export default function ChatLoading() {
   return <ChatPageSkeleton />;
 }

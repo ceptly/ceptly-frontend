@@ -80,7 +80,6 @@ export async function updateWorkspaceName(
     await setWorkspaceNameCookie(workspace.name);
   }
 
-  revalidatePath("/", "layout");
   revalidatePath("/settings");
 
   return { success: true };

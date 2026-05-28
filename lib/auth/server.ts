@@ -23,10 +23,12 @@ function cookieOptions() {
   };
 }
 
-export async function getAccessToken(): Promise<string | undefined> {
-  const cookieStore = await cookies();
-  return cookieStore.get("access_token")?.value;
-}
+export const getAccessToken = cache(
+  async (): Promise<string | undefined> => {
+    const cookieStore = await cookies();
+    return cookieStore.get("access_token")?.value;
+  },
+);
 
 export async function setAuthCookies(session: {
   access_token: string;
