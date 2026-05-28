@@ -11,10 +11,7 @@ export const INTEGRATION_LOGOS: Record<string, IntegrationLogo> = {
     light: "/integrations/linear-dark.png",
     dark: "/integrations/linear-light.png",
   },
-  jira: {
-    light: "/integrations/Jira_attribution_center_light.svg",
-    dark: "/integrations/Jira_attribution_center_dark.svg",
-  },
+  jira: "/integrations/Jira_icon.png",
 };
 
 export function getIntegrationLogo(
