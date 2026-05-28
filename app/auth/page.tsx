@@ -19,7 +19,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
+function SubmitButton({
+  label,
+  pendingLabel,
+}: {
+  label: string;
+  pendingLabel: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -39,7 +45,8 @@ function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: st
 function AuthPageContent() {
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get("invite") ?? undefined;
-  const initialMode = searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
+  const initialMode =
+    searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
   const prefilledEmail = searchParams.get("email") ?? "";
   const checkoutSuccess = searchParams.get("checkout") === "success";
 
@@ -223,9 +230,7 @@ function AuthPageContent() {
               {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
               <button
                 type="button"
-                onClick={() =>
-                  setMode(isSignUp ? "sign-in" : "sign-up")
-                }
+                onClick={() => setMode(isSignUp ? "sign-in" : "sign-up")}
                 className="font-medium text-primary hover:underline"
               >
                 {isSignUp ? "Sign in" : "Create account"}

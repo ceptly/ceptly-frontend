@@ -24,10 +24,10 @@ Build settings are in [`amplify.yml`](./amplify.yml). Requires `packageManager` 
 
 Set in Amplify Console → Environment variables:
 
-| Variable | Example |
-|----------|---------|
-| `NEXT_PUBLIC_API_URL` | `https://api.ceptly.ai` (your backend) |
-| `NEXT_PUBLIC_STATSIG_CLIENT_KEY` | Statsig client key |
-| `NEXT_PUBLIC_BILLING_ENFORCED` | `true` |
+| Variable                         | Example                                |
+| -------------------------------- | -------------------------------------- |
+| `NEXT_PUBLIC_API_URL`            | `https://api.ceptly.ai` (your backend) |
+| `NEXT_PUBLIC_STATSIG_CLIENT_KEY` | Statsig client key                     |
+| `NEXT_PUBLIC_BILLING_ENFORCED`   | `true`                                 |
 
 Ensure backend `FRONTEND_URL` is `https://app.ceptly.ai` for CORS and invite links.

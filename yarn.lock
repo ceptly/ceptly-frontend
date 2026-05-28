@@ -2337,9 +2337,11 @@ __metadata:
     clsx: "npm:^2.1.1"
     eslint: "npm:^9"
     eslint-config-next: "npm:16.2.6"
+    eslint-config-prettier: "npm:^10.1.8"
     lucide-react: "npm:^1.16.0"
     next: "npm:16.2.6"
     next-themes: "npm:^0.4.6"
+    prettier: "npm:^3.8.3"
     react: "npm:19.2.4"
     react-dom: "npm:19.2.4"
     shadcn: "npm:^4.7.0"
@@ -3032,6 +3034,17 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/a44f5757e6da6fe4bde1a001db93a103580ce950a1cc48398064d55b5e590144366279b1a4696c908a05664c40a75eeb8f0fe765ccd361aa9360978f4bfdb1ef
+  languageName: node
+  linkType: hard
+
+"eslint-config-prettier@npm:^10.1.8":
+  version: 10.1.8
+  resolution: "eslint-config-prettier@npm:10.1.8"
+  peerDependencies:
+    eslint: ">=7.0.0"
+  bin:
+    eslint-config-prettier: bin/cli.js
+  checksum: 10c0/e1bcfadc9eccd526c240056b1e59c5cd26544fe59feb85f38f4f1f116caed96aea0b3b87868e68b3099e55caaac3f2e5b9f58110f85db893e83a332751192682
   languageName: node
   linkType: hard
 
@@ -5487,6 +5500,15 @@ __metadata:
   version: 1.2.1
   resolution: "prelude-ls@npm:1.2.1"
   checksum: 10c0/b00d617431e7886c520a6f498a2e14c75ec58f6d93ba48c3b639cf241b54232d90daa05d83a9e9b9fef6baa63cb7e1e4602c2372fea5bc169668401eb127d0cd
+  languageName: node
+  linkType: hard
+
+"prettier@npm:^3.8.3":
+  version: 3.8.3
+  resolution: "prettier@npm:3.8.3"
+  bin:
+    prettier: bin/prettier.cjs
+  checksum: 10c0/754816fd7593eb80f6376d7476d463e832c38a12f32775a82683adb6e35b772b1f484d65f19401507b983a8c8a7cd5a4a9f12006bd56491e8f35503473f77473
   languageName: node
   linkType: hard
 
