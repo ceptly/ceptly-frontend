@@ -74,17 +74,21 @@ export function SlackRosterChatToggle({
           disabled={!canEdit || isPending}
           onClick={handleToggle}
           className={cn(
-            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
-            enabled ? "bg-primary" : "bg-input",
+            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+            enabled
+              ? "border-primary bg-primary"
+              : "border-border bg-muted dark:border-white/25 dark:bg-white/15",
           )}
         >
           {isPending ? (
-            <Loader2 className="absolute inset-0 m-auto size-3 animate-spin text-background" />
+            <Loader2 className="absolute inset-0 m-auto size-3 animate-spin text-primary-foreground" />
           ) : (
             <span
               className={cn(
-                "pointer-events-none block size-5 rounded-full bg-background shadow-sm ring-0 transition-transform",
-                enabled ? "translate-x-5" : "translate-x-0",
+                "pointer-events-none block size-5 rounded-full shadow-sm ring-1 ring-black/5 transition-transform dark:ring-white/10",
+                enabled
+                  ? "translate-x-5 bg-primary-foreground"
+                  : "translate-x-0 bg-white dark:bg-white",
               )}
             />
           )}
