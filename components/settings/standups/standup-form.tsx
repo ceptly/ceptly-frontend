@@ -27,8 +27,7 @@ import {
   groupTimezonesByRegion,
   TIMEZONE_OPTIONS,
 } from "@/lib/schedule/timezones";
-import { ScheduleTimePicker } from "@/components/settings/schedule-time-picker";
-import { snapScheduleTimeToInterval } from "@/lib/schedule/interval";
+import { effectiveCronFireTimeLocal } from "@/lib/schedule/cron-fire";
 import {
   buildResultDestinations,
   parseResultDestinations,
@@ -113,14 +112,17 @@ export function StandupForm({
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
     standup?.days_of_week ?? [1, 2, 3, 4, 5],
   );
-  const [timeLocal, setTimeLocal] = useState(
-    snapScheduleTimeToInterval(standup?.time_local ?? "09:00"),
-  );
+  const [timeLocal, setTimeLocal] = useState(standup?.time_local ?? "09:00");
   const [enabled, setEnabled] = useState(standup?.enabled ?? true);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const timezoneGroups = useMemo(() => groupTimezonesByRegion(), []);
+
+  const cronFirePreview = useMemo(
+    () => effectiveCronFireTimeLocal(timeLocal),
+    [timeLocal],
+  );
 
   const slackChannelsForPicker = useMemo(() => {
     const byId = new Map(slackChannels.map((channel) => [channel.id, channel]));
@@ -279,12 +281,24 @@ export function StandupForm({
         />
       </div>
 
-      <ScheduleTimePicker
-        id="standup-time"
-        value={timeLocal}
-        onChange={setTimeLocal}
-        disabled={isPending}
-      />
+      <div className="space-y-2">
+        <Label htmlFor="standup-time">Time</Label>
+        <Input
+          id="standup-time"
+          type="time"
+          value={timeLocal}
+          onChange={(event) => setTimeLocal(event.target.value)}
+          disabled={isPending}
+          className="max-w-xs bg-background"
+        />
+        <p className="text-sm text-muted-foreground">
+          Standups run on the next 15-minute tick after this time
+          {timeLocal !== cronFirePreview
+            ? ` (e.g. ${timeLocal} → ${cronFirePreview})`
+            : ` (e.g. ${cronFirePreview})`}
+          .
+        </p>
+      </div>
 
       <div className="space-y-2">
         <Label>Frequency</Label>
