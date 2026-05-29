@@ -1,5 +1,6 @@
 import type {
   AdhocConversationProposal,
+  ChannelStandupProposal,
   ChatAgentId,
   ConversationSetupPlan,
   SetupChatMessage,
@@ -29,6 +30,7 @@ export type ChatStreamEvent =
       agent: ChatAgentId;
       proposal?: ConversationSetupPlan | null;
       adhoc_proposal?: AdhocConversationProposal | null;
+      channel_standup_proposal?: ChannelStandupProposal | null;
       ui_component?: SetupChatUiComponent | null;
     }
   | { type: "error"; message: string };
@@ -54,6 +56,7 @@ export interface ChatStreamDoneResult {
   agent: ChatAgentId;
   proposal?: ConversationSetupPlan | null;
   adhoc_proposal?: AdhocConversationProposal | null;
+  channel_standup_proposal?: ChannelStandupProposal | null;
   ui_component?: SetupChatUiComponent | null;
 }
 
@@ -118,7 +121,9 @@ export function formatToolLabel(
     match_roster_members: "Matching roster members",
     submit_adhoc_conversation_proposal: "Building reach-out plan",
     submit_conversation_plan: "Building schedule plan",
+    submit_channel_standup_plan: "Building channel standup plan",
     load_existing_schedules: "Loading existing schedules",
+    load_slack_channels: "Loading Slack channels",
   };
 
   if (integration === "ceptly" && ceptlyLabels[name]) {
@@ -249,6 +254,7 @@ export async function streamChatWorkspace(
               agent: event.agent,
               proposal: event.proposal,
               adhoc_proposal: event.adhoc_proposal,
+              channel_standup_proposal: event.channel_standup_proposal,
               ui_component: event.ui_component,
             },
           };

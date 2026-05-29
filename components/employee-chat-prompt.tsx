@@ -21,7 +21,9 @@ import {
 } from "@/actions/adhoc-conversation";
 import { ACTIVE_CHECKIN_IN_PROGRESS_ERROR } from "@/lib/api/adhoc-conversation";
 import { commitSetupPlan } from "@/actions/conversation-setup";
+import { commitChannelStandupProposalAction } from "@/actions/standups";
 import { AdhocConversationProposalCard } from "@/components/chat/adhoc-conversation-proposal";
+import { ChannelStandupProposalCard } from "@/components/chat/channel-standup-proposal";
 import { ChatMessageList } from "@/components/chat/chat-message-list";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +42,7 @@ import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
   AdhocConversationProposal,
   AppContextOption,
+  ChannelStandupProposal,
   ChatAgentId,
   ConversationSetupPlan,
   SetupChatMessage,
@@ -56,6 +59,7 @@ const AGENT_LABELS: Record<ChatAgentId, string> = {
   conversation_setup: "Scheduling",
   team_qa: "Team insights",
   adhoc_conversation: "Reach out",
+  channel_standup: "Channel standup",
 };
 
 const AGENT_MENU_LABELS: Record<ChatAgentId | "auto", string> = {
@@ -63,6 +67,7 @@ const AGENT_MENU_LABELS: Record<ChatAgentId | "auto", string> = {
   conversation_setup: "Scheduling",
   team_qa: "Team insights",
   adhoc_conversation: "Reach out",
+  channel_standup: "Channel standup",
 };
 
 interface EmployeeChatPromptProps {
@@ -187,6 +192,8 @@ export function EmployeeChatPrompt({
   const [proposal, setProposal] = useState<ConversationSetupPlan | null>(null);
   const [adhocProposal, setAdhocProposal] =
     useState<AdhocConversationProposal | null>(null);
+  const [channelStandupProposal, setChannelStandupProposal] =
+    useState<ChannelStandupProposal | null>(null);
   const [input, setInput] = useState("");
   const [chatPending, setChatPending] = useState(false);
   const [pendingActivity, setPendingActivity] =
@@ -194,11 +201,14 @@ export function EmployeeChatPrompt({
   const [publishPending, setPublishPending] = useState(false);
   const [adhocPending, setAdhocPending] = useState(false);
   const [adhocAbandonPending, setAdhocAbandonPending] = useState(false);
+  const [standupPending, setStandupPending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [adhocError, setAdhocError] = useState<string | null>(null);
+  const [standupError, setStandupError] = useState<string | null>(null);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [adhocSuccess, setAdhocSuccess] = useState(false);
+  const [standupSuccess, setStandupSuccess] = useState(false);
   const [activeAgent, setActiveAgent] = useState<ChatAgentId | null>(null);
   const [agentPreference, setAgentPreference] = useState<ChatAgentId | "auto">(
     "auto",
@@ -211,10 +221,12 @@ export function EmployeeChatPrompt({
     publishPending ||
     adhocPending ||
     adhocAbandonPending ||
+    standupPending ||
     !canEdit;
   const isSetupAgent =
     activeAgent === "conversation_setup" || activeAgent === null;
   const isAdhocAgent = activeAgent === "adhoc_conversation";
+  const isChannelStandupAgent = activeAgent === "channel_standup";
 
   const pickerDays = useMemo(() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
@@ -298,6 +310,24 @@ export function EmployeeChatPrompt({
     return adhocProposal.roster_member_ids.length === 0;
   }, [adhocProposal, adhocPending, chatPending, isAdhocAgent]);
 
+  const standupSaveDisabled = useMemo(() => {
+    if (
+      !channelStandupProposal ||
+      standupPending ||
+      chatPending ||
+      !isChannelStandupAgent
+    ) {
+      return true;
+    }
+
+    return channelStandupProposal.roster_member_ids.length === 0;
+  }, [
+    channelStandupProposal,
+    standupPending,
+    chatPending,
+    isChannelStandupAgent,
+  ]);
+
   const {
     supported: dictationSupported,
     listening: dictationListening,
@@ -332,10 +362,13 @@ export function EmployeeChatPrompt({
     setChatError(null);
     setPublishSuccess(false);
     setAdhocSuccess(false);
+    setStandupSuccess(false);
     setProposal(null);
     setAdhocProposal(null);
+    setChannelStandupProposal(null);
     setPublishError(null);
     setAdhocError(null);
+    setStandupError(null);
 
     const agentToSend =
       agentOverride ??
@@ -349,7 +382,11 @@ export function EmployeeChatPrompt({
         ...messages,
         {
           role: "user",
-          content: formatMessageWithMentionContext(trimmed, rosterMembers),
+          content: formatMessageWithMentionContext(
+            trimmed,
+            rosterMembers,
+            slackChannels,
+          ),
         },
       ],
       agentToSend,
@@ -410,6 +447,13 @@ export function EmployeeChatPrompt({
 
     if (result.agent === "adhoc_conversation" && result.adhoc_proposal) {
       setAdhocProposal(result.adhoc_proposal);
+    }
+
+    if (
+      result.agent === "channel_standup" &&
+      result.channel_standup_proposal
+    ) {
+      setChannelStandupProposal(result.channel_standup_proposal);
     }
   }
 
@@ -505,7 +549,32 @@ export function EmployeeChatPrompt({
   }
 
   function interactiveDisabled() {
-    return chatDisabled || publishSuccess || adhocSuccess;
+    return chatDisabled || publishSuccess || adhocSuccess || standupSuccess;
+  }
+
+  async function handleSaveChannelStandup() {
+    if (!channelStandupProposal || standupSaveDisabled) {
+      return;
+    }
+
+    setStandupPending(true);
+    setStandupError(null);
+    setStandupSuccess(false);
+
+    const result = await commitChannelStandupProposalAction(
+      workspaceId,
+      channelStandupProposal,
+    );
+
+    setStandupPending(false);
+
+    if (result.error) {
+      setStandupError(result.error);
+      return;
+    }
+
+    setChannelStandupProposal(null);
+    setStandupSuccess(true);
   }
 
   async function handleStartAdhocConversation() {
@@ -516,6 +585,7 @@ export function EmployeeChatPrompt({
     setAdhocPending(true);
     setAdhocError(null);
     setAdhocSuccess(false);
+    setStandupSuccess(false);
 
     const result = await commitAdhocConversationAction(workspaceId, {
       roster_member_ids: adhocProposal.roster_member_ids,
@@ -599,14 +669,17 @@ export function EmployeeChatPrompt({
     setMessages([]);
     setProposal(null);
     setAdhocProposal(null);
+    setChannelStandupProposal(null);
     setInput("");
     setChatPending(false);
     setPendingActivity(null);
     setChatError(null);
     setPublishError(null);
     setAdhocError(null);
+    setStandupError(null);
     setPublishSuccess(false);
     setAdhocSuccess(false);
+    setStandupSuccess(false);
     setActiveAgent(null);
     setAgentPreference("auto");
     client.logEvent("employee_chat_refresh_click");
@@ -631,10 +704,11 @@ export function EmployeeChatPrompt({
       ) : null}
       <ChatMentionTextarea
         variant="chat"
-        placeholder="Ask about your team — @ to mention someone. Enter to send, Shift+Enter for new line."
+        placeholder="Ask about your team — @ for people, # for channels. Enter to send, Shift+Enter for new line."
         rows={3}
         value={input}
         rosterMembers={rosterMembers}
+        slackChannels={slackChannels}
         disabled={chatDisabled}
         onChange={setInput}
         onEnter={(value) => {
@@ -687,6 +761,9 @@ export function EmployeeChatPrompt({
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="adhoc_conversation">
                   Reach out
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="channel_standup">
+                  Channel standup
                 </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
@@ -809,6 +886,12 @@ export function EmployeeChatPrompt({
         </Alert>
       ) : null}
 
+      {standupError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{standupError}</AlertDescription>
+        </Alert>
+      ) : null}
+
       {adhocError ? (
         <Alert variant="destructive">
           <AlertDescription className="space-y-3">
@@ -864,6 +947,17 @@ export function EmployeeChatPrompt({
         </div>
       ) : null}
 
+      {channelStandupProposal && !standupSuccess && isChannelStandupAgent ? (
+        <div className="px-1">
+          <ChannelStandupProposalCard
+            proposal={channelStandupProposal}
+            onSave={() => void handleSaveChannelStandup()}
+            pending={standupPending}
+            disabled={standupSaveDisabled}
+          />
+        </div>
+      ) : null}
+
       {publishSuccess ? (
         <p className="text-center text-sm text-muted-foreground">
           Schedule published.{" "}
@@ -880,6 +974,26 @@ export function EmployeeChatPrompt({
         <p className="text-center text-sm text-muted-foreground">
           Conversation started in Slack. Replies will show up in Team insights
           once your teammate responds.
+        </p>
+      ) : null}
+
+      {standupSuccess ? (
+        <p className="text-center text-sm text-muted-foreground">
+          Channel standup saved.{" "}
+          <Link
+            href="/settings/standups"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            Manage standups
+          </Link>{" "}
+          or{" "}
+          <Link
+            href="/activity"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            view Activity
+          </Link>
+          .
         </p>
       ) : null}
 
