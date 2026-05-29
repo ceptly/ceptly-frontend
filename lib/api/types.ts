@@ -177,11 +177,100 @@ export interface ActivityAdhocSession {
   agent_prompt: string | null;
 }
 
+export type StandupStyle = "broadcast" | "sequential";
+
+export interface StandupSchedule {
+  timezone: string;
+  frequency: ScheduleFrequency;
+  days_of_week: number[];
+  time_local: string;
+  enabled: boolean;
+}
+
+export interface StandupMember {
+  roster_member_id: string;
+  display_name: string;
+  email: string;
+  sort_order: number;
+}
+
+export interface Standup {
+  id: string;
+  name: string;
+  slack_channel_id: string;
+  slack_channel_name?: string;
+  style: StandupStyle;
+  custom_instructions: string;
+  timezone: string;
+  frequency: ScheduleFrequency;
+  days_of_week: number[];
+  time_local: string;
+  enabled: boolean;
+  members: StandupMember[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChannelStandupProposal {
+  name: string;
+  slack_channel_id: string;
+  slack_channel_name?: string;
+  roster_member_ids: string[];
+  members: StandupMember[];
+  style: StandupStyle;
+  custom_instructions: string;
+  schedule: StandupSchedule;
+  summary: string;
+  standup_id?: string;
+}
+
+export interface StandupSessionSummary {
+  session_id: string;
+  scheduled_fire_at: string;
+  status: "active" | "completed" | "cancelled";
+  participant_count: number;
+  responded_count: number;
+  summary_preview?: string;
+}
+
+export interface StandupSessionMessage {
+  role: "agent" | "ic";
+  display_name?: string;
+  content: string;
+  created_at: string;
+}
+
+export interface StandupSessionDetail {
+  session_id: string;
+  standup_id: string;
+  standup_name: string;
+  slack_channel_id: string;
+  slack_channel_name?: string;
+  style: StandupStyle;
+  status: "active" | "completed" | "cancelled";
+  scheduled_fire_at: string;
+  completed_at?: string;
+  summary_text?: string;
+  summary_generated_at?: string;
+  participants: { roster_member_id: string; display_name: string }[];
+  messages: StandupSessionMessage[];
+}
+
+export interface ActivityChannelStandup {
+  standup_id: string;
+  name: string;
+  slack_channel_id: string;
+  slack_channel_name?: string;
+  style: StandupStyle;
+  latest_session: StandupSessionSummary | null;
+}
+
 export interface WorkspaceActivity {
   attention_count: number;
   attention_items: ActivityAttentionItem[];
   scheduled_conversations: ActivityScheduledConversation[];
   adhoc_sessions: ActivityAdhocSession[];
+  channel_standups: ActivityChannelStandup[];
 }
 
 export interface ConversationSessionSummary {
@@ -291,7 +380,8 @@ export interface SetupChatMessage {
 export type ChatAgentId =
   | "conversation_setup"
   | "team_qa"
-  | "adhoc_conversation";
+  | "adhoc_conversation"
+  | "channel_standup";
 
 export interface AuthUser {
   id: string;

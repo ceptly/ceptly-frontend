@@ -4,6 +4,7 @@ import { chatWorkspace } from "@/lib/api/workspace-chat";
 import { normalizeChatMessagesForApi } from "@/lib/api/workspace-chat-stream";
 import type {
   AdhocConversationProposal,
+  ChannelStandupProposal,
   ChatAgentId,
   ConversationSetupPlan,
   SetupChatMessage,
@@ -29,6 +30,7 @@ export async function sendChatMessage(
   agent?: ChatAgentId;
   proposal?: ConversationSetupPlan | null;
   adhoc_proposal?: AdhocConversationProposal | null;
+  channel_standup_proposal?: ChannelStandupProposal | null;
   ui_component?: SetupChatUiComponent | null;
 }> {
   try {
@@ -45,6 +47,7 @@ export async function sendChatMessage(
       agent: result.data?.agent,
       proposal: result.data?.proposal ?? null,
       adhoc_proposal: result.data?.adhoc_proposal ?? null,
+      channel_standup_proposal: result.data?.channel_standup_proposal ?? null,
       ui_component: result.data?.ui_component ?? null,
     };
   } catch (error) {

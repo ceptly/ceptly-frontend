@@ -116,6 +116,7 @@ export function ChatMessageList({
                   <MentionMessageContent
                     content={message.content}
                     rosterMembers={rosterMembers}
+                    slackChannels={slackChannels}
                   />
                 ) : (
                   <p className="whitespace-pre-wrap">{message.content}</p>

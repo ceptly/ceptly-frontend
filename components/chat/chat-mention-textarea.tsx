@@ -13,16 +13,22 @@ import { createPortal } from "react-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea, textareaVariants } from "@/components/ui/textarea";
 import {
+  filterChannelsForMentionQuery,
   filterMembersForMentionQuery,
+  findActiveChannelMention,
   findActiveMention,
   getActiveRosterMembers,
+  insertChannelMention,
   insertMention,
+  MENTION_COMPOSER_WRAP_CLASS,
   MENTION_HIGHLIGHT_COLOR,
   MENTION_TEXT_CLASS,
+  normalizeCompletedMentionSpaces,
   splitTextWithMentionSegments,
   type ActiveMentionState,
 } from "@/lib/chat-mentions";
 import type { RosterMember } from "@/lib/api/roster";
+import type { SlackChannel } from "@/lib/api/slack-channels";
 import { getTextareaCaretCoordinates } from "@/lib/textarea-caret";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +39,7 @@ interface ChatMentionTextareaProps extends Omit<
   value: string;
   onChange: (value: string) => void;
   rosterMembers: RosterMember[];
+  slackChannels?: SlackChannel[];
   /** Enter sends; Shift+Enter inserts a newline. */
   onEnter?: (value: string) => void;
   submitOnEnter?: boolean;
@@ -77,11 +84,17 @@ function getInitials(name: string): string {
 function MentionValueMirror({
   value,
   rosterMembers,
+  slackChannels,
 }: {
   value: string;
   rosterMembers: RosterMember[];
+  slackChannels: SlackChannel[];
 }) {
-  const segments = splitTextWithMentionSegments(value, rosterMembers);
+  const segments = splitTextWithMentionSegments(
+    value,
+    rosterMembers,
+    slackChannels,
+  );
 
   if (segments.length === 0) {
     return <span className="text-foreground">{"\u00a0"}</span>;
@@ -90,7 +103,7 @@ function MentionValueMirror({
   return (
     <>
       {segments.map((segment, index) =>
-        segment.type === "mention" ? (
+        segment.type === "mention" || segment.type === "channel_mention" ? (
           <span key={`mention-${index}`} className={MENTION_TEXT_CLASS}>
             {segment.content}
           </span>
@@ -206,10 +219,106 @@ function MentionMemberDropdown({
   );
 }
 
+function MentionChannelDropdown({
+  open,
+  position,
+  query,
+  suggestions,
+  highlightIndex,
+  onHighlight,
+  onSelect,
+}: {
+  open: boolean;
+  position: MentionDropdownPosition | null;
+  query: string;
+  suggestions: SlackChannel[];
+  highlightIndex: number;
+  onHighlight: (index: number) => void;
+  onSelect: (channel: SlackChannel) => void;
+}) {
+  if (!open || !position || typeof document === "undefined") {
+    return null;
+  }
+
+  const viewportPadding = 8;
+  const dropdownWidth = 300;
+  const clampedLeft = Math.min(
+    Math.max(viewportPadding, position.left),
+    window.innerWidth - dropdownWidth - viewportPadding,
+  );
+  const spaceBelow = window.innerHeight - position.top - viewportPadding;
+  const openAbove = spaceBelow < 220;
+  const top = openAbove
+    ? Math.max(viewportPadding, position.caretTop - 8)
+    : position.top;
+
+  return createPortal(
+    <div
+      role="listbox"
+      aria-label="Mention Slack channel"
+      className={cn(
+        "fixed z-50 w-[300px] overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg ring-1 ring-foreground/10",
+        openAbove && "-translate-y-full",
+      )}
+      style={{
+        top,
+        left: clampedLeft,
+      }}
+    >
+      <div className="border-b border-border px-3 py-2 text-xs font-semibold text-muted-foreground">
+        {query.trim() ? "Matching channels" : "Slack channels"}
+      </div>
+      <div className="max-h-60 overflow-y-auto py-1">
+        {suggestions.length === 0 ? (
+          <p className="px-3 py-2 text-sm text-muted-foreground">
+            No matching Slack channels.
+          </p>
+        ) : (
+          suggestions.map((channel, index) => (
+            <button
+              key={channel.id}
+              type="button"
+              role="option"
+              aria-selected={index === highlightIndex}
+              className={cn(
+                "mx-1 flex w-[calc(100%-0.5rem)] items-center gap-3 rounded-md px-2 py-2 text-left text-sm outline-none",
+                index !== highlightIndex && "hover:bg-muted/80",
+              )}
+              style={
+                index === highlightIndex
+                  ? { backgroundColor: MENTION_HIGHLIGHT_COLOR }
+                  : undefined
+              }
+              onMouseEnter={() => onHighlight(index)}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                onSelect(channel);
+              }}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">
+                  #{channel.name}
+                </span>
+                {channel.is_private ? (
+                  <span className="block truncate text-xs text-muted-foreground">
+                    Private channel
+                  </span>
+                ) : null}
+              </span>
+            </button>
+          ))
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export function ChatMentionTextarea({
   value,
   onChange,
   rosterMembers,
+  slackChannels = [],
   onEnter,
   submitOnEnter = true,
   disabled,
@@ -226,12 +335,30 @@ export function ChatMentionTextarea({
   const [dropdownPosition, setDropdownPosition] =
     useState<MentionDropdownPosition | null>(null);
 
-  const activeMention = mentionDismissed
+  const activeMemberMention = mentionDismissed
     ? null
     : findActiveMention(value, cursor, rosterMembers);
-  const suggestions = activeMention
-    ? filterMembersForMentionQuery(rosterMembers, activeMention.query)
+  const activeChannelMention =
+    mentionDismissed || activeMemberMention
+      ? null
+      : findActiveChannelMention(value, cursor, slackChannels);
+  const activeMention = activeMemberMention ?? activeChannelMention;
+  const mentionKind = activeMemberMention
+    ? "member"
+    : activeChannelMention
+      ? "channel"
+      : null;
+  const memberSuggestions = activeMemberMention
+    ? filterMembersForMentionQuery(rosterMembers, activeMemberMention.query)
     : [];
+  const channelSuggestions = activeChannelMention
+    ? filterChannelsForMentionQuery(
+        slackChannels,
+        activeChannelMention.query,
+      )
+    : [];
+  const suggestions =
+    mentionKind === "channel" ? channelSuggestions : memberSuggestions;
   const menuOpen = !!activeMention;
   const mentionPickerActive = menuOpen && suggestions.length > 0;
   const mentionStart = activeMention?.start ?? null;
@@ -312,7 +439,7 @@ export function ChatMentionTextarea({
     setCursor(nextCursor);
   }, []);
 
-  const applyMention = useCallback(
+  const applyMemberMention = useCallback(
     (member: RosterMember, mention: ActiveMentionState) => {
       const { value: nextValue, cursor: nextCursor } = insertMention(
         value,
@@ -335,17 +462,57 @@ export function ChatMentionTextarea({
     [cursor, onChange, value],
   );
 
+  const applyChannelMention = useCallback(
+    (channel: SlackChannel, mention: ActiveMentionState) => {
+      const { value: nextValue, cursor: nextCursor } = insertChannelMention(
+        value,
+        cursor,
+        mention,
+        channel,
+      );
+      onChange(nextValue);
+      setMentionDismissed(true);
+      requestAnimationFrame(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) {
+          return;
+        }
+        textarea.focus();
+        textarea.setSelectionRange(nextCursor, nextCursor);
+        setCursor(nextCursor);
+      });
+    },
+    [cursor, onChange, value],
+  );
+
   const selectHighlighted = useCallback(() => {
     if (!activeMention || suggestions.length === 0) {
       return false;
     }
-    const member = suggestions[highlightIndex] ?? suggestions[0];
+    if (mentionKind === "channel") {
+      const channel = channelSuggestions[highlightIndex] ?? channelSuggestions[0];
+      if (!channel) {
+        return false;
+      }
+      applyChannelMention(channel, activeMention);
+      return true;
+    }
+    const member = memberSuggestions[highlightIndex] ?? memberSuggestions[0];
     if (!member) {
       return false;
     }
-    applyMention(member, activeMention);
+    applyMemberMention(member, activeMention);
     return true;
-  }, [activeMention, applyMention, highlightIndex, suggestions]);
+  }, [
+    activeMention,
+    applyChannelMention,
+    applyMemberMention,
+    channelSuggestions,
+    highlightIndex,
+    memberSuggestions,
+    mentionKind,
+    suggestions.length,
+  ]);
 
   return (
     <div className="relative">
@@ -353,12 +520,17 @@ export function ChatMentionTextarea({
         ref={mirrorRef}
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words",
+          "pointer-events-none absolute inset-0 overflow-hidden",
+          MENTION_COMPOSER_WRAP_CLASS,
           textareaVariants({ variant }),
-          "text-base md:text-sm",
+          "block text-base md:text-sm",
         )}
       >
-        <MentionValueMirror value={value} rosterMembers={rosterMembers} />
+        <MentionValueMirror
+          value={value}
+          rosterMembers={rosterMembers}
+          slackChannels={slackChannels}
+        />
       </div>
       <Textarea
         ref={textareaRef}
@@ -367,10 +539,17 @@ export function ChatMentionTextarea({
         disabled={disabled}
         className={cn(
           "relative bg-transparent text-transparent caret-foreground selection:bg-primary/20 selection:text-transparent",
+          MENTION_COMPOSER_WRAP_CLASS,
           className,
         )}
         onChange={(event) => {
-          onChange(event.target.value);
+          const rawValue = event.target.value;
+          const nextValue = normalizeCompletedMentionSpaces(
+            rawValue,
+            rosterMembers,
+            slackChannels,
+          );
+          onChange(nextValue);
           setCursor(event.target.selectionStart ?? 0);
           setMentionDismissed(false);
         }}
@@ -423,21 +602,38 @@ export function ChatMentionTextarea({
         }}
         {...props}
       />
-      <MentionMemberDropdown
-        open={menuOpen}
-        position={dropdownPosition}
-        query={activeMention?.query ?? ""}
-        suggestions={suggestions}
-        highlightIndex={highlightIndex}
-        rosterMembers={rosterMembers}
-        onHighlight={setHighlightIndex}
-        onSelect={(member) => {
-          if (!activeMention) {
-            return;
-          }
-          applyMention(member, activeMention);
-        }}
-      />
+      {mentionKind === "channel" ? (
+        <MentionChannelDropdown
+          open={menuOpen}
+          position={dropdownPosition}
+          query={mentionQuery}
+          suggestions={channelSuggestions}
+          highlightIndex={highlightIndex}
+          onHighlight={setHighlightIndex}
+          onSelect={(channel) => {
+            if (!activeChannelMention) {
+              return;
+            }
+            applyChannelMention(channel, activeChannelMention);
+          }}
+        />
+      ) : (
+        <MentionMemberDropdown
+          open={menuOpen}
+          position={dropdownPosition}
+          query={mentionQuery}
+          suggestions={memberSuggestions}
+          highlightIndex={highlightIndex}
+          rosterMembers={rosterMembers}
+          onHighlight={setHighlightIndex}
+          onSelect={(member) => {
+            if (!activeMemberMention) {
+              return;
+            }
+            applyMemberMention(member, activeMemberMention);
+          }}
+        />
+      )}
     </div>
   );
 }
