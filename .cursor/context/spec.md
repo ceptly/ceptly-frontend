@@ -5,13 +5,13 @@
 **Derived from:** [prd.md](./prd.md), [conversation.md](./conversation.md)  
 **Last Updated:** May 2026
 
-This spec narrows the PRD into implementable decisions for **Render deployment**, **check-in scheduling**, **manager-facing schedule controls**, and **roadmap surfaces** (executive dashboard, Linear, capacity/overload). It supersedes the PRD on job scheduling (Inngest → Render Cron Jobs).
+This spec narrows the PRD into implementable decisions for **deployment**, **check-in scheduling**, **manager-facing schedule controls**, and **roadmap surfaces** (executive dashboard, Linear, capacity/overload). It supersedes the PRD on job scheduling (Inngest → **AWS EventBridge + Lambda**).
 
 **Scope split:**
 
 | Area                                 | In this spec now                    | Deferred to implementation tickets |
 | ------------------------------------ | ----------------------------------- | ---------------------------------- |
-| Render + cron + schedule             | Detailed (§2–§9)                    | —                                  |
+| AWS cron + schedule                  | Detailed (§2–§9); backend `docs/aws-cron-setup.md` | —                                  |
 | Executive dashboard + Strategy Agent | Architecture + API boundaries (§13) | Chart library, full chart catalog  |
 | Linear + capacity + overload         | Data model + sync outline (§14–§16) | OAuth UI, full assignment agent    |
 | HRIS onboarding                      | Outline only (§17)                  | Provider choice                    |
@@ -28,13 +28,13 @@ Ceptly on Render needs three services:
 | --- | --------------- | ------------------------------------------------------------------------ | -------------------------------------------- |
 | 1   | **Web Service** | Express backend API — Slack webhooks, agents, permissions, all DB access | **First**                                    |
 | 2   | **Postgres**    | Primary data store                                                       | **Second** (connection string → backend env) |
-| 3   | **Cron Job**    | Hits an internal scheduler endpoint on a fixed cadence                   | **Third** (after web service is deployed)    |
+| 3   | **EventBridge + Lambda** | Periodic HTTP trigger to `/internal/*` scheduler routes                  | **Third** (after API URL is known)           |
 
 The Next.js app stays on **Vercel** and talks only to the Express API (unchanged from PRD §7).
 
-**Scheduling model:** One Render cron job runs frequently (e.g. every 15 minutes). Each tick calls a secured internal endpoint; Express evaluates **per-workspace** schedule settings (days, local time, timezone) and triggers the Check-In Agent only for workspaces that are due.
+**Scheduling model:** EventBridge invokes Lambda on a fixed cadence (e.g. every 15 minutes). Lambda `POST`s a secured internal endpoint; Express evaluates **per-workspace** schedule settings (days, local time, timezone) and triggers the Check-In Agent only for workspaces that are due.
 
-Managers configure schedules in the web app — not in Render. Render only provides the clock.
+Managers configure schedules in the web app — not in AWS. EventBridge only provides the clock.
 
 ---
 
@@ -62,22 +62,24 @@ Managers configure schedules in the web app — not in Render. Render only provi
 - **Access:** Only from the Web Service (private connection string in env)
 - **Setup:** Create DB → copy `DATABASE_URL` → set on Web Service → run migrations
 
-### 2.3 Cron Job
+### 2.3 Scheduled jobs (AWS)
 
-- **Provider:** Render Cron Job (replaces Inngest for v1)
-- **Rationale:** One fewer external dependency; sufficient for periodic scheduler ticks
-- **Does not store per-team schedules** — only fires on a global cron expression
+- **Provider:** AWS EventBridge rules → Lambda (replaces Inngest and legacy Render Cron Jobs)
+- **Rationale:** Managed schedule + minimal invoker; all scheduling logic stays in Express
+- **Does not store per-team schedules** — only fires on global schedule expressions
 
-**Render cron configuration:**
+**Configuration:** See ceptly-backend `docs/aws-cron-setup.md`.
 
 | Field    | Value                                                   |
 | -------- | ------------------------------------------------------- |
 | Method   | `POST`                                                  |
 | URL      | `https://<your-api-host>/internal/checkin-scheduler`    |
-| Schedule | `*/15 * * * *` (every 15 minutes — recommended default) |
+| Schedule | Every 15 minutes (EventBridge `rate(15 minutes)`)       |
 | Header   | `X-Cron-Secret: <CRON_SECRET>` (must match backend env) |
 
-**Why every 15 minutes?** Manager schedules are workspace-local times (e.g. Monday 09:00 in `America/Chicago`). A 15-minute poll gives ±7.5 minute accuracy without needing one Render cron per workspace. The scheduler compares “now” in each workspace timezone against configured day + time.
+Channel standups: `POST /internal/standup-scheduler` on the same cadence.
+
+**Why every 15 minutes?** Manager schedules are workspace-local times (e.g. Monday 09:00 in `America/Chicago`). A 15-minute poll gives ±7.5 minute accuracy without one rule per workspace. The scheduler compares “now” in each workspace timezone against configured day + time.
 
 Alternative: `*/5 * * * *` for tighter windows at higher cron cost.
 
@@ -89,7 +91,7 @@ Alternative: `*/5 * * * *` for tighter windows at higher cron cost.
 
 ### 3.1 Shared secret header
 
-**Render cron job** sends:
+**Lambda / EventBridge invoker** sends:
 
 ```http
 X-Cron-Secret: <value from CRON_SECRET env>
@@ -298,11 +300,13 @@ Synthesis / digest scheduling can follow the same pattern on a separate internal
 | `JWT_SECRET` / session secret | Yes      | Vercel ↔ API auth                                           |
 | `FRONTEND_URL`                | Yes      | Vercel origin for OAuth redirects / CORS                    |
 
-### Cron Job (Render)
+### Cron invoker (Lambda)
 
 | Setting                | Value                                      |
 | ---------------------- | ------------------------------------------ |
-| `X-Cron-Secret` header | Same value as `CRON_SECRET` on Web Service |
+| `API_URL`              | Full internal route URL for this Lambda    |
+| `CRON_SECRET`          | Same value as API env                      |
+| `X-Cron-Secret` header | Sent on every `POST`                       |
 
 ### Vercel (Next.js)
 
@@ -324,8 +328,8 @@ Synthesis / digest scheduling can follow the same pattern on a separate internal
    - Verify: Vercel settings page saves and reloads schedule
 4. **Internal scheduler** — `POST /internal/checkin-scheduler` + secret check + due logic + idempotency
    - Verify: manual `curl` with header triggers check-in for test workspace; without header → 401
-5. **Render Cron Job** — `*/15 * * * *` → production URL
-   - Verify: Render cron logs show 200; `SchedulerRun` or app logs show evaluations
+5. **EventBridge + Lambda** — 15-minute rules → check-in and standup scheduler endpoints
+   - Verify: CloudWatch / Lambda logs show 200; API logs show evaluations
 6. **Slack Check-In Agent** — wire scheduler to DM flow
 
 ### 9.2 Acceptance criteria
@@ -335,7 +339,7 @@ Synthesis / digest scheduling can follow the same pattern on a separate internal
 - [ ] Cron tick at wrong secret returns 401, no DMs sent
 - [ ] Cron tick at correct secret only DMs workspaces due in their local window
 - [ ] Same workspace not double-triggered within one 15-minute window
-- [ ] PRD tech stack table lists Render Cron Jobs, not Inngest
+- [ ] PRD tech stack table lists AWS EventBridge + Lambda for scheduling, not Inngest
 
 ---
 
@@ -416,7 +420,7 @@ interface TeamHealthRow {
 ### 14.1 Connection
 
 - Workspace-level OAuth to Linear (store refresh token on `LinearConnection`)
-- Periodic sync job (Render cron or dedicated `/internal/linear-sync`) + webhooks if enabled
+- Periodic sync job (EventBridge/Lambda or dedicated `/internal/linear-sync`) + webhooks if enabled
 - Map Linear users → Ceptly `User.linear_user_id`
 
 ### 14.2 Synced fields (minimum)
@@ -532,7 +536,7 @@ When this spec is accepted, [prd.md](./prd.md) should stay aligned on:
 | Topic                 | PRD section | Spec section       |
 | --------------------- | ----------- | ------------------ |
 | Workspace schedule UI | §4.1        | §4                 |
-| Render Cron Jobs      | §7          | §2–§3, §7          |
+| AWS EventBridge + Lambda | §7          | §2–§3, §7          |
 | Executive dashboard   | §4.5        | §13                |
 | Linear + capacity     | §4.7–§4.8   | §14–§16            |
 | HRIS + performance    | §4.6–§4.9   | §17–§18            |

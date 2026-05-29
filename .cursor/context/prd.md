@@ -158,7 +158,7 @@ All IC-facing agents default to Slack. Executive Strategy Agent is **web-first**
 - Active question set (managed via Question Editor — see Section 4.4)
 - Whether ICs can opt out of specific questions
 
-See [spec.md](./spec.md) for Render cron + scheduler implementation.
+See [spec.md](./spec.md) for EventBridge + Lambda scheduler implementation (ceptly-backend: `docs/aws-cron-setup.md`).
 
 ---
 
@@ -566,7 +566,7 @@ See [spec.md](./spec.md) for schedule fields, capacity computation notes, and da
 | Slack Integration           | Slack Bolt SDK (Node)                           | Events, slash commands, IC and alert flows                                                                                     |
 | Linear Integration (later)  | Linear API + OAuth                              | Tickets, capacity, performance signals                                                                                         |
 | HRIS Integration (later)    | Provider API / webhooks                         | Onboarding trigger on new hire                                                                                                 |
-| Job Scheduling              | Render Cron Jobs                                | Periodic HTTP trigger to Express `/internal/*` scheduler (see [spec.md](./spec.md)); per-workspace schedule stored in Postgres |
+| Job Scheduling              | AWS EventBridge + Lambda                        | Lambda invokes `POST /internal/*` on a schedule; per-workspace schedule stored in Postgres |
 
 ### Permissions Architecture
 
@@ -651,7 +651,7 @@ Vercel (Next.js) → REST API request with auth token
 
 ### Phase 1 — Core Loop (Weeks 1–4)
 
-- Render: Web Service (Express) + Postgres + Cron Job → `/internal/checkin-scheduler`
+- Render: Web Service (Express) + Postgres + EventBridge/Lambda → `/internal/checkin-scheduler`, `/internal/standup-scheduler`
 - Slack app setup and OAuth
 - Check-In Agent: DM flow, hardcoded default question set, response storage
 - Workspace schedule in DB + secured cron scheduler (default Mon/Thu)

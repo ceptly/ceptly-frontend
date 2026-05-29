@@ -24,6 +24,7 @@ import {
   groupTimezonesByRegion,
   TIMEZONE_OPTIONS,
 } from "@/lib/schedule/timezones";
+import { snapScheduleTimeToInterval } from "@/lib/schedule/interval";
 
 interface StandupFormProps {
   workspaceId: string;
@@ -65,7 +66,9 @@ export function StandupForm({
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
     standup?.days_of_week ?? [1, 2, 3, 4, 5],
   );
-  const [timeLocal, setTimeLocal] = useState(standup?.time_local ?? "09:00");
+  const [timeLocal, setTimeLocal] = useState(
+    snapScheduleTimeToInterval(standup?.time_local ?? "09:00"),
+  );
   const [enabled, setEnabled] = useState(standup?.enabled ?? true);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -230,14 +233,20 @@ export function StandupForm({
       ) : null}
 
       <div className="space-y-2">
-        <Label htmlFor="standup-time">Time (24h)</Label>
+        <Label htmlFor="standup-time">Time</Label>
         <Input
           id="standup-time"
           type="time"
+          step={900}
           value={timeLocal}
-          onChange={(event) => setTimeLocal(event.target.value)}
+          onChange={(event) =>
+            setTimeLocal(snapScheduleTimeToInterval(event.target.value))
+          }
           disabled={isPending}
         />
+        <p className="text-sm text-muted-foreground">
+          Standups run on 15-minute intervals (e.g. 9:00, 9:15, 9:30).
+        </p>
       </div>
 
       <label className="flex items-center gap-2 text-sm">

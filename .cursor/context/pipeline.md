@@ -91,7 +91,7 @@ Use this file as the execution checklist. Check items when shipped and verified 
 - [x] Re-enable `POST /internal/checkin-scheduler` with `X-Cron-Secret` (401 without secret)
 - [x] Due-window algorithm per conversation timezone (§7.1 in spec)
 - [x] Idempotency: no double-DM in same 15-minute window (`last_fire_at` per conversation)
-- [x] Render Cron Job: `*/15 * * * *` → scheduler endpoint
+- [x] AWS EventBridge + Lambda: `rate(15 minutes)` → `/internal/checkin-scheduler`, `/internal/standup-scheduler` (see ceptly-backend `docs/aws-cron-setup.md`)
 - [x] Slack app: OAuth install, bot token, signing secret (per-workspace OAuth + events receiver)
 - [x] Check-In Agent: DM opener + bullet list; loads enabled questions from DB
 - [x] Persist each turn; mark session complete
