@@ -12,6 +12,7 @@ export const INTEGRATION_LOGOS: Record<string, IntegrationLogo> = {
     dark: "/integrations/linear-light.png",
   },
   jira: "/integrations/Jira_icon.png",
+  monday: "/integrations/monday.png",
 };
 
 export function getIntegrationLogo(

@@ -9,6 +9,7 @@ export interface WorkspaceBootstrap {
     slack: boolean;
     linear: boolean;
     jira: boolean;
+    monday: boolean;
   };
 }
 

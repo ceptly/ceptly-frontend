@@ -42,6 +42,10 @@ function defaultContextIntegrations(options: AppContextOption[]): string[] {
   if (jira?.selectable) {
     return ["jira"];
   }
+  const monday = options.find((item) => item.id === "monday");
+  if (monday?.selectable) {
+    return ["monday"];
+  }
   return [];
 }
 

@@ -146,7 +146,7 @@ export type ActivityAttentionItem =
       roster_member_id: string;
       member_name: string;
       member_email: string;
-      missing_trackers: ("linear" | "jira")[];
+      missing_trackers: ("linear" | "jira" | "monday")[];
     };
 
 export interface ActivityScheduledConversation {
