@@ -1,6 +1,6 @@
 export const SCHEDULE_INTERVAL_MINUTES = 15;
 
-const TIME_LOCAL_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+const TIME_LOCAL_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const MINUTES_PER_DAY = 24 * 60;
 
 export function minutesSinceMidnightFromTimeLocal(timeLocal: string): number {
