@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { AUTH_ENDPOINTS, resolveApiBaseUrl } from "@/lib/api/auth";
 import type { AuthSessionResponse } from "@/lib/api/types";
+import { appRedirectUrl } from "@/lib/app-origin";
 import {
   setAuthCookies,
   setOnboardingCompleteCookie,
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
 
   if (!token) {
     return NextResponse.redirect(
-      new URL("/auth?error=google_auth_failed", request.url),
+      appRedirectUrl("/auth?error=google_auth_failed"),
     );
   }
 
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
       const message = encodeURIComponent(
         result.error ?? "google_auth_failed",
       );
-      return NextResponse.redirect(new URL(`/auth?error=${message}`, request.url));
+      return NextResponse.redirect(appRedirectUrl(`/auth?error=${message}`));
     }
 
     await setAuthCookies(result.data.session);
@@ -52,10 +53,10 @@ export async function GET(request: Request) {
     }
 
     const redirectPath = result.data.redirectPath ?? "/chat";
-    return NextResponse.redirect(new URL(redirectPath, request.url));
+    return NextResponse.redirect(appRedirectUrl(redirectPath));
   } catch {
     return NextResponse.redirect(
-      new URL("/auth?error=google_auth_failed", request.url),
+      appRedirectUrl("/auth?error=google_auth_failed"),
     );
   }
 }
