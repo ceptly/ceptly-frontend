@@ -42,6 +42,7 @@ interface TeamRosterProps {
   slackConnected: boolean;
   linearConnected: boolean;
   jiraConnected: boolean;
+  mondayConnected: boolean;
   members: RosterMember[];
 }
 
@@ -53,6 +54,7 @@ export function TeamRoster({
   slackConnected,
   linearConnected,
   jiraConnected,
+  mondayConnected,
   members,
 }: TeamRosterProps) {
   const [addState, addAction, addPending] = useActionState(
@@ -243,6 +245,9 @@ export function TeamRoster({
             {sources.includes("jira") ? (
               <Badge variant="secondary">Jira</Badge>
             ) : null}
+            {sources.includes("monday") ? (
+              <Badge variant="secondary">Monday</Badge>
+            ) : null}
           </div>
         );
       },
@@ -316,17 +321,18 @@ export function TeamRoster({
         </Alert>
       ) : null}
 
-      {(linearConnected || jiraConnected) &&
-      members.some(
-        (member) =>
-          (linearConnected && !member.data_sources?.includes("linear")) ||
-          (jiraConnected && !member.data_sources?.includes("jira")),
-      ) ? (
+      {(linearConnected || jiraConnected || mondayConnected) &&
+        members.some(
+          (member) =>
+            (linearConnected && !member.data_sources?.includes("linear")) ||
+            (jiraConnected && !member.data_sources?.includes("jira")) ||
+            (mondayConnected && !member.data_sources?.includes("monday")),
+        ) ? (
         <Alert>
           <AlertDescription>
             Some roster emails may not match a connected issue tracker account.
-            Check the Apps column — members without a Linear or Jira badge need
-            the same email in Slack and your tracker.
+            Check the Apps column — members without a Linear, Jira, or Monday badge
+            need the same email in Slack and your tracker.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -355,6 +361,7 @@ export function TeamRoster({
           slackConnected={slackConnected}
           linearConnected={linearConnected}
           jiraConnected={jiraConnected}
+          mondayConnected={mondayConnected}
         />
       ) : null}
 

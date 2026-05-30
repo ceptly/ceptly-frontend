@@ -23,6 +23,12 @@ export const KNOWN_INTEGRATIONS: Record<string, KnownIntegration> = {
     description:
       "Connect Jira Cloud so standup check-ins reference assigned issues (with links) and can update ticket status when someone finishes or starts work.",
   },
+  monday: {
+    id: "monday",
+    name: "Monday.com",
+    description:
+      "Connect Monday.com so standup check-ins reference assigned items (with links) and can update item status when someone finishes or starts work.",
+  },
 };
 
 export function resolveIntegration(

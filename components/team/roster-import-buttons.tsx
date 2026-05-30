@@ -8,6 +8,7 @@ import { useTheme } from "next-themes";
 import {
   importRosterFromJiraAction,
   importRosterFromLinearAction,
+  importRosterFromMondayAction,
   importRosterFromSlackAction,
 } from "@/actions/roster";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -20,6 +21,7 @@ interface RosterImportButtonsProps {
   slackConnected: boolean;
   linearConnected: boolean;
   jiraConnected: boolean;
+  mondayConnected: boolean;
 }
 
 export function RosterImportButtons({
@@ -27,20 +29,27 @@ export function RosterImportButtons({
   slackConnected,
   linearConnected,
   jiraConnected,
+  mondayConnected,
 }: RosterImportButtonsProps) {
   const { resolvedTheme, theme } = useTheme();
   const logoTheme = (resolvedTheme ?? theme) === "dark" ? "dark" : "light";
   const slackLogo = getIntegrationLogo("slack", logoTheme);
   const linearLogo = getIntegrationLogo("linear", logoTheme);
   const jiraLogo = getIntegrationLogo("jira", logoTheme);
+  const mondayLogo = getIntegrationLogo("monday", logoTheme);
 
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSlackPending, startSlackTransition] = useTransition();
   const [isLinearPending, startLinearTransition] = useTransition();
   const [isJiraPending, startJiraTransition] = useTransition();
+  const [isMondayPending, startMondayTransition] = useTransition();
 
-  const importDisabled = isSlackPending || isLinearPending || isJiraPending;
+  const importDisabled =
+    isSlackPending ||
+    isLinearPending ||
+    isJiraPending ||
+    isMondayPending;
 
   const handleSlackImport = () => {
     setMessage(null);
@@ -73,6 +82,19 @@ export function RosterImportButtons({
     setError(null);
     startJiraTransition(async () => {
       const result = await importRosterFromJiraAction(workspaceId);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setMessage(result.message ?? "Import complete.");
+    });
+  };
+
+  const handleMondayImport = () => {
+    setMessage(null);
+    setError(null);
+    startMondayTransition(async () => {
+      const result = await importRosterFromMondayAction(workspaceId);
       if (result.error) {
         setError(result.error);
         return;
@@ -167,13 +189,41 @@ export function RosterImportButtons({
             Connect Jira
           </Link>
         )}
+
+        {mondayConnected ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleMondayImport}
+            disabled={!slackConnected || importDisabled}
+          >
+            {isMondayPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : mondayLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={mondayLogo}
+                alt=""
+                className="mr-2 size-4 rounded-sm object-contain"
+              />
+            ) : null}
+            Import from Monday
+          </Button>
+        ) : (
+          <Link
+            href="/settings/integrations/monday"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Connect Monday.com
+          </Link>
+        )}
       </div>
 
       {!slackConnected ? (
         <p className="text-xs text-muted-foreground">
           Connect Slack to import your team and send check-in DMs.
         </p>
-      ) : linearConnected || jiraConnected ? (
+      ) : linearConnected || jiraConnected || mondayConnected ? (
         <p className="text-xs text-muted-foreground">
           Tracker imports add members who match a Slack account by email.
         </p>

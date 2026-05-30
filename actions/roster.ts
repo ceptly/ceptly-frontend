@@ -8,6 +8,7 @@ import {
   deleteRosterMember,
   importRosterFromJira,
   importRosterFromLinear,
+  importRosterFromMonday,
   importRosterFromSlack,
   updateRosterMember,
 } from "@/lib/api/roster";
@@ -255,6 +256,25 @@ export async function importRosterFromJiraAction(
 
   if (!result.success || !result.data) {
     return { error: result.error ?? "Failed to import from Jira." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/team");
+  return { message: formatImportResult(result.data) };
+}
+
+export async function importRosterFromMondayAction(
+  workspaceId: string,
+): Promise<{ error?: string; message?: string }> {
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: "You must be signed in to manage the roster." };
+  }
+
+  const result = await importRosterFromMonday(token, workspaceId);
+
+  if (!result.success || !result.data) {
+    return { error: result.error ?? "Failed to import from Monday.com." };
   }
 
   revalidatePath("/settings");

@@ -5,6 +5,7 @@ import { DigestChannelForm } from "@/components/settings/digest-channel-form";
 import { SlackRosterChatToggle } from "@/components/settings/slack-roster-chat-toggle";
 import { JiraIntegrationPanel } from "@/components/settings/integrations/jira-integration-panel";
 import { LinearIntegrationPanel } from "@/components/settings/integrations/linear-integration-panel";
+import { MondayIntegrationPanel } from "@/components/settings/integrations/monday-integration-panel";
 import { SlackIntegrationPanel } from "@/components/settings/integrations/slack-integration-panel";
 import { getDigestSlackChannel } from "@/lib/api/digest-channel";
 import { buttonVariants } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { listIntegrations } from "@/lib/api/integrations";
 import { resolveIntegration } from "@/lib/integrations/catalog";
 import { getJiraConnectionStatus } from "@/lib/api/jira";
 import { getLinearConnectionStatus } from "@/lib/api/linear";
+import { getMondayConnectionStatus } from "@/lib/api/monday";
 import { getSlackConnectionStatus } from "@/lib/api/slack";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
@@ -19,7 +21,7 @@ import { cn } from "@/lib/utils";
 
 interface IntegrationDetailPageProps {
   params: Promise<{ integration: string }>;
-  searchParams: Promise<{ slack?: string; linear?: string; jira?: string }>;
+  searchParams: Promise<{ slack?: string; linear?: string; jira?: string; monday?: string }>;
 }
 
 export default async function IntegrationDetailPage({
@@ -53,6 +55,8 @@ export default async function IntegrationDetailPage({
   const showLinearErrorAlert = query.linear === "error";
   const showJiraConnectedAlert = query.jira === "connected";
   const showJiraErrorAlert = query.jira === "error";
+  const showMondayConnectedAlert = query.monday === "connected";
+  const showMondayErrorAlert = query.monday === "error";
 
   let panel: React.ReactNode = null;
 
@@ -142,6 +146,25 @@ export default async function IntegrationDetailPage({
         description={integration.description}
         showConnectedAlert={showJiraConnectedAlert}
         showErrorAlert={showJiraErrorAlert}
+      />
+    );
+  }
+
+  if (integration.id === "monday" && workspace?.id && token) {
+    const mondayStatusResult = await getMondayConnectionStatus(
+      token,
+      workspace.id,
+    );
+    const mondayStatus = mondayStatusResult?.data ?? { connected: false };
+
+    panel = (
+      <MondayIntegrationPanel
+        workspaceId={workspace.id}
+        canEdit={canEdit}
+        status={mondayStatus}
+        description={integration.description}
+        showConnectedAlert={showMondayConnectedAlert}
+        showErrorAlert={showMondayErrorAlert}
       />
     );
   }

@@ -32,6 +32,7 @@ export async function TeamPageContent({
       slackConnected={bootstrap?.integrations.slack ?? false}
       linearConnected={bootstrap?.integrations.linear ?? false}
       jiraConnected={bootstrap?.integrations.jira ?? false}
+      mondayConnected={bootstrap?.integrations.monday ?? false}
       members={bootstrap?.roster ?? []}
     />
   );
