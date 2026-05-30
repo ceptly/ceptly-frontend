@@ -21,7 +21,6 @@ import type {
   StandupSessionSummary,
 } from "@/lib/api/types";
 import { getAccessToken } from "@/lib/auth/server";
-import { isScheduleTimeOnInterval } from "@/lib/schedule/interval";
 
 const scheduleFrequencySchema = z.enum(["daily", "specific_days"]);
 
@@ -32,11 +31,7 @@ const standupScheduleSchema = z
     days_of_week: z.array(z.number().int().min(0).max(6)),
     time_local: z
       .string()
-      .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Time must be HH:mm")
-      .refine(
-        isScheduleTimeOnInterval,
-        "Time must be on a 15-minute interval (e.g. 09:00, 09:15)",
-      ),
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Time must be HH:mm"),
     enabled: z.boolean(),
   })
   .superRefine((data, ctx) => {

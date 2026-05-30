@@ -42,6 +42,11 @@ export async function resolveApiBaseUrl(): Promise<string> {
     throw new Error("NEXT_PUBLIC_API_URL is not configured");
   }
 
+  if (process.env.NODE_ENV === "production") {
+    cachedServerApiBaseUrl = publicUrl;
+    return publicUrl;
+  }
+
   if (localUrl && localUrl !== publicUrl) {
     const localUp = await probeLocalBackend(localUrl);
     if (localUp) {
