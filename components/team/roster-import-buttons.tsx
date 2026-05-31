@@ -24,6 +24,7 @@ interface RosterImportButtonsProps {
   jiraConnected: boolean;
   mondayConnected: boolean;
   clickupConnected: boolean;
+  communicationPlatform?: "slack" | "clickup" | "teams";
 }
 
 export function RosterImportButtons({
@@ -33,7 +34,10 @@ export function RosterImportButtons({
   jiraConnected,
   mondayConnected,
   clickupConnected,
+  communicationPlatform = "slack",
 }: RosterImportButtonsProps) {
+  const clickupPrimary = communicationPlatform === "clickup";
+  const primaryConnected = clickupPrimary ? clickupConnected : slackConnected;
   const { resolvedTheme, theme } = useTheme();
   const logoTheme = (resolvedTheme ?? theme) === "dark" ? "dark" : "light";
   const slackLogo = getIntegrationLogo("slack", logoTheme);
@@ -158,7 +162,7 @@ export function RosterImportButtons({
             type="button"
             variant="outline"
             onClick={handleLinearImport}
-            disabled={!slackConnected || importDisabled}
+            disabled={!primaryConnected || importDisabled}
           >
             {isLinearPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -186,7 +190,7 @@ export function RosterImportButtons({
             type="button"
             variant="outline"
             onClick={handleJiraImport}
-            disabled={!slackConnected || importDisabled}
+            disabled={!primaryConnected || importDisabled}
           >
             {isJiraPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -214,7 +218,7 @@ export function RosterImportButtons({
             type="button"
             variant="outline"
             onClick={handleMondayImport}
-            disabled={!slackConnected || importDisabled}
+            disabled={!primaryConnected || importDisabled}
           >
             {isMondayPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -242,7 +246,7 @@ export function RosterImportButtons({
             type="button"
             variant="outline"
             onClick={handleClickUpImport}
-            disabled={!slackConnected || importDisabled}
+            disabled={!primaryConnected || importDisabled}
           >
             {isClickUpPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -266,13 +270,17 @@ export function RosterImportButtons({
         )}
       </div>
 
-      {!slackConnected ? (
+      {!primaryConnected ? (
         <p className="text-xs text-muted-foreground">
-          Connect Slack to import your team and send check-in DMs.
+          {clickupPrimary
+            ? "Connect ClickUp to import your team."
+            : "Connect Slack to import your team and send check-in DMs."}
         </p>
       ) : linearConnected || jiraConnected || mondayConnected || clickupConnected ? (
         <p className="text-xs text-muted-foreground">
-          Tracker imports add members who match a Slack account by email.
+          {clickupPrimary
+            ? "Tracker imports add members who match a ClickUp account by email."
+            : "Tracker imports add members who match a Slack account by email."}
         </p>
       ) : null}
 

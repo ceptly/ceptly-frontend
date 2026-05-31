@@ -11,34 +11,54 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import type { SlackChannel } from "@/lib/api/slack-channels";
+import type { ChatChannel, CommunicationPlatform } from "@/lib/api/communication";
 
 interface StandupChannelPickerProps {
-  slackChannels: SlackChannel[];
-  slackChannelsError?: string | null;
+  channels: ChatChannel[];
+  channelsError?: string | null;
   selectedChannelId: string;
   onChange: (channelId: string) => void;
   disabled?: boolean;
+  platform?: CommunicationPlatform;
 }
 
+const PLATFORM_LABEL: Record<CommunicationPlatform, string> = {
+  slack: "Slack channel",
+  clickup: "ClickUp channel",
+  teams: "Teams channel",
+};
+
+const PLATFORM_PREFIX: Record<CommunicationPlatform, string> = {
+  slack: "#",
+  clickup: "#",
+  teams: "#",
+};
+
+const PLATFORM_EMPTY_HINT: Record<CommunicationPlatform, string> = {
+  slack: "No channels found. Invite the Ceptly bot to a channel, then refresh this page.",
+  clickup: "No channels found. Make sure Ceptly has access in ClickUp Chat, then refresh this page.",
+  teams: "Microsoft Teams is not yet supported.",
+};
+
 export function StandupChannelPicker({
-  slackChannels,
-  slackChannelsError,
+  channels,
+  channelsError,
   selectedChannelId,
   onChange,
   disabled = false,
+  platform = "slack",
 }: StandupChannelPickerProps) {
-  const selected = slackChannels.find((channel) => channel.id === selectedChannelId);
+  const selected = channels.find((channel) => channel.id === selectedChannelId);
+  const prefix = PLATFORM_PREFIX[platform];
 
   return (
     <div className="space-y-2">
-      <Label>Slack channel</Label>
-      {slackChannelsError ? (
-        <p className="text-sm text-destructive">{slackChannelsError}</p>
-      ) : slackChannels.length === 0 ? (
+      <Label>{PLATFORM_LABEL[platform]}</Label>
+      {channelsError ? (
+        <p className="text-sm text-destructive">{channelsError}</p>
+      ) : channels.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No channels found. Invite the Ceptly bot to a channel, then refresh
-          this page.
+          {PLATFORM_EMPTY_HINT[platform]}
         </p>
       ) : (
         <DropdownMenu>
@@ -53,7 +73,7 @@ export function StandupChannelPicker({
             }
           >
             <span className="truncate">
-              {selected ? `#${selected.name}` : "Select a channel"}
+              {selected ? `${prefix}${selected.name}` : "Select a channel"}
             </span>
             <ChevronDown className="size-4 shrink-0 opacity-50" />
           </DropdownMenuTrigger>
@@ -62,9 +82,10 @@ export function StandupChannelPicker({
               value={selectedChannelId}
               onValueChange={onChange}
             >
-              {slackChannels.map((channel) => (
+              {channels.map((channel) => (
                 <DropdownMenuRadioItem key={channel.id} value={channel.id}>
-                  #{channel.name}
+                  {prefix}
+                  {channel.name}
                   {channel.is_private ? " (private)" : ""}
                 </DropdownMenuRadioItem>
               ))}

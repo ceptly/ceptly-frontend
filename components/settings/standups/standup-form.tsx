@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { OptionSelector } from "@/components/ui/option-selector";
 import { Textarea } from "@/components/ui/textarea";
 import type { RosterMember } from "@/lib/api/roster";
-import type { SlackChannel } from "@/lib/api/slack-channels";
+import type { ChatChannel, CommunicationPlatform } from "@/lib/api/communication";
 import type {
   AppContextOption,
   ScheduleFrequency,
@@ -70,9 +70,10 @@ interface StandupFormProps {
   workspaceId: string;
   workspaceTimezone: string;
   rosterMembers: RosterMember[];
-  slackChannels: SlackChannel[];
+  chatChannels: ChatChannel[];
+  communicationPlatform: CommunicationPlatform;
   appContextOptions: AppContextOption[];
-  slackChannelsError?: string | null;
+  chatChannelsError?: string | null;
   standup?: Standup;
   onSaved?: (standup: Standup) => void;
   onCancel?: () => void;
@@ -82,16 +83,17 @@ export function StandupForm({
   workspaceId,
   workspaceTimezone,
   rosterMembers,
-  slackChannels,
+  chatChannels,
+  communicationPlatform,
   appContextOptions,
-  slackChannelsError,
+  chatChannelsError,
   standup,
   onSaved,
   onCancel,
 }: StandupFormProps) {
   const [name, setName] = useState(standup?.name ?? "");
   const [slackChannelId, setSlackChannelId] = useState(
-    standup?.slack_channel_id ?? slackChannels[0]?.id ?? "",
+    standup?.slack_channel_id ?? chatChannels[0]?.id ?? "",
   );
   const [style, setStyle] = useState<StandupStyle>(standup?.style ?? "broadcast");
   const [customInstructions, setCustomInstructions] = useState(
@@ -133,7 +135,7 @@ export function StandupForm({
   );
 
   const slackChannelsForPicker = useMemo(() => {
-    const byId = new Map(slackChannels.map((channel) => [channel.id, channel]));
+    const byId = new Map(chatChannels.map((channel) => [channel.id, channel]));
     for (const destination of standup?.result_destinations ?? []) {
       if (
         destination.type === "slack_channel" &&
@@ -147,7 +149,7 @@ export function StandupForm({
       }
     }
     return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [slackChannels, standup?.result_destinations]);
+  }, [chatChannels, standup?.result_destinations]);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -222,11 +224,12 @@ export function StandupForm({
       </div>
 
       <StandupChannelPicker
-        slackChannels={slackChannels}
-        slackChannelsError={slackChannelsError}
+        channels={chatChannels}
+        channelsError={chatChannelsError}
         selectedChannelId={slackChannelId}
         onChange={setSlackChannelId}
         disabled={isPending}
+        platform={communicationPlatform}
       />
 
       <RosterMemberPicker
@@ -245,7 +248,7 @@ export function StandupForm({
 
       <ResultDestinationsPicker
         slackChannels={slackChannelsForPicker}
-        slackChannelsError={slackChannelsError}
+        slackChannelsError={chatChannelsError}
         rosterMembers={rosterMembers}
         selectedChannelIds={selectedChannelIds}
         selectedRosterDmIds={selectedRosterDmIds}

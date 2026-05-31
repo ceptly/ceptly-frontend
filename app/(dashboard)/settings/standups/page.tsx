@@ -5,7 +5,7 @@ import { StandupsSettings } from "@/components/settings/standups/standups-settin
 import { getWorkspaceTimezone, listAppContextOptions } from "@/lib/api/conversations";
 import { listStandups } from "@/lib/api/standups";
 import { listRosterMembers } from "@/lib/api/roster";
-import { listSlackChannels } from "@/lib/api/slack-channels";
+import { listChatChannels } from "@/lib/api/communication";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
 
@@ -30,14 +30,15 @@ export default async function StandupsSettingsPage() {
     await Promise.all([
       listStandups(token, workspace.id),
       listRosterMembers(token, workspace.id),
-      listSlackChannels(token, workspace.id),
+      listChatChannels(token, workspace.id),
       getWorkspaceTimezone(token, workspace.id),
       listAppContextOptions(token, workspace.id),
     ]);
 
   const standups = standupsResult.data?.standups ?? [];
   const rosterMembers = rosterResult.data?.members ?? [];
-  const slackChannels = channelsResult.data?.channels ?? [];
+  const chatChannels = channelsResult.data?.channels ?? [];
+  const communicationPlatform = channelsResult.data?.platform ?? "slack";
   const appContextOptions = appContextsResult.data?.app_contexts ?? [];
   const workspaceTimezone =
     timezoneResult.data?.timezone ?? "America/Chicago";
@@ -49,7 +50,7 @@ export default async function StandupsSettingsPage() {
           Channel standups
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Scheduled standups that run in Slack channels with your roster.
+          Scheduled standups that run in your team's chat channels with your roster.
         </p>
       </div>
 
@@ -64,9 +65,10 @@ export default async function StandupsSettingsPage() {
             workspaceTimezone={workspaceTimezone}
             standups={standups}
             rosterMembers={rosterMembers}
-            slackChannels={slackChannels}
+            chatChannels={chatChannels}
+            communicationPlatform={communicationPlatform}
             appContextOptions={appContextOptions}
-            slackChannelsError={
+            chatChannelsError={
               channelsResult.success ? null : channelsResult.error
             }
             canEdit

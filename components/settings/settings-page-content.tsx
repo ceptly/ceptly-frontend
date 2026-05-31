@@ -1,9 +1,11 @@
+import { CommunicationPlatformForm } from "@/components/settings/communication-platform-form";
 import { WorkspaceInvites } from "@/components/settings/workspace-invites";
 import { WorkspaceLanguageForm } from "@/components/settings/workspace-language-form";
 import { WorkspaceMembersTable } from "@/components/settings/workspace-members";
 import { WorkspaceNameForm } from "@/components/settings/workspace-name-form";
 import { WorkspaceTimezoneForm } from "@/components/settings/workspace-timezone-form";
 import { fetchBillingStatus } from "@/lib/api/billing";
+import { getCommunicationSettings } from "@/lib/api/communication";
 import {
   getWorkspaceLanguage,
   getWorkspaceTimezone,
@@ -45,16 +47,19 @@ export async function SettingsPageContent({
     invitesResult,
     membersResult,
     billingStatus,
+    communicationResult,
   ] = await Promise.all([
     getWorkspaceTimezone(token, workspaceId),
     getWorkspaceLanguage(token, workspaceId),
     listInvites(token, workspaceId),
     listWorkspaceMembers(token, workspaceId),
     fetchBillingStatus(token, workspaceId),
+    getCommunicationSettings(token, workspaceId),
   ]);
 
   const pendingInvites = invitesResult?.data?.invites ?? [];
   const members = membersResult?.data?.members ?? [];
+  const communicationSettings = communicationResult?.data;
 
   return (
     <>
@@ -76,6 +81,14 @@ export async function SettingsPageContent({
         <WorkspaceLanguageForm
           workspaceId={workspaceId}
           initialLanguage={languageResult.data.language}
+          canEdit={canEdit}
+        />
+      ) : null}
+
+      {communicationSettings ? (
+        <CommunicationPlatformForm
+          workspaceId={workspaceId}
+          initialSettings={communicationSettings}
           canEdit={canEdit}
         />
       ) : null}
