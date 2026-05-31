@@ -27,13 +27,17 @@ function attentionHref(item: ActivityAttentionItem): string {
   return `/activity/${item.conversation_id}`;
 }
 
-function formatMissingTrackers(trackers: ("linear" | "jira" | "monday")[]): string {
+function formatMissingTrackers(
+  trackers: ("linear" | "jira" | "monday" | "clickup")[],
+): string {
   const labels = trackers.map((tracker) =>
     tracker === "linear"
       ? "Linear"
       : tracker === "jira"
         ? "Jira"
-        : "Monday.com",
+        : tracker === "monday"
+          ? "Monday.com"
+          : "ClickUp",
   );
   if (labels.length > 1) {
     return labels.slice(0, -1).join(", ") + " or " + labels[labels.length - 1];

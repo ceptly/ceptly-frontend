@@ -29,6 +29,12 @@ export const KNOWN_INTEGRATIONS: Record<string, KnownIntegration> = {
     description:
       "Connect Monday.com so standup check-ins reference assigned items (with links) and can update item status when someone finishes or starts work.",
   },
+  clickup: {
+    id: "clickup",
+    name: "ClickUp",
+    description:
+      "Connect ClickUp so standup check-ins reference assigned tasks (with links) and can update task status when someone finishes or starts work.",
+  },
 };
 
 export function resolveIntegration(

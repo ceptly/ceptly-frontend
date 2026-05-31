@@ -7,7 +7,13 @@ import type {
   SetupChatUiComponent,
 } from "./types";
 
-export type ChatIntegrationId = "slack" | "linear" | "jira" | "monday" | "ceptly";
+export type ChatIntegrationId =
+  | "slack"
+  | "linear"
+  | "jira"
+  | "monday"
+  | "clickup"
+  | "ceptly";
 
 export type ChatStreamEvent =
   | { type: "status"; label: string }
@@ -137,7 +143,9 @@ export function formatToolLabel(
         ? "Jira"
         : integration === "monday"
           ? "Monday.com"
-          : integration === "slack"
+          : integration === "clickup"
+            ? "ClickUp"
+            : integration === "slack"
             ? "Slack"
             : "Ceptly";
 

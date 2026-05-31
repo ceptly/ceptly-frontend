@@ -9,6 +9,7 @@ import {
   importRosterFromJiraAction,
   importRosterFromLinearAction,
   importRosterFromMondayAction,
+  importRosterFromClickUpAction,
   importRosterFromSlackAction,
 } from "@/actions/roster";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -22,6 +23,7 @@ interface RosterImportButtonsProps {
   linearConnected: boolean;
   jiraConnected: boolean;
   mondayConnected: boolean;
+  clickupConnected: boolean;
 }
 
 export function RosterImportButtons({
@@ -30,6 +32,7 @@ export function RosterImportButtons({
   linearConnected,
   jiraConnected,
   mondayConnected,
+  clickupConnected,
 }: RosterImportButtonsProps) {
   const { resolvedTheme, theme } = useTheme();
   const logoTheme = (resolvedTheme ?? theme) === "dark" ? "dark" : "light";
@@ -37,6 +40,7 @@ export function RosterImportButtons({
   const linearLogo = getIntegrationLogo("linear", logoTheme);
   const jiraLogo = getIntegrationLogo("jira", logoTheme);
   const mondayLogo = getIntegrationLogo("monday", logoTheme);
+  const clickupLogo = getIntegrationLogo("clickup", logoTheme);
 
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,12 +48,14 @@ export function RosterImportButtons({
   const [isLinearPending, startLinearTransition] = useTransition();
   const [isJiraPending, startJiraTransition] = useTransition();
   const [isMondayPending, startMondayTransition] = useTransition();
+  const [isClickUpPending, startClickUpTransition] = useTransition();
 
   const importDisabled =
     isSlackPending ||
     isLinearPending ||
     isJiraPending ||
-    isMondayPending;
+    isMondayPending ||
+    isClickUpPending;
 
   const handleSlackImport = () => {
     setMessage(null);
@@ -95,6 +101,19 @@ export function RosterImportButtons({
     setError(null);
     startMondayTransition(async () => {
       const result = await importRosterFromMondayAction(workspaceId);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setMessage(result.message ?? "Import complete.");
+    });
+  };
+
+  const handleClickUpImport = () => {
+    setMessage(null);
+    setError(null);
+    startClickUpTransition(async () => {
+      const result = await importRosterFromClickUpAction(workspaceId);
       if (result.error) {
         setError(result.error);
         return;
@@ -217,13 +236,41 @@ export function RosterImportButtons({
             Connect Monday.com
           </Link>
         )}
+
+        {clickupConnected ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClickUpImport}
+            disabled={!slackConnected || importDisabled}
+          >
+            {isClickUpPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : clickupLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={clickupLogo}
+                alt=""
+                className="mr-2 size-4 rounded-sm object-contain"
+              />
+            ) : null}
+            Import from ClickUp
+          </Button>
+        ) : (
+          <Link
+            href="/settings/integrations/clickup"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Connect ClickUp
+          </Link>
+        )}
       </div>
 
       {!slackConnected ? (
         <p className="text-xs text-muted-foreground">
           Connect Slack to import your team and send check-in DMs.
         </p>
-      ) : linearConnected || jiraConnected || mondayConnected ? (
+      ) : linearConnected || jiraConnected || mondayConnected || clickupConnected ? (
         <p className="text-xs text-muted-foreground">
           Tracker imports add members who match a Slack account by email.
         </p>

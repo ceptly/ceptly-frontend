@@ -43,6 +43,7 @@ interface TeamRosterProps {
   linearConnected: boolean;
   jiraConnected: boolean;
   mondayConnected: boolean;
+  clickupConnected: boolean;
   members: RosterMember[];
 }
 
@@ -55,6 +56,7 @@ export function TeamRoster({
   linearConnected,
   jiraConnected,
   mondayConnected,
+  clickupConnected,
   members,
 }: TeamRosterProps) {
   const [addState, addAction, addPending] = useActionState(
@@ -248,6 +250,9 @@ export function TeamRoster({
             {sources.includes("monday") ? (
               <Badge variant="secondary">Monday</Badge>
             ) : null}
+            {sources.includes("clickup") ? (
+              <Badge variant="secondary">ClickUp</Badge>
+            ) : null}
           </div>
         );
       },
@@ -321,18 +326,22 @@ export function TeamRoster({
         </Alert>
       ) : null}
 
-      {(linearConnected || jiraConnected || mondayConnected) &&
+      {(linearConnected ||
+        jiraConnected ||
+        mondayConnected ||
+        clickupConnected) &&
         members.some(
           (member) =>
             (linearConnected && !member.data_sources?.includes("linear")) ||
             (jiraConnected && !member.data_sources?.includes("jira")) ||
-            (mondayConnected && !member.data_sources?.includes("monday")),
+            (mondayConnected && !member.data_sources?.includes("monday")) ||
+            (clickupConnected && !member.data_sources?.includes("clickup")),
         ) ? (
         <Alert>
           <AlertDescription>
             Some roster emails may not match a connected issue tracker account.
-            Check the Apps column — members without a Linear, Jira, or Monday badge
-            need the same email in Slack and your tracker.
+            Check the Apps column — members without a Linear, Jira, Monday, or
+            ClickUp badge need the same email in Slack and your tracker.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -362,6 +371,7 @@ export function TeamRoster({
           linearConnected={linearConnected}
           jiraConnected={jiraConnected}
           mondayConnected={mondayConnected}
+          clickupConnected={clickupConnected}
         />
       ) : null}
 
