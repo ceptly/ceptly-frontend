@@ -44,7 +44,9 @@ const standupScheduleSchema = z
     }
   });
 
-const contextIntegrationsSchema = z.array(z.enum(["linear", "jira", "monday"]));
+const contextIntegrationsSchema = z.array(
+  z.enum(["linear", "jira", "monday", "clickup"]),
+);
 
 const resultDestinationsSchema = z
   .array(

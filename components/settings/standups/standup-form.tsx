@@ -8,6 +8,7 @@ import { AppContextPicker } from "@/components/settings/app-context-picker";
 import { ResultDestinationsPicker } from "@/components/settings/result-destinations-picker";
 import { RosterMemberPicker } from "@/components/settings/roster-member-picker";
 import { ScheduleDaysPicker } from "@/components/settings/schedule-days-picker";
+import { ScheduleTimePicker } from "@/components/settings/schedule-time-picker";
 import { StandupChannelPicker } from "@/components/settings/standups/standup-channel-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { OptionSelector } from "@/components/ui/option-selector";
 import { Textarea } from "@/components/ui/textarea";
 import type { RosterMember } from "@/lib/api/roster";
-import type { SlackChannel } from "@/lib/api/slack-channels";
+import type { ChatChannel, CommunicationPlatform } from "@/lib/api/communication";
 import type {
   AppContextOption,
   ScheduleFrequency,
@@ -27,7 +28,10 @@ import {
   groupTimezonesByRegion,
   TIMEZONE_OPTIONS,
 } from "@/lib/schedule/timezones";
-import { effectiveCronFireTimeLocal } from "@/lib/schedule/cron-fire";
+import {
+  effectiveCronFireTimeLocal,
+  snapScheduleTimeToInterval,
+} from "@/lib/schedule/cron-fire";
 import {
   buildResultDestinations,
   parseResultDestinations,
@@ -70,9 +74,10 @@ interface StandupFormProps {
   workspaceId: string;
   workspaceTimezone: string;
   rosterMembers: RosterMember[];
-  slackChannels: SlackChannel[];
+  chatChannels: ChatChannel[];
+  communicationPlatform: CommunicationPlatform;
   appContextOptions: AppContextOption[];
-  slackChannelsError?: string | null;
+  chatChannelsError?: string | null;
   standup?: Standup;
   onSaved?: (standup: Standup) => void;
   onCancel?: () => void;
@@ -82,16 +87,17 @@ export function StandupForm({
   workspaceId,
   workspaceTimezone,
   rosterMembers,
-  slackChannels,
+  chatChannels,
+  communicationPlatform,
   appContextOptions,
-  slackChannelsError,
+  chatChannelsError,
   standup,
   onSaved,
   onCancel,
 }: StandupFormProps) {
   const [name, setName] = useState(standup?.name ?? "");
   const [slackChannelId, setSlackChannelId] = useState(
-    standup?.slack_channel_id ?? slackChannels[0]?.id ?? "",
+    standup?.slack_channel_id ?? chatChannels[0]?.id ?? "",
   );
   const [style, setStyle] = useState<StandupStyle>(standup?.style ?? "broadcast");
   const [customInstructions, setCustomInstructions] = useState(
@@ -120,7 +126,9 @@ export function StandupForm({
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
     standup?.days_of_week ?? [1, 2, 3, 4, 5],
   );
-  const [timeLocal, setTimeLocal] = useState(standup?.time_local ?? "09:00");
+  const [timeLocal, setTimeLocal] = useState(() =>
+    snapScheduleTimeToInterval(standup?.time_local ?? "09:00"),
+  );
   const [enabled, setEnabled] = useState(standup?.enabled ?? true);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -133,7 +141,7 @@ export function StandupForm({
   );
 
   const slackChannelsForPicker = useMemo(() => {
-    const byId = new Map(slackChannels.map((channel) => [channel.id, channel]));
+    const byId = new Map(chatChannels.map((channel) => [channel.id, channel]));
     for (const destination of standup?.result_destinations ?? []) {
       if (
         destination.type === "slack_channel" &&
@@ -147,7 +155,7 @@ export function StandupForm({
       }
     }
     return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [slackChannels, standup?.result_destinations]);
+  }, [chatChannels, standup?.result_destinations]);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -191,7 +199,7 @@ export function StandupForm({
             frequency,
             days_of_week:
               frequency === "daily" ? [0, 1, 2, 3, 4, 5, 6] : daysOfWeek,
-            time_local: timeLocal,
+            time_local: snapScheduleTimeToInterval(timeLocal),
             enabled,
           },
         },
@@ -222,11 +230,12 @@ export function StandupForm({
       </div>
 
       <StandupChannelPicker
-        slackChannels={slackChannels}
-        slackChannelsError={slackChannelsError}
+        channels={chatChannels}
+        channelsError={chatChannelsError}
         selectedChannelId={slackChannelId}
         onChange={setSlackChannelId}
         disabled={isPending}
+        platform={communicationPlatform}
       />
 
       <RosterMemberPicker
@@ -245,7 +254,7 @@ export function StandupForm({
 
       <ResultDestinationsPicker
         slackChannels={slackChannelsForPicker}
-        slackChannelsError={slackChannelsError}
+        slackChannelsError={chatChannelsError}
         rosterMembers={rosterMembers}
         selectedChannelIds={selectedChannelIds}
         selectedRosterDmIds={selectedRosterDmIds}
@@ -291,13 +300,11 @@ export function StandupForm({
 
       <div className="space-y-2">
         <Label htmlFor="standup-time">Time</Label>
-        <Input
+        <ScheduleTimePicker
           id="standup-time"
-          type="time"
           value={timeLocal}
-          onChange={(event) => setTimeLocal(event.target.value)}
+          onChange={setTimeLocal}
           disabled={isPending}
-          className="max-w-xs bg-background"
         />
         <p className="text-sm text-muted-foreground">
           Standups run on the next 15-minute tick after this time

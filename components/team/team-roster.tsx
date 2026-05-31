@@ -44,6 +44,7 @@ interface TeamRosterProps {
   jiraConnected: boolean;
   mondayConnected: boolean;
   clickupConnected: boolean;
+  communicationPlatform: "slack" | "clickup" | "teams";
   members: RosterMember[];
 }
 
@@ -57,6 +58,7 @@ export function TeamRoster({
   jiraConnected,
   mondayConnected,
   clickupConnected,
+  communicationPlatform,
   members,
 }: TeamRosterProps) {
   const [addState, addAction, addPending] = useActionState(
@@ -372,6 +374,7 @@ export function TeamRoster({
           jiraConnected={jiraConnected}
           mondayConnected={mondayConnected}
           clickupConnected={clickupConnected}
+          communicationPlatform={communicationPlatform}
         />
       ) : null}
 

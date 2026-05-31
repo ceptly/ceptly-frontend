@@ -16,7 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { RosterMember } from "@/lib/api/roster";
-import type { SlackChannel } from "@/lib/api/slack-channels";
+import type { ChatChannel, CommunicationPlatform } from "@/lib/api/communication";
 import type { AppContextOption, Standup } from "@/lib/api/types";
 import { formatSchedulePreview } from "@/lib/schedule/preview";
 
@@ -25,9 +25,10 @@ interface StandupsSettingsProps {
   workspaceTimezone: string;
   standups: Standup[];
   rosterMembers: RosterMember[];
-  slackChannels: SlackChannel[];
+  chatChannels: ChatChannel[];
+  communicationPlatform: CommunicationPlatform;
   appContextOptions: AppContextOption[];
-  slackChannelsError?: string | null;
+  chatChannelsError?: string | null;
   canEdit: boolean;
 }
 
@@ -36,9 +37,10 @@ export function StandupsSettings({
   workspaceTimezone,
   standups: initialStandups,
   rosterMembers,
-  slackChannels,
+  chatChannels,
+  communicationPlatform,
   appContextOptions,
-  slackChannelsError,
+  chatChannelsError,
   canEdit,
 }: StandupsSettingsProps) {
   const router = useRouter();
@@ -107,9 +109,10 @@ export function StandupsSettings({
           workspaceId={workspaceId}
           workspaceTimezone={workspaceTimezone}
           rosterMembers={rosterMembers}
-          slackChannels={slackChannels}
+          chatChannels={chatChannels}
+          communicationPlatform={communicationPlatform}
           appContextOptions={appContextOptions}
-          slackChannelsError={slackChannelsError}
+          chatChannelsError={chatChannelsError}
           onSaved={handleSaved}
           onCancel={() => setCreating(false)}
         />
@@ -125,9 +128,10 @@ export function StandupsSettings({
           workspaceId={workspaceId}
           workspaceTimezone={workspaceTimezone}
           rosterMembers={rosterMembers}
-          slackChannels={slackChannels}
+          chatChannels={chatChannels}
+          communicationPlatform={communicationPlatform}
           appContextOptions={appContextOptions}
-          slackChannelsError={slackChannelsError}
+          chatChannelsError={chatChannelsError}
           standup={editingStandup}
           onSaved={handleSaved}
           onCancel={() => setEditingId(null)}
