@@ -46,6 +46,10 @@ function defaultContextIntegrations(options: AppContextOption[]): string[] {
   if (monday?.selectable) {
     return ["monday"];
   }
+  const clickup = options.find((item) => item.id === "clickup");
+  if (clickup?.selectable) {
+    return ["clickup"];
+  }
   return [];
 }
 

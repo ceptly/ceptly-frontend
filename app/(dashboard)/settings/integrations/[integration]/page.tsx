@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { DigestChannelForm } from "@/components/settings/digest-channel-form";
 import { SlackRosterChatToggle } from "@/components/settings/slack-roster-chat-toggle";
+import { ClickUpIntegrationPanel } from "@/components/settings/integrations/clickup-integration-panel";
 import { JiraIntegrationPanel } from "@/components/settings/integrations/jira-integration-panel";
 import { LinearIntegrationPanel } from "@/components/settings/integrations/linear-integration-panel";
 import { MondayIntegrationPanel } from "@/components/settings/integrations/monday-integration-panel";
@@ -11,6 +12,7 @@ import { getDigestSlackChannel } from "@/lib/api/digest-channel";
 import { buttonVariants } from "@/components/ui/button";
 import { listIntegrations } from "@/lib/api/integrations";
 import { resolveIntegration } from "@/lib/integrations/catalog";
+import { getClickUpConnectionStatus } from "@/lib/api/clickup";
 import { getJiraConnectionStatus } from "@/lib/api/jira";
 import { getLinearConnectionStatus } from "@/lib/api/linear";
 import { getMondayConnectionStatus } from "@/lib/api/monday";
@@ -21,7 +23,13 @@ import { cn } from "@/lib/utils";
 
 interface IntegrationDetailPageProps {
   params: Promise<{ integration: string }>;
-  searchParams: Promise<{ slack?: string; linear?: string; jira?: string; monday?: string }>;
+  searchParams: Promise<{
+    slack?: string;
+    linear?: string;
+    jira?: string;
+    monday?: string;
+    clickup?: string;
+  }>;
 }
 
 export default async function IntegrationDetailPage({
@@ -57,6 +65,8 @@ export default async function IntegrationDetailPage({
   const showJiraErrorAlert = query.jira === "error";
   const showMondayConnectedAlert = query.monday === "connected";
   const showMondayErrorAlert = query.monday === "error";
+  const showClickUpConnectedAlert = query.clickup === "connected";
+  const showClickUpErrorAlert = query.clickup === "error";
 
   let panel: React.ReactNode = null;
 
@@ -165,6 +175,25 @@ export default async function IntegrationDetailPage({
         description={integration.description}
         showConnectedAlert={showMondayConnectedAlert}
         showErrorAlert={showMondayErrorAlert}
+      />
+    );
+  }
+
+  if (integration.id === "clickup" && workspace?.id && token) {
+    const clickupStatusResult = await getClickUpConnectionStatus(
+      token,
+      workspace.id,
+    );
+    const clickupStatus = clickupStatusResult?.data ?? { connected: false };
+
+    panel = (
+      <ClickUpIntegrationPanel
+        workspaceId={workspace.id}
+        canEdit={canEdit}
+        status={clickupStatus}
+        description={integration.description}
+        showConnectedAlert={showClickUpConnectedAlert}
+        showErrorAlert={showClickUpErrorAlert}
       />
     );
   }

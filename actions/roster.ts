@@ -9,6 +9,7 @@ import {
   importRosterFromJira,
   importRosterFromLinear,
   importRosterFromMonday,
+  importRosterFromClickUp,
   importRosterFromSlack,
   updateRosterMember,
 } from "@/lib/api/roster";
@@ -275,6 +276,25 @@ export async function importRosterFromMondayAction(
 
   if (!result.success || !result.data) {
     return { error: result.error ?? "Failed to import from Monday.com." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/team");
+  return { message: formatImportResult(result.data) };
+}
+
+export async function importRosterFromClickUpAction(
+  workspaceId: string,
+): Promise<{ error?: string; message?: string }> {
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: "You must be signed in to manage the roster." };
+  }
+
+  const result = await importRosterFromClickUp(token, workspaceId);
+
+  if (!result.success || !result.data) {
+    return { error: result.error ?? "Failed to import from ClickUp." };
   }
 
   revalidatePath("/settings");

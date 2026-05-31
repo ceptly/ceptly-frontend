@@ -33,6 +33,7 @@ export async function TeamPageContent({
       linearConnected={bootstrap?.integrations.linear ?? false}
       jiraConnected={bootstrap?.integrations.jira ?? false}
       mondayConnected={bootstrap?.integrations.monday ?? false}
+      clickupConnected={bootstrap?.integrations.clickup ?? false}
       members={bootstrap?.roster ?? []}
     />
   );

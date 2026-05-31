@@ -7,7 +7,7 @@ export interface RosterMember {
   display_name: string;
   paused: boolean;
   created_at: string;
-  data_sources: ("slack" | "linear" | "jira" | "monday")[];
+  data_sources: ("slack" | "linear" | "jira" | "monday" | "clickup")[];
   timezone: string | null;
   language: string | null;
   effective_timezone: string;
@@ -233,6 +233,35 @@ export async function importRosterFromMonday(
     const base = await resolveApiBaseUrl();
     const response = await fetch(
       `${base}/api/workspaces/${workspaceId}/roster/import/monday`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    return parseJsonResponse<{ data?: RosterImportResult }>(response);
+  } catch {
+    return {
+      success: false,
+      error: "Could not reach the API. Is the backend running?",
+    };
+  }
+}
+
+export async function importRosterFromClickUp(
+  accessToken: string,
+  workspaceId: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+  data?: RosterImportResult;
+}> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/roster/import/clickup`,
       {
         method: "POST",
         headers: {

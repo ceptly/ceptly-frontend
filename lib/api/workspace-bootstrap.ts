@@ -10,6 +10,7 @@ export interface WorkspaceBootstrap {
     linear: boolean;
     jira: boolean;
     monday: boolean;
+    clickup: boolean;
   };
 }
 

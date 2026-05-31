@@ -9,6 +9,9 @@
     {
       "path": "../../../ceptly-public",
     },
+    {
+      "path": "../../../landing",
+    },
   ],
   "settings": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
