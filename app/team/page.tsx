@@ -11,14 +11,12 @@ export default async function TeamPage() {
   const canEdit = workspace ? canManageWorkspace(workspace.role) : false;
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-8">
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Team roster</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            People on this list receive scheduled check-in DMs in Slack.
-          </p>
-        </div>
+    <div className="ceptly-page flex flex-col gap-8">
+      <div className="ceptly-page-head">
+        <h1 className="ceptly-page-title">Team roster</h1>
+        <p className="ceptly-page-sub">
+          People on this list receive scheduled check-in DMs in Slack.
+        </p>
       </div>
 
       {workspace?.id ? (

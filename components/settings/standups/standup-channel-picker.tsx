@@ -37,7 +37,7 @@ const PLATFORM_PREFIX: Record<CommunicationPlatform, string> = {
 const PLATFORM_EMPTY_HINT: Record<CommunicationPlatform, string> = {
   slack: "No channels found. Invite the Ceptly bot to a channel, then refresh this page.",
   clickup: "No channels found. Make sure Ceptly has access in ClickUp Chat, then refresh this page.",
-  teams: "Microsoft Teams is not yet supported.",
+  teams: "No channels found. Make sure Ceptly has access in Microsoft Teams, then refresh this page.",
 };
 
 export function StandupChannelPicker({

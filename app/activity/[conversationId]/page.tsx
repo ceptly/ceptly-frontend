@@ -77,28 +77,13 @@ export default async function ActivityConversationPage({
     const sessions = sessionsResult.data?.sessions ?? [];
 
     return (
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">
-        <div className="space-y-4">
-          <Link
-            href="/activity"
-            className={cn(
-              buttonVariants({ variant: "ghost", size: "sm" }),
-              "-ml-3 w-fit px-3 text-muted-foreground hover:text-foreground",
-            )}
-          >
-            &lt; Activity
-          </Link>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {conversation.name}
-            </h1>
-            {conversation.summary ? (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {conversation.summary}
-              </p>
-            ) : null}
-            <p className="mt-1 text-sm text-muted-foreground">Reach out</p>
-          </div>
+      <div className="ceptly-page ceptly-page-narrow">
+        <Link href="/activity" className="ceptly-back">
+          ← Activity
+        </Link>
+        <div className="ceptly-page-head">
+          <h1 className="ceptly-page-title">{conversation.name}</h1>
+          <p className="ceptly-page-sub">Reach out</p>
         </div>
 
         <ConversationSessionsClient

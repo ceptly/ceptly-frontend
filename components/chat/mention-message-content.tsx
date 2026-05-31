@@ -34,7 +34,7 @@ export function MentionMessageContent({
         segment.type === "mention" || segment.type === "channel_mention" ? (
           <span
             key={`mention-${index}`}
-            className={cn("text-[#56FF3C]", mentionClassName)}
+            className={cn("ceptly-mention", mentionClassName)}
           >
             {segment.content}
           </span>

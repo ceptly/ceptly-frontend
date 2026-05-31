@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 const baseSettingsNavItems = [
   {
-    label: "Team Settings",
+    label: "Workspace settings",
     href: "/settings",
     icon: Settings2,
     exact: true,
@@ -58,8 +58,8 @@ export function SettingsSidebar({ showBilling }: SettingsSidebarProps) {
   );
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
-      <nav className="flex flex-col gap-1 p-3">
+    <aside className="flex w-56 shrink-0 flex-col border-r border-border py-5 pl-3 pr-3">
+      <nav className="flex flex-col gap-0.5">
         {settingsNavItems.map((item) => {
           const active = isActive(pathname, item.href, item.exact);
           const Icon = item.icon;
@@ -69,10 +69,10 @@ export function SettingsSidebar({ showBilling }: SettingsSidebarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-2.5 rounded-none px-3 py-2 text-[13px] font-medium transition-colors",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                  ? "bg-muted text-foreground [&_svg]:text-[color:var(--green-ink)]"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:text-muted-foreground",
               )}
             >
               <Icon className="size-4 shrink-0" />

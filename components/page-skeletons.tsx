@@ -19,19 +19,24 @@ function BackLinkSkeleton() {
   return <Skeleton className="h-8 w-24" />;
 }
 
-function ConversationCardSkeleton() {
+function RollupCardSkeleton() {
   return (
-    <div className="rounded-xl border bg-card/50 py-6 shadow-sm">
-      <div className="grid gap-2 px-6">
-        <Skeleton className="h-5 w-44" />
-        <Skeleton className="h-4 w-64 max-w-full" />
-      </div>
-      <div className="mt-4 space-y-3 px-6 pb-2">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-36" />
-          <Skeleton className="h-4 w-24" />
+    <div className="ceptly-rollup-card min-h-[220px]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-5 w-44" />
+          <Skeleton className="h-3.5 w-56 max-w-full" />
         </div>
-        <Skeleton className="h-2 w-full rounded-full" />
+        <Skeleton className="h-[21px] w-24" />
+      </div>
+      <div className="ceptly-rollup-card-body">
+        <div className="mt-4 flex justify-between">
+          <Skeleton className="h-3.5 w-40" />
+          <Skeleton className="h-3.5 w-20" />
+        </div>
+        <Skeleton className="mt-2 h-[7px] w-full" />
+        <Skeleton className="mt-3 min-h-[2.75rem] flex-1" />
+        <Skeleton className="mt-auto h-3 w-28" />
       </div>
     </div>
   );
@@ -39,15 +44,33 @@ function ConversationCardSkeleton() {
 
 function AttentionItemSkeleton() {
   return (
-    <div className="flex items-start gap-3 rounded-lg border px-4 py-3">
-      <Skeleton className="size-4 shrink-0 rounded-full" />
+    <div className="ceptly-warn-row">
+      <Skeleton className="size-[18px] shrink-0" />
       <div className="min-w-0 flex-1 space-y-2">
         <Skeleton className="h-4 w-full max-w-md" />
         <Skeleton className="h-3 w-48 max-w-full" />
       </div>
-      <Skeleton className="size-8 shrink-0 rounded-md" />
+      <Skeleton className="size-8 shrink-0" />
     </div>
   );
+}
+
+function ReachOutCardSkeleton() {
+  return (
+    <div className="ceptly-reachout">
+      <div className="flex justify-between gap-3">
+        <Skeleton className="h-3 w-28" />
+        <Skeleton className="h-[21px] w-20" />
+      </div>
+      <Skeleton className="mt-2 h-5 w-40" />
+      <Skeleton className="mt-3 h-14 w-full" />
+      <Skeleton className="mt-3.5 h-3.5 w-52" />
+    </div>
+  );
+}
+
+function ConversationCardSkeleton() {
+  return <RollupCardSkeleton />;
 }
 
 function TableSkeleton({ rows = 5 }: { rows?: number }) {
@@ -89,30 +112,38 @@ function FormSectionSkeleton() {
 export function ActivityPageContentSkeleton() {
   return (
     <>
-      <section className="space-y-3" aria-busy="true" aria-label="Loading activity">
-        <Skeleton className="h-4 w-40" />
-        <AttentionItemSkeleton />
-        <AttentionItemSkeleton />
-      </section>
+      <div className="ceptly-page-head" aria-busy="true" aria-label="Loading activity">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="mt-2 h-4 w-80 max-w-full" />
+      </div>
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <Skeleton className="h-4 w-36" />
-          <Skeleton className="h-8 w-32 rounded-md" />
-        </div>
-        <div className="space-y-3">
-          <ConversationCardSkeleton />
-          <ConversationCardSkeleton />
-          <ConversationCardSkeleton />
+      <section className="ceptly-section">
+        <Skeleton className="mb-3.5 h-4 w-44" />
+        <div className="ceptly-list-card">
+          <AttentionItemSkeleton />
+          <AttentionItemSkeleton />
         </div>
       </section>
 
-      <section className="space-y-4">
-        <Skeleton className="h-4 w-32" />
-        <div className="space-y-2">
-          <Skeleton className="h-12 w-full rounded-lg" />
-          <Skeleton className="h-12 w-full rounded-lg" />
+      <section className="ceptly-section">
+        <Skeleton className="mb-3.5 h-4 w-28" />
+        <div className="ceptly-rollup-card-grid">
+          <RollupCardSkeleton />
+          <RollupCardSkeleton />
         </div>
+      </section>
+
+      <section className="ceptly-section">
+        <Skeleton className="mb-3.5 h-4 w-40" />
+        <div className="ceptly-rollup-card-grid">
+          <RollupCardSkeleton />
+          <RollupCardSkeleton />
+        </div>
+      </section>
+
+      <section className="ceptly-section">
+        <Skeleton className="mb-3.5 h-4 w-36" />
+        <ReachOutCardSkeleton />
       </section>
     </>
   );

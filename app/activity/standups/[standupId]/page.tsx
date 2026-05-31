@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { StandupSessionDetailView } from "@/components/activity/standup-session-detail";
-import { buttonVariants } from "@/components/ui/button";
 import {
   getStandupSessionDetail,
   listStandupSessions,
@@ -10,8 +9,6 @@ import {
 } from "@/lib/api/standups";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
-import { cn } from "@/lib/utils";
-
 interface StandupActivityPageProps {
   params: Promise<{ standupId: string }>;
 }
@@ -72,16 +69,13 @@ export default async function StandupActivityPage({
     : standup.slack_channel_id;
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">
-      <div className="space-y-2">
-        <Link
-          href="/activity"
-          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "px-0")}
-        >
-          ← Activity
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{standup.name}</h1>
-        <p className="text-sm text-muted-foreground">
+    <div className="ceptly-page ceptly-page-narrow">
+      <Link href="/activity" className="ceptly-back">
+        ← Activity
+      </Link>
+      <div className="ceptly-page-head">
+        <h1 className="ceptly-page-title">{standup.name}</h1>
+        <p className="ceptly-page-sub">
           {channelLabel} · {standup.members.length} participants
         </p>
       </div>

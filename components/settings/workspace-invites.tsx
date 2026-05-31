@@ -66,10 +66,9 @@ export function WorkspaceInvites({
 
   return (
     <div className="rounded-lg border border-border bg-muted/20 px-4 py-4 dark:border-white/10">
-      <h2 className="text-base font-semibold">Invite teammates</h2>
+      <h2 className="text-base font-semibold">Invite workspace members</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Invite people by email. Members join without a paid seat; admins use a
-        seat when invited.
+        Invite people by email, they use a paid seat when invited.
       </p>
 
       {canEdit ? (

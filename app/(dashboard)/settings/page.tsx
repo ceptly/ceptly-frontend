@@ -12,16 +12,12 @@ export default async function SettingsPage() {
   const canEdit = workspace ? canManageWorkspace(workspace.role) : false;
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-8">
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Team settings
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage your team and integrations.
-          </p>
-        </div>
+    <div className="ceptly-page flex flex-col gap-8">
+      <div className="ceptly-page-head">
+        <h1 className="ceptly-page-title">Workspace settings</h1>
+        <p className="ceptly-page-sub">
+          Manage your team and integrations.
+        </p>
       </div>
 
       {workspace?.id ? (

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 
 import { updateCommunicationPlatformAction } from "@/actions/communication";
@@ -26,7 +27,11 @@ interface CommunicationPlatformFormProps {
   canEdit: boolean;
 }
 
-const PLATFORM_OPTIONS = [
+const PLATFORM_OPTIONS: {
+  value: CommunicationPlatform;
+  label: string;
+  description: string;
+}[] = [
   {
     value: "slack",
     label: "Slack",
@@ -44,18 +49,47 @@ const PLATFORM_OPTIONS = [
   },
 ];
 
+function connectedPlatformOptions(settings: CommunicationSettings) {
+  return PLATFORM_OPTIONS.filter((option) => {
+    if (option.value === "slack") {
+      return settings.slack_connected;
+    }
+    if (option.value === "clickup") {
+      return settings.clickup_connected;
+    }
+    return settings.teams_connected;
+  });
+}
+
 export function CommunicationPlatformForm({
   workspaceId,
   initialSettings,
   canEdit,
 }: CommunicationPlatformFormProps) {
-  const [platform, setPlatform] = useState<CommunicationPlatform>(
-    initialSettings.communication_platform,
-  );
   const [settings, setSettings] = useState(initialSettings);
+  const availableOptions = useMemo(
+    () => connectedPlatformOptions(settings),
+    [settings],
+  );
+  const [platform, setPlatform] = useState<CommunicationPlatform>(() => {
+    const options = connectedPlatformOptions(initialSettings);
+    if (
+      options.some((option) => option.value === initialSettings.communication_platform)
+    ) {
+      return initialSettings.communication_platform;
+    }
+    return options[0]?.value ?? initialSettings.communication_platform;
+  });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    const values = availableOptions.map((option) => option.value);
+    if (values.length > 0 && !values.includes(platform)) {
+      setPlatform(values[0]!);
+    }
+  }, [availableOptions, platform]);
 
   const handleSave = () => {
     setError(null);
@@ -88,30 +122,28 @@ export function CommunicationPlatformForm({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>Platform</Label>
-          <OptionSelector
-            mode="single"
-            value={platform}
-            onChange={(value) => setPlatform(value as CommunicationPlatform)}
-            options={PLATFORM_OPTIONS}
-          />
-        </div>
-
-        <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-          <p>
-            <span className="font-medium text-foreground">Slack:</span>{" "}
-            {settings.slack_connected ? "Connected." : "Not connected — connect from Integrations before selecting."}
+        {availableOptions.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Connect Slack, ClickUp, or Microsoft Teams in{" "}
+            <Link
+              href="/settings/integrations"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Integrations
+            </Link>{" "}
+            to choose a communication platform.
           </p>
-          <p>
-            <span className="font-medium text-foreground">ClickUp:</span>{" "}
-            {settings.clickup_connected ? "Connected." : "Not connected — connect from Integrations before selecting."}
-          </p>
-          <p>
-            <span className="font-medium text-foreground">Microsoft Teams:</span>{" "}
-            {settings.teams_connected ? "Connected." : "Not connected — connect from Integrations before selecting."}
-          </p>
-        </div>
+        ) : (
+          <div className="space-y-2">
+            <Label>Platform</Label>
+            <OptionSelector
+              mode="single"
+              value={platform}
+              onChange={(value) => setPlatform(value as CommunicationPlatform)}
+              options={availableOptions}
+            />
+          </div>
+        )}
 
         {error ? (
           <Alert variant="destructive">
@@ -124,7 +156,7 @@ export function CommunicationPlatformForm({
           </Alert>
         ) : null}
 
-        {canEdit ? (
+        {canEdit && availableOptions.length > 0 ? (
           <Button
             type="button"
             onClick={handleSave}

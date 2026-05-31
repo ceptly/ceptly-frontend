@@ -11,6 +11,7 @@ import {
   importRosterFromMondayAction,
   importRosterFromClickUpAction,
   importRosterFromSlackAction,
+  importRosterFromTeamsAction,
 } from "@/actions/roster";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -24,6 +25,7 @@ interface RosterImportButtonsProps {
   jiraConnected: boolean;
   mondayConnected: boolean;
   clickupConnected: boolean;
+  teamsConnected: boolean;
   communicationPlatform?: "slack" | "clickup" | "teams";
 }
 
@@ -34,10 +36,16 @@ export function RosterImportButtons({
   jiraConnected,
   mondayConnected,
   clickupConnected,
+  teamsConnected,
   communicationPlatform = "slack",
 }: RosterImportButtonsProps) {
   const clickupPrimary = communicationPlatform === "clickup";
-  const primaryConnected = clickupPrimary ? clickupConnected : slackConnected;
+  const teamsPrimary = communicationPlatform === "teams";
+  const primaryConnected = clickupPrimary
+    ? clickupConnected
+    : teamsPrimary
+      ? teamsConnected
+      : slackConnected;
   const { resolvedTheme, theme } = useTheme();
   const logoTheme = (resolvedTheme ?? theme) === "dark" ? "dark" : "light";
   const slackLogo = getIntegrationLogo("slack", logoTheme);
@@ -45,6 +53,7 @@ export function RosterImportButtons({
   const jiraLogo = getIntegrationLogo("jira", logoTheme);
   const mondayLogo = getIntegrationLogo("monday", logoTheme);
   const clickupLogo = getIntegrationLogo("clickup", logoTheme);
+  const teamsLogo = getIntegrationLogo("teams", logoTheme);
 
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,13 +62,15 @@ export function RosterImportButtons({
   const [isJiraPending, startJiraTransition] = useTransition();
   const [isMondayPending, startMondayTransition] = useTransition();
   const [isClickUpPending, startClickUpTransition] = useTransition();
+  const [isTeamsPending, startTeamsTransition] = useTransition();
 
   const importDisabled =
     isSlackPending ||
     isLinearPending ||
     isJiraPending ||
     isMondayPending ||
-    isClickUpPending;
+    isClickUpPending ||
+    isTeamsPending;
 
   const handleSlackImport = () => {
     setMessage(null);
@@ -126,36 +137,80 @@ export function RosterImportButtons({
     });
   };
 
+  const handleTeamsImport = () => {
+    setMessage(null);
+    setError(null);
+    startTeamsTransition(async () => {
+      const result = await importRosterFromTeamsAction(workspaceId);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setMessage(result.message ?? "Import complete.");
+    });
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
-        {slackConnected ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleSlackImport}
-            disabled={importDisabled}
-          >
-            {isSlackPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : slackLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={slackLogo}
-                alt=""
-                className="mr-2 size-4 rounded-sm object-contain"
-              />
-            ) : null}
-            Import from Slack
-          </Button>
-        ) : (
-          <Link
-            href="/settings/integrations/slack"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            Connect Slack
-          </Link>
-        )}
+        {teamsPrimary ? (
+          teamsConnected ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleTeamsImport}
+              disabled={importDisabled}
+            >
+              {isTeamsPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : teamsLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={teamsLogo}
+                  alt=""
+                  className="mr-2 size-4 rounded-sm object-contain"
+                />
+              ) : null}
+              Import from Microsoft Teams
+            </Button>
+          ) : (
+            <Link
+              href="/settings/integrations/teams"
+              className={cn(buttonVariants({ variant: "outline" }))}
+            >
+              Connect Microsoft Teams
+            </Link>
+          )
+        ) : null}
+
+        {!teamsPrimary &&
+          (slackConnected ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSlackImport}
+              disabled={importDisabled}
+            >
+              {isSlackPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : slackLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={slackLogo}
+                  alt=""
+                  className="mr-2 size-4 rounded-sm object-contain"
+                />
+              ) : null}
+              Import from Slack
+            </Button>
+          ) : (
+            <Link
+              href="/settings/integrations/slack"
+              className={cn(buttonVariants({ variant: "outline" }))}
+            >
+              Connect Slack
+            </Link>
+          ))}
 
         {linearConnected ? (
           <Button
@@ -274,13 +329,17 @@ export function RosterImportButtons({
         <p className="text-xs text-muted-foreground">
           {clickupPrimary
             ? "Connect ClickUp to import your team."
-            : "Connect Slack to import your team and send check-in DMs."}
+            : teamsPrimary
+              ? "Connect Microsoft Teams to import your team."
+              : "Connect Slack to import your team and send check-in DMs."}
         </p>
       ) : linearConnected || jiraConnected || mondayConnected || clickupConnected ? (
         <p className="text-xs text-muted-foreground">
           {clickupPrimary
             ? "Tracker imports add members who match a ClickUp account by email."
-            : "Tracker imports add members who match a Slack account by email."}
+            : teamsPrimary
+              ? "Tracker imports add members who match a Microsoft Teams account by email."
+              : "Tracker imports add members who match a Slack account by email."}
         </p>
       ) : null}
 

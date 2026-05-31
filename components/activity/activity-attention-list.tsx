@@ -8,11 +8,11 @@ import {
   Clock,
   MailWarning,
   MessageSquareWarning,
+  TriangleAlert,
   X,
 } from "lucide-react";
 
 import { dismissActivityAttentionAction } from "@/actions/activity";
-import { Button } from "@/components/ui/button";
 import type { ActivityAttentionItem } from "@/lib/api/types";
 
 interface ActivityAttentionListProps {
@@ -46,19 +46,19 @@ function formatMissingTrackers(
 }
 
 function AttentionIcon({ type }: { type: ActivityAttentionItem["type"] }) {
+  if (type === "roster_tracker_mismatch") {
+    return <MailWarning className="size-[18px]" aria-hidden />;
+  }
   if (type === "blocker") {
-    return <AlertTriangle className="size-4 shrink-0 text-amber-500" />;
+    return <AlertTriangle className="size-[18px]" aria-hidden />;
   }
   if (type === "missing_responses") {
-    return <MessageSquareWarning className="size-4 shrink-0 text-orange-500" />;
+    return <MessageSquareWarning className="size-[18px]" aria-hidden />;
   }
-  if (type === "roster_tracker_mismatch") {
-    return <MailWarning className="size-4 shrink-0 text-orange-500" />;
-  }
-  return <Clock className="size-4 shrink-0 text-muted-foreground" />;
+  return <Clock className="size-[18px]" aria-hidden />;
 }
 
-function attentionLabel(item: ActivityAttentionItem): string {
+function attentionTitle(item: ActivityAttentionItem): string {
   if (item.type === "missing_responses") {
     const names =
       item.missing_names.length > 0
@@ -125,9 +125,12 @@ export function ActivityAttentionList({
   };
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-sm font-semibold">Needs attention</h2>
-      <ul className="space-y-2">
+    <section className="ceptly-section">
+      <h2 className="ceptly-section-title">
+        <TriangleAlert aria-hidden />
+        Needs your attention
+      </h2>
+      <div className="ceptly-list-card">
         {items.map((item, index) => {
           const detail = attentionDetail(item);
           const key =
@@ -140,42 +143,37 @@ export function ActivityAttentionList({
                   : `missing-${item.conversation_id}-${item.run_id}`;
 
           return (
-            <li key={`${key}-${index}`}>
-              <div className="flex items-start gap-2 rounded-lg border border-border px-4 py-3 dark:border-white/10">
-                <Link
-                  href={attentionHref(item)}
-                  className="flex min-w-0 flex-1 gap-3 transition-colors hover:opacity-80"
-                >
-                  <AttentionIcon type={item.type} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">
-                      {attentionLabel(item)}
-                    </p>
-                    {detail ? (
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                        {detail}
-                      </p>
-                    ) : null}
-                  </div>
-                </Link>
-                {isDismissible(item) ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 shrink-0 text-muted-foreground"
-                    disabled={isPending}
-                    aria-label={`Dismiss alert for ${item.member_name}`}
-                    onClick={() => handleDismiss(item)}
-                  >
-                    <X className="size-4" />
-                  </Button>
+            <div className="ceptly-warn-row" key={`${key}-${index}`}>
+              <span
+                className={
+                  item.type === "roster_tracker_mismatch"
+                    ? "ceptly-warn-ico"
+                    : "mt-px shrink-0 text-muted-foreground"
+                }
+              >
+                <AttentionIcon type={item.type} />
+              </span>
+              <Link href={attentionHref(item)} className="ceptly-warn-main">
+                <div className="ceptly-warn-title">{attentionTitle(item)}</div>
+                {detail ? (
+                  <div className="ceptly-warn-desc">{detail}</div>
                 ) : null}
-              </div>
-            </li>
+              </Link>
+              {isDismissible(item) ? (
+                <button
+                  type="button"
+                  className="ceptly-warn-x"
+                  disabled={isPending}
+                  aria-label={`Dismiss alert for ${item.member_name}`}
+                  onClick={() => handleDismiss(item)}
+                >
+                  <X className="size-4" aria-hidden />
+                </button>
+              ) : null}
+            </div>
           );
         })}
-      </ul>
+      </div>
     </section>
   );
 }
