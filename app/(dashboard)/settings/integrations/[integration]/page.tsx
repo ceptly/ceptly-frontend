@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { DigestChannelForm } from "@/components/settings/digest-channel-form";
 import { SlackRosterChatToggle } from "@/components/settings/slack-roster-chat-toggle";
 import { ClickUpIntegrationPanel } from "@/components/settings/integrations/clickup-integration-panel";
+import { TeamsIntegrationPanel } from "@/components/settings/integrations/teams-integration-panel";
 import { JiraIntegrationPanel } from "@/components/settings/integrations/jira-integration-panel";
 import { LinearIntegrationPanel } from "@/components/settings/integrations/linear-integration-panel";
 import { MondayIntegrationPanel } from "@/components/settings/integrations/monday-integration-panel";
@@ -13,6 +14,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { listIntegrations } from "@/lib/api/integrations";
 import { resolveIntegration } from "@/lib/integrations/catalog";
 import { getClickUpConnectionStatus } from "@/lib/api/clickup";
+import { getTeamsConnectionStatus } from "@/lib/api/teams";
 import { getJiraConnectionStatus } from "@/lib/api/jira";
 import { getLinearConnectionStatus } from "@/lib/api/linear";
 import { getMondayConnectionStatus } from "@/lib/api/monday";
@@ -29,6 +31,7 @@ interface IntegrationDetailPageProps {
     jira?: string;
     monday?: string;
     clickup?: string;
+    teams?: string;
   }>;
 }
 
@@ -67,6 +70,8 @@ export default async function IntegrationDetailPage({
   const showMondayErrorAlert = query.monday === "error";
   const showClickUpConnectedAlert = query.clickup === "connected";
   const showClickUpErrorAlert = query.clickup === "error";
+  const showTeamsConnectedAlert = query.teams === "connected";
+  const showTeamsErrorAlert = query.teams === "error";
 
   let panel: React.ReactNode = null;
 
@@ -194,6 +199,25 @@ export default async function IntegrationDetailPage({
         description={integration.description}
         showConnectedAlert={showClickUpConnectedAlert}
         showErrorAlert={showClickUpErrorAlert}
+      />
+    );
+  }
+
+  if (integration.id === "teams" && workspace?.id && token) {
+    const teamsStatusResult = await getTeamsConnectionStatus(
+      token,
+      workspace.id,
+    );
+    const teamsStatus = teamsStatusResult?.data ?? { connected: false };
+
+    panel = (
+      <TeamsIntegrationPanel
+        workspaceId={workspace.id}
+        canEdit={canEdit}
+        status={teamsStatus}
+        description={integration.description}
+        showConnectedAlert={showTeamsConnectedAlert}
+        showErrorAlert={showTeamsErrorAlert}
       />
     );
   }

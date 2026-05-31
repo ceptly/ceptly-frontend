@@ -6,6 +6,7 @@ export interface CommunicationSettings {
   communication_platform: CommunicationPlatform;
   slack_connected: boolean;
   clickup_connected: boolean;
+  teams_connected: boolean;
   roster_chat_enabled: boolean;
   digest_channel_id: string | null;
   clickup_chat_webhook_secret_set: boolean;

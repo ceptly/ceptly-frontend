@@ -8,6 +8,7 @@ import { AppContextPicker } from "@/components/settings/app-context-picker";
 import { ResultDestinationsPicker } from "@/components/settings/result-destinations-picker";
 import { RosterMemberPicker } from "@/components/settings/roster-member-picker";
 import { ScheduleDaysPicker } from "@/components/settings/schedule-days-picker";
+import { ScheduleTimePicker } from "@/components/settings/schedule-time-picker";
 import { StandupChannelPicker } from "@/components/settings/standups/standup-channel-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,10 @@ import {
   groupTimezonesByRegion,
   TIMEZONE_OPTIONS,
 } from "@/lib/schedule/timezones";
-import { effectiveCronFireTimeLocal } from "@/lib/schedule/cron-fire";
+import {
+  effectiveCronFireTimeLocal,
+  snapScheduleTimeToInterval,
+} from "@/lib/schedule/cron-fire";
 import {
   buildResultDestinations,
   parseResultDestinations,
@@ -122,7 +126,9 @@ export function StandupForm({
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
     standup?.days_of_week ?? [1, 2, 3, 4, 5],
   );
-  const [timeLocal, setTimeLocal] = useState(standup?.time_local ?? "09:00");
+  const [timeLocal, setTimeLocal] = useState(() =>
+    snapScheduleTimeToInterval(standup?.time_local ?? "09:00"),
+  );
   const [enabled, setEnabled] = useState(standup?.enabled ?? true);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -193,7 +199,7 @@ export function StandupForm({
             frequency,
             days_of_week:
               frequency === "daily" ? [0, 1, 2, 3, 4, 5, 6] : daysOfWeek,
-            time_local: timeLocal,
+            time_local: snapScheduleTimeToInterval(timeLocal),
             enabled,
           },
         },
@@ -294,13 +300,11 @@ export function StandupForm({
 
       <div className="space-y-2">
         <Label htmlFor="standup-time">Time</Label>
-        <Input
+        <ScheduleTimePicker
           id="standup-time"
-          type="time"
           value={timeLocal}
-          onChange={(event) => setTimeLocal(event.target.value)}
+          onChange={setTimeLocal}
           disabled={isPending}
-          className="max-w-xs bg-background"
         />
         <p className="text-sm text-muted-foreground">
           Standups run on the next 15-minute tick after this time

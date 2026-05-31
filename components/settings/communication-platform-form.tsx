@@ -40,8 +40,7 @@ const PLATFORM_OPTIONS = [
   {
     value: "teams",
     label: "Microsoft Teams",
-    description: "Coming soon — not yet available.",
-    disabled: true,
+    description: "Standups and @mentions run in Microsoft Teams channels.",
   },
 ];
 
@@ -107,6 +106,10 @@ export function CommunicationPlatformForm({
           <p>
             <span className="font-medium text-foreground">ClickUp:</span>{" "}
             {settings.clickup_connected ? "Connected." : "Not connected — connect from Integrations before selecting."}
+          </p>
+          <p>
+            <span className="font-medium text-foreground">Microsoft Teams:</span>{" "}
+            {settings.teams_connected ? "Connected." : "Not connected — connect from Integrations before selecting."}
           </p>
         </div>
 
