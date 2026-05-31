@@ -161,11 +161,13 @@ export interface ActivityScheduledConversation {
   enabled: boolean;
   latest_run: ConversationRunSummary | null;
   missing_members: ConversationRunMemberRef[];
+  run_count: number;
 }
 
 export interface ActivityAdhocSession {
   conversation_id: string;
   session_id: string;
+  conversation_name: string;
   member_name: string;
   status: "completed" | "in_progress" | "abandoned";
   started_at: string;
@@ -265,6 +267,7 @@ export interface ActivityChannelStandup {
   slack_channel_name?: string;
   style: StandupStyle;
   latest_session: StandupSessionSummary | null;
+  session_count: number;
 }
 
 export interface WorkspaceActivity {

@@ -8,7 +8,7 @@ export const MENTION_TEXT_COLOR_LIGHT = "#69C35B";
 /** 50% opacity highlight for mention picker selection */
 export const MENTION_HIGHLIGHT_COLOR = "rgba(86, 255, 60, 0.5)";
 
-export const MENTION_TEXT_CLASS = "text-[#1B7A14] dark:text-[#56FF3C]";
+export const MENTION_TEXT_CLASS = "ceptly-mention";
 
 /** Keep mirror overlay wrapping in sync with the textarea. */
 export const MENTION_COMPOSER_WRAP_CLASS = "whitespace-pre-wrap break-words";

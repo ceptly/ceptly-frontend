@@ -328,8 +328,8 @@ export function OnboardingWizard({
         : "Continue";
 
   return (
-    <Card className="w-full dark:border-white/20">
-      <CardHeader className="space-y-4">
+    <Card className="ceptly-auth-card w-full gap-0 py-0">
+      <CardHeader className="space-y-4 px-0 pt-0">
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Step {step} of {totalSteps}
@@ -341,7 +341,7 @@ export function OnboardingWizard({
           </Progress>
         </div>
         <div className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle className="text-[22px] font-normal tracking-tight">
             {getStepTitle(step, slackSelected)}
           </CardTitle>
           <CardDescription>
@@ -350,7 +350,7 @@ export function OnboardingWizard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 px-0 pb-0">
         {error ? (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />

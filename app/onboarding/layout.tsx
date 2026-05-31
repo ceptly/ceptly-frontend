@@ -6,17 +6,23 @@ export default function OnboardingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[calc(100vh-0px)] flex-col items-center justify-center bg-background p-4">
-      <div className="mb-8 flex justify-center">
-        <Image
-          src="/parallax-gradient.png"
-          alt="Ceptly Logo"
-          width={48}
-          height={48}
-          className="h-12 w-12 object-contain"
-        />
+    <div className="ceptly-auth-shell">
+      <div className="ceptly-auth-bg" aria-hidden>
+        <div className="ceptly-auth-bg ceptly-auth-grid absolute inset-0" />
+        <div className="ceptly-auth-bg ceptly-auth-dots absolute inset-0" />
       </div>
-      <div className="w-full max-w-md">{children}</div>
+      <div className="relative z-[2] flex w-full max-w-[480px] flex-col gap-6">
+        <div className="flex justify-center">
+          <Image
+            src="/parallax-gradient.png"
+            alt="Ceptly"
+            width={46}
+            height={46}
+            className="size-[46px] object-contain"
+          />
+        </div>
+        {children}
+      </div>
     </div>
   );
 }

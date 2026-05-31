@@ -11,6 +11,7 @@ import {
   importRosterFromMonday,
   importRosterFromClickUp,
   importRosterFromSlack,
+  importRosterFromTeams,
   updateRosterMember,
 } from "@/lib/api/roster";
 import { getAccessToken } from "@/lib/auth/server";
@@ -31,6 +32,14 @@ const localeUpdateSchema = z.object({
   memberId: z.string().uuid(),
   timezone: z.string().trim().min(1).nullable().optional(),
   language: z.string().trim().min(1).nullable().optional(),
+});
+
+const memberDetailsUpdateSchema = z.object({
+  workspaceId: z.string().uuid(),
+  memberId: z.string().uuid(),
+  display_name: z.string().trim().min(1).max(200),
+  timezone: z.string().trim().min(1).nullable(),
+  language: z.string().trim().min(1).nullable(),
 });
 
 const deleteSchema = z.object({
@@ -128,6 +137,49 @@ export async function removeRosterMemberAction(
 
   revalidatePath("/settings");
   revalidatePath("/team");
+  return { success: true };
+}
+
+export async function updateRosterMemberDetails(
+  workspaceId: string,
+  memberId: string,
+  payload: {
+    display_name: string;
+    timezone: string | null;
+    language: string | null;
+  },
+): Promise<{ error?: string; success?: boolean }> {
+  const parsed = memberDetailsUpdateSchema.safeParse({
+    workspaceId,
+    memberId,
+    ...payload,
+  });
+  if (!parsed.success) {
+    return { error: "Invalid roster member details." };
+  }
+
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: "You must be signed in to manage the roster." };
+  }
+
+  const result = await updateRosterMember(
+    token,
+    parsed.data.workspaceId,
+    parsed.data.memberId,
+    {
+      display_name: parsed.data.display_name,
+      timezone: parsed.data.timezone,
+      language: parsed.data.language,
+    },
+  );
+
+  if (!result.success) {
+    return { error: result.error ?? "Failed to update team member." };
+  }
+
+  revalidatePath("/team");
+  revalidatePath("/settings");
   return { success: true };
 }
 
@@ -295,6 +347,25 @@ export async function importRosterFromClickUpAction(
 
   if (!result.success || !result.data) {
     return { error: result.error ?? "Failed to import from ClickUp." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/team");
+  return { message: formatImportResult(result.data) };
+}
+
+export async function importRosterFromTeamsAction(
+  workspaceId: string,
+): Promise<{ error?: string; message?: string }> {
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: "You must be signed in to manage the roster." };
+  }
+
+  const result = await importRosterFromTeams(token, workspaceId);
+
+  if (!result.success || !result.data) {
+    return { error: result.error ?? "Failed to import from Microsoft Teams." };
   }
 
   revalidatePath("/settings");

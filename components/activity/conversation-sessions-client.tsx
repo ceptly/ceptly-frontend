@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessagesSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { AdhocReachOutSummary } from "@/components/activity/adhoc-reach-out-summary";
@@ -165,7 +165,7 @@ export function ConversationSessionsClient({
 
       {selectedSummary ? (
         <>
-          <section className="space-y-4 rounded-lg border border-border px-4 py-4 dark:border-white/10">
+          <section className="ceptly-glass-card mb-7 space-y-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="font-medium">{selectedSummary.display_name}</p>
@@ -244,18 +244,31 @@ export function ConversationSessionsClient({
             />
           </section>
 
-          <section className="space-y-4">
-            <h2 className="text-sm font-semibold">Conversation</h2>
+          <section className="ceptly-section">
+            <h2 className="ceptly-section-title">
+              <MessagesSquare aria-hidden />
+              Conversation
+            </h2>
             {loading ? (
               <p className="text-sm text-muted-foreground">
                 Loading conversation...
               </p>
             ) : sessionDetail ? (
-              <CheckinTranscriptMessageList
-                transcript={sessionDetail.transcript}
-                legacyResponses={sessionDetail.legacy_responses}
-                icDisplayName={sessionDetail.display_name}
-              />
+              (sessionDetail.transcript?.length ?? 0) > 0 ||
+              (sessionDetail.legacy_responses?.length ?? 0) > 0 ? (
+                <CheckinTranscriptMessageList
+                  transcript={sessionDetail.transcript}
+                  legacyResponses={sessionDetail.legacy_responses}
+                  icDisplayName={sessionDetail.display_name}
+                />
+              ) : (
+                <div className="ceptly-glass-card p-5">
+                  <p className="ceptly-card-empty mt-0">
+                    This reach-out was abandoned before any messages were
+                    exchanged.
+                  </p>
+                </div>
+              )
             ) : (
               <p className="text-sm text-muted-foreground">
                 Could not load the conversation.

@@ -32,7 +32,7 @@ export function RosterDataTable<TData, TValue>({
   });
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border dark:border-white/10">
+    <div className="ceptly-roster-table overflow-hidden border border-border">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (

@@ -5,7 +5,6 @@ import { ArrowRight, Hash, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChannelStandupProposal } from "@/lib/api/types";
 import { formatSchedulePreview } from "@/lib/schedule/preview";
-import { cn } from "@/lib/utils";
 
 interface ChannelStandupProposalCardProps {
   proposal: ChannelStandupProposal;
@@ -40,13 +39,7 @@ export function ChannelStandupProposalCard({
   );
 
   return (
-    <div
-      className={cn(
-        "rounded-lg border border-dashed p-4",
-        "border-[#56FF3C]/30 bg-[#E6F9E6]/70",
-        "dark:border-[#56FF3C]/40 dark:bg-[#56FF3C]/10",
-      )}
-    >
+    <div className="ceptly-proposal-card">
       <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
         <Hash className="size-3.5 shrink-0" aria-hidden="true" />
         Channel standup · Slack

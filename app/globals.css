@@ -7,9 +7,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-open-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-montserrat);
+  --font-heading: var(--font-aldrich);
+  --color-brand: var(--brand-green);
+  --color-brand-foreground: #09090b;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,79 +41,119 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
 }
 
 :root {
-  --radius: 0.5rem;
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.145 0 0);
+  --brand-green: #56ff3c;
+  --brand-green-soft: #b1ffa5;
+  --brand-green-wash: #e6f9e6;
+  --proposal-border: #3dbe26;
+  --proposal-wash: #f3fff1;
+
+  --radius: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+
+  --background: #fbfffa;
+  --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --primary: oklch(0.21 0.006 285.885);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.145 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.885);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.145 0 0);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.705 0.015 286.067);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-primary: oklch(0.21 0.006 285.885);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.145 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.705 0.015 286.067);
+
+  --border-strong: oklch(0.09 0.01 285 / 14%);
+  --border-2: oklch(0.09 0.01 285 / 22%);
+  --card-glass: oklch(1 0 0 / 70%);
+  --card-hover: oklch(0.97 0.001 286 / 70%);
+  --fg3: #a1a1aa;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+  --green-ink: #1f9c10;
+  --green-wash: #ebffe8;
+  --green-line: #9ff08e;
+  --grid-line: oklch(0.55 0.15 145 / 10%);
+  --grid-dot: oklch(0.09 0.01 285 / 5%);
+  --watermark-opacity: 0.05;
 }
 
 .dark {
-  --background: oklch(0.12 0.01 285);
+  --proposal-border: #ebffe8;
+  --proposal-wash: oklch(0.55 0.2 145 / 6%);
+
+  --background: #0c0c0f;
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.14 0.01 285);
+  --card: #141417;
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.14 0.01 285);
+  --popover: #141417;
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.985 0 0);
   --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.18 0.01 285);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.18 0.01 285);
+  --muted: #1c1c20;
   --muted-foreground: oklch(0.65 0.01 285);
   --accent: oklch(0.18 0.01 285);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --border: oklch(0.2 0.01 285);
-  --input: oklch(0.2 0.01 285);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #2a2a2f;
+  --input: #2a2a2f;
   --ring: oklch(0.8 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.13 0.01 285);
+  --sidebar: #100f14;
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.18 0.01 285);
+  --sidebar-accent: #1c1c20;
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.2 0.01 285);
+  --sidebar-border: #2a2a2f;
   --sidebar-ring: oklch(0.8 0 0);
+
+  --border-strong: oklch(1 0 0 / 20%);
+  --border-2: oklch(1 0 0 / 28%);
+  --card-glass: oklch(0.14 0.01 285 / 60%);
+  --card-hover: oklch(0.22 0.01 285 / 45%);
+  --fg3: #71717a;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --green-ink: #56ff3c;
+  --green-wash: oklch(0.75 0.22 145 / 8%);
+  --green-line: oklch(0.75 0.22 145 / 30%);
+  --grid-line: oklch(0.75 0.22 145 / 6%);
+  --grid-dot: oklch(1 0 0 / 5%);
+  --watermark-opacity: 0.045;
 }
 
 @layer base {
@@ -119,7 +161,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]) {
@@ -134,6 +176,412 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-montserrat), sans-serif;
+    font-family: var(--font-aldrich), sans-serif;
+    font-weight: 400;
+  }
+  ::selection {
+    background: var(--brand-green);
+    color: #09090b;
+  }
+}
+
+@layer components {
+  .ceptly-page {
+    @apply mx-auto w-full max-w-[940px] flex-1 px-6 pt-9 pb-16;
+  }
+
+  .ceptly-page-narrow {
+    @apply max-w-[760px];
+  }
+
+  .ceptly-page-head {
+    @apply mb-7;
+  }
+
+  .ceptly-page-title {
+    font-family: var(--font-aldrich), sans-serif;
+    @apply mb-1.5 text-[27px] leading-tight font-normal tracking-[-0.01em];
+  }
+
+  .ceptly-page-sub {
+    @apply flex flex-wrap items-center gap-2.5 text-sm leading-normal text-muted-foreground;
+  }
+
+  .ceptly-section {
+    @apply mb-[34px];
+  }
+
+  .ceptly-section-title {
+    @apply mb-3.5 flex items-center gap-[9px] text-sm font-bold tracking-[0.01em] text-foreground;
+
+    & > svg {
+      @apply size-[15px] shrink-0 text-muted-foreground;
+    }
+  }
+
+  .ceptly-section-head {
+    @apply mb-3.5 flex flex-wrap items-center justify-between gap-3;
+  }
+
+  .ceptly-section-head .ceptly-section-title {
+    @apply mb-0;
+  }
+
+  .ceptly-list-card {
+    border-color: var(--border-strong);
+    background: var(--card-glass);
+    box-shadow: var(--shadow-card);
+    @apply border backdrop-blur-xl;
+  }
+
+  .ceptly-warn-row {
+    @apply flex items-start gap-[13px] px-4 py-3.5;
+  }
+
+  .ceptly-warn-row + .ceptly-warn-row {
+    @apply border-t border-border;
+  }
+
+  .ceptly-warn-ico {
+    color: #e8883a;
+    @apply mt-px shrink-0;
+  }
+
+  .ceptly-warn-main {
+    @apply min-w-0 flex-1;
+  }
+
+  .ceptly-warn-title {
+    @apply text-[13.5px] leading-[1.45] font-semibold text-foreground;
+  }
+
+  .ceptly-warn-desc {
+    @apply mt-1 text-[12.5px] leading-normal text-muted-foreground;
+  }
+
+  .ceptly-warn-x {
+    color: var(--fg3);
+    @apply inline-flex shrink-0 border-0 bg-transparent p-1 transition-colors hover:bg-muted hover:text-foreground;
+  }
+
+  .ceptly-card-empty {
+    color: var(--fg3);
+    @apply mt-3 text-[13px] leading-[1.55] italic;
+  }
+
+  .ceptly-glass-card {
+    border-color: var(--border-strong);
+    background: var(--card-glass);
+    @apply border shadow-sm backdrop-blur-xl;
+  }
+
+  .ceptly-proposal-card {
+    border: 1.5px solid var(--proposal-border);
+    background: var(--proposal-wash);
+    @apply p-4;
+  }
+
+  .ceptly-composer {
+    border-color: var(--border-strong);
+    @apply overflow-hidden border bg-card shadow-sm focus-within:ring-[3px] focus-within:ring-ring/50;
+  }
+
+  .ceptly-composer-send-group {
+    @apply gap-0;
+
+    & > [data-slot="button"] + [data-slot="button"] {
+      margin-left: -1px;
+    }
+  }
+
+  .ceptly-chat-bubble-user {
+    @apply bg-primary text-primary-foreground shadow-sm;
+    border-radius: 15px 15px 4px 15px;
+  }
+
+  .ceptly-chat-bubble-ai {
+    @apply border border-border bg-card text-card-foreground shadow-sm;
+    border-radius: 15px 15px 15px 4px;
+  }
+
+  .ceptly-nav-link {
+    @apply relative border-0 bg-transparent px-3 py-1.5 text-[13px] leading-none font-medium whitespace-nowrap text-muted-foreground transition-colors;
+  }
+
+  .ceptly-nav-link:hover {
+    @apply bg-muted text-foreground;
+  }
+
+  .ceptly-nav-link[data-active="true"] {
+    @apply bg-transparent text-foreground;
+  }
+
+  .ceptly-nav-link[data-active="true"]::after {
+    content: "";
+    @apply absolute right-3 bottom-[-11px] left-3 h-0.5 bg-brand;
+  }
+
+  .ceptly-nav-ws {
+    @apply font-semibold text-foreground;
+  }
+
+  .ceptly-nav-badge {
+    @apply absolute top-[-5px] right-[-5px] flex h-4 min-w-4 items-center justify-center rounded-none px-1 text-[10px] leading-none font-bold;
+    background: var(--destructive);
+    color: #fff;
+  }
+
+  .dark .ceptly-nav-badge {
+    color: #18181b;
+  }
+
+  .ceptly-nav-badge-single {
+    @apply w-4 min-w-4 px-0;
+  }
+
+  .ceptly-auth-shell {
+    @apply relative flex min-h-screen flex-1 items-center justify-center overflow-hidden p-7;
+  }
+
+  .ceptly-auth-bg {
+    @apply pointer-events-none absolute inset-0;
+  }
+
+  .ceptly-auth-grid {
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 54px 54px;
+    mask-image: radial-gradient(120% 90% at 50% 35%, #000 25%, transparent 78%);
+  }
+
+  .ceptly-auth-dots {
+    background-image: radial-gradient(var(--grid-dot) 1.2px, transparent 1.3px);
+    background-size: 27px 27px;
+    mask-image: radial-gradient(100% 80% at 50% 40%, #000 10%, transparent 70%);
+  }
+
+  .ceptly-auth-watermark {
+    opacity: var(--watermark-opacity);
+    @apply pointer-events-none absolute -right-[90px] -bottom-[120px] w-[460px];
+  }
+
+  .ceptly-auth-card {
+    border-color: var(--border-strong);
+    @apply border bg-card p-[30px] shadow-lg;
+  }
+
+  .dark .ceptly-auth-card {
+    background: color-mix(in oklab, var(--card) 86%, transparent);
+    @apply backdrop-blur-2xl;
+  }
+
+  .ceptly-progress-track {
+    @apply h-1.5 overflow-hidden bg-muted;
+  }
+
+  .ceptly-progress-fill {
+    @apply h-full bg-brand transition-[width] duration-300 ease-out;
+  }
+
+  .ceptly-mention {
+    color: var(--green-ink);
+    @apply font-semibold;
+  }
+
+  .ceptly-modal {
+    border-color: var(--border-strong);
+    @apply fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100vh-2.5rem)] w-[min(calc(100%-2.5rem),28.75rem)] -translate-x-1/2 -translate-y-1/2 flex-col border bg-card p-0 shadow-2xl open:flex [&::backdrop]:bg-black/55 [&::backdrop]:backdrop-blur-[3px];
+  }
+
+  .ceptly-roster-table [data-slot="table-head"] {
+    @apply bg-muted text-[11.5px] font-semibold tracking-[0.04em] text-muted-foreground uppercase;
+  }
+
+  .ceptly-roster-table [data-slot="table-head"] th {
+    @apply h-auto px-4 py-2.5;
+  }
+
+  .ceptly-roster-table [data-slot="table-cell"] {
+    @apply px-4 py-3 text-[13px];
+  }
+
+  .ceptly-roster-table [data-slot="table-row"]:hover {
+    @apply bg-foreground/[0.03];
+  }
+
+  .ceptly-rollup-card-grid {
+    @apply grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-2;
+  }
+
+  .ceptly-rollup-card-link {
+    @apply block h-full min-h-[220px];
+  }
+
+  .ceptly-rollup-card {
+    border-color: var(--border-strong);
+    background: var(--card-glass);
+    box-shadow: var(--shadow-card);
+    @apply flex h-full min-h-[220px] flex-col border p-5 backdrop-blur-xl transition-colors;
+  }
+
+  .ceptly-rollup-card-body {
+    @apply flex min-h-0 flex-1 flex-col;
+  }
+
+  .ceptly-rollup-card-link:hover .ceptly-rollup-card {
+    border-color: var(--border-2);
+    background: var(--card-hover);
+  }
+
+  .ceptly-rollup-card-top {
+    @apply flex items-start justify-between gap-3;
+  }
+
+  .ceptly-rollup-card-title {
+    font-family: var(--font-aldrich), sans-serif;
+    @apply text-[17px] leading-tight font-normal tracking-[-0.005em];
+  }
+
+  .ceptly-rollup-card-desc {
+    @apply mt-1 text-[12.5px] text-muted-foreground;
+  }
+
+  .ceptly-rollup-card-meta {
+    @apply mt-4 mb-2 flex items-baseline justify-between text-[13px];
+  }
+
+  .ceptly-rollup-card-meta-muted {
+    @apply text-muted-foreground;
+  }
+
+  .ceptly-rollup-card-meta-strong {
+    @apply font-semibold text-foreground;
+  }
+
+  .ceptly-rollup-card-track {
+    @apply h-[7px] overflow-hidden bg-muted;
+  }
+
+  .ceptly-rollup-card-fill {
+    @apply h-full bg-primary transition-[width] duration-300 ease-out;
+  }
+
+  .ceptly-rollup-card-fill-full {
+    @apply bg-brand;
+  }
+
+  .ceptly-rollup-card-summary {
+    @apply mt-3 min-h-[2.75rem] flex-1 text-[13px] leading-[1.55] text-muted-foreground;
+  }
+
+  .ceptly-rollup-card-summary-empty {
+    color: var(--fg3);
+    @apply italic;
+  }
+
+  .ceptly-rollup-card-sum {
+    @apply line-clamp-2;
+  }
+
+  .ceptly-rollup-card-foot {
+    @apply mt-auto flex shrink-0 items-center gap-1.5 pt-3 text-xs text-muted-foreground;
+
+    & > svg {
+      @apply size-[13px] shrink-0;
+    }
+  }
+
+  .ceptly-reachout-list > .ceptly-reachout + .ceptly-reachout {
+    @apply mt-3;
+  }
+
+  .ceptly-reachout {
+    border-color: var(--border-strong);
+    background: var(--card-glass);
+    box-shadow: var(--shadow-card);
+    @apply block cursor-pointer border p-[18px_20px] backdrop-blur-xl transition-colors;
+  }
+
+  .ceptly-reachout:hover {
+    border-color: var(--border-2);
+    background: var(--card-hover);
+  }
+
+  .ceptly-reachout-top {
+    @apply flex items-start justify-between gap-3;
+  }
+
+  .ceptly-reachout-eyebrow {
+    @apply text-[10.5px] font-bold tracking-[0.07em] text-muted-foreground uppercase;
+  }
+
+  .ceptly-reachout-title {
+    @apply mt-[7px] text-base font-bold text-foreground;
+  }
+
+  .ceptly-mono-block {
+    font-family: var(--font-mono);
+    @apply mt-3 line-clamp-4 text-xs leading-[1.55] break-words whitespace-pre-wrap text-muted-foreground;
+  }
+
+  .ceptly-reachout-foot {
+    @apply mt-3.5 text-[12.5px] text-muted-foreground;
+  }
+
+  .ceptly-pager {
+    @apply mt-5 flex items-center justify-center gap-1.5;
+  }
+
+  .ceptly-pager-btn {
+    @apply inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-none border border-border bg-card px-2 text-[13px] font-medium text-foreground transition-colors hover:border-[color:var(--border-2)] hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .ceptly-pager-btn.active {
+    @apply border-primary bg-primary text-primary-foreground;
+  }
+
+  .ceptly-pager-info {
+    @apply mt-2.5 text-center text-[12.5px] text-muted-foreground;
+  }
+
+  .ceptly-prompt-box {
+    font-family: var(--font-mono);
+    @apply mt-2.5 border border-border bg-muted p-3.5 text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground;
+  }
+
+  .ceptly-back {
+    @apply mb-3.5 inline-flex items-center gap-1.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground;
+  }
+
+  .ceptly-stat-grid {
+    @apply mb-7 grid grid-cols-3 gap-3.5;
+  }
+
+  .ceptly-stat {
+    border-color: var(--border);
+    background: var(--card-glass);
+    @apply border px-[18px] py-4 backdrop-blur-xl;
+  }
+
+  .ceptly-stat-val {
+    font-family: var(--font-aldrich), sans-serif;
+    @apply text-[26px] leading-none;
+  }
+
+  .ceptly-stat-label {
+    @apply mt-2 text-xs text-muted-foreground;
+  }
+
+  .ceptly-collapse {
+    @apply inline-flex items-center gap-1.5 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-foreground;
+
+    & > svg {
+      @apply size-[15px] transition-transform duration-200;
+    }
+
+    &[data-open="true"] > svg {
+      @apply rotate-180;
+    }
   }
 }

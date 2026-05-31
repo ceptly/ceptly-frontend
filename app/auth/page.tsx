@@ -95,22 +95,43 @@ function AuthPageContent() {
   );
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="ceptly-auth-shell">
+      <div className="ceptly-auth-bg" aria-hidden>
+        <div className="ceptly-auth-bg ceptly-auth-grid absolute inset-0" />
+        <div className="ceptly-auth-bg ceptly-auth-dots absolute inset-0" />
+        <div className="ceptly-auth-watermark">
+          <Image
+            src="/parallax-light.png"
+            alt=""
+            width={460}
+            height={460}
+            className="h-auto w-full dark:hidden"
+          />
+          <Image
+            src="/parallax-dark.png"
+            alt=""
+            width={460}
+            height={460}
+            className="hidden h-auto w-full dark:block"
+          />
+        </div>
+      </div>
+
+      <div className="relative z-[2] flex w-full max-w-[420px] flex-col gap-6">
         <div className="flex justify-center">
           <Image
             src="/parallax-gradient.png"
-            alt="Ceptly Logo"
-            width={48}
-            height={48}
-            className="h-12 w-12 object-contain"
+            alt="Ceptly"
+            width={46}
+            height={46}
+            className="size-[46px] object-contain"
           />
         </div>
 
-        <Card className="w-full dark:border-white/20">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">
-              {isSignUp ? "Create your Ceptly account" : "Welcome Back"}
+        <Card className="ceptly-auth-card w-full gap-0 py-0 shadow-lg">
+          <CardHeader className="px-0 pt-0 text-center">
+            <CardTitle className="text-[23px] font-normal tracking-tight">
+              {isSignUp ? "Create your Ceptly account" : "Welcome back"}
             </CardTitle>
             <CardDescription>
               {inviteToken
@@ -156,13 +177,11 @@ function AuthPageContent() {
               Continue with Google
             </Button>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">or</span>
-              </div>
+            <div className="relative text-center">
+              <div className="absolute inset-x-0 top-1/2 h-px bg-border" />
+              <span className="relative bg-card px-2.5 text-[11px] tracking-[0.08em] text-muted-foreground uppercase">
+                or
+              </span>
             </div>
 
             {isSignUp ? (
@@ -280,18 +299,18 @@ function AuthPageContent() {
               </form>
             )}
 
-            <div className="text-center text-sm">
+            <div className="mt-5 text-center text-[13px] text-muted-foreground">
               {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
               <button
                 type="button"
                 onClick={() => setMode(isSignUp ? "sign-in" : "sign-up")}
-                className="font-medium text-primary hover:underline"
+                className="font-semibold text-foreground hover:underline"
               >
                 {isSignUp ? "Sign in" : "Create account"}
               </button>
             </div>
 
-            <p className="text-center text-xs text-muted-foreground">
+            <p className="mt-4 text-center text-[11.5px] leading-normal text-muted-foreground">
               By continuing, you agree to our terms of service and privacy
               policy.
             </p>

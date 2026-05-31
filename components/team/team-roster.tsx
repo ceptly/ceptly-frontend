@@ -1,38 +1,46 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Loader2, Ellipsis, Pause, Play, Trash2 } from "lucide-react";
+import {
+  Loader2,
+  Ellipsis,
+  Mail,
+  MessageSquare,
+  Pause,
+  Pencil,
+  Play,
+  Trash2,
+} from "lucide-react";
 
 import {
   addRosterMemberAction,
   removeRosterMemberAction,
   toggleRosterMemberPaused,
-  updateRosterMemberLocale,
 } from "@/actions/roster";
+import { EditRosterMemberDialog } from "@/components/team/edit-roster-member-dialog";
 import { RosterDataTable } from "@/components/team/roster-data-table";
 import { RosterImportButtons } from "@/components/team/roster-import-buttons";
+import {
+  getRosterMemberInitials,
+  RosterMemberApps,
+} from "@/components/team/roster-member-apps";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { RosterMember } from "@/lib/api/roster";
-import { getLanguageLabel, SUPPORTED_LANGUAGES } from "@/lib/i18n/languages";
-import {
-  getTimezoneLabel,
-  groupTimezonesByRegion,
-  TIMEZONE_OPTIONS,
-} from "@/lib/schedule/timezones";
-
-const selectClassName =
-  "flex h-9 w-full min-w-[9rem] rounded-md border border-input bg-background px-2 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+import { getLanguageLabel } from "@/lib/i18n/languages";
+import { getTimezoneLabel } from "@/lib/schedule/timezones";
 
 interface TeamRosterProps {
   workspaceId: string;
@@ -44,6 +52,7 @@ interface TeamRosterProps {
   jiraConnected: boolean;
   mondayConnected: boolean;
   clickupConnected: boolean;
+  teamsConnected: boolean;
   communicationPlatform: "slack" | "clickup" | "teams";
   members: RosterMember[];
 }
@@ -58,16 +67,30 @@ export function TeamRoster({
   jiraConnected,
   mondayConnected,
   clickupConnected,
+  teamsConnected,
   communicationPlatform,
   members,
 }: TeamRosterProps) {
+  const clickupPrimary = communicationPlatform === "clickup";
+  const teamsPrimary = communicationPlatform === "teams";
+  const primaryConnected = clickupPrimary
+    ? clickupConnected
+    : teamsPrimary
+      ? teamsConnected
+      : slackConnected;
   const [addState, addAction, addPending] = useActionState(
     addRosterMemberAction,
     {},
   );
   const [actionError, setActionError] = useState<string | null>(null);
+  const [editingMember, setEditingMember] = useState<RosterMember | null>(null);
   const [isPending, startTransition] = useTransition();
-  const timezoneGroups = groupTimezonesByRegion();
+
+  const primaryEmailHint = clickupPrimary
+    ? "Must match a ClickUp account in your connected workspace."
+    : teamsPrimary
+      ? "Must match a Microsoft Teams account in your connected organization."
+      : "Must match a Slack account in your connected team.";
 
   const handleTogglePaused = (member: RosterMember) => {
     setActionError(null);
@@ -93,47 +116,28 @@ export function TeamRoster({
     });
   };
 
-  const handleTimezoneChange = (member: RosterMember, value: string) => {
-    setActionError(null);
-    const timezone = value === workspaceTimezone ? null : value;
-    if (timezone === member.timezone) {
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await updateRosterMemberLocale(workspaceId, member.id, {
-        timezone,
-      });
-      if (result.error) {
-        setActionError(result.error);
-      }
-    });
-  };
-
-  const handleLanguageChange = (member: RosterMember, value: string) => {
-    setActionError(null);
-    const language = value === workspaceLanguage ? null : value;
-    if (language === member.language) {
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await updateRosterMemberLocale(workspaceId, member.id, {
-        language,
-      });
-      if (result.error) {
-        setActionError(result.error);
-      }
-    });
-  };
-
   const columns: ColumnDef<RosterMember>[] = [
     {
       accessorKey: "display_name",
       header: "Name",
-      cell: ({ row }) => (
-        <span className="font-medium">{row.getValue("display_name")}</span>
-      ),
+      cell: ({ row }) => {
+        const member = row.original;
+        return (
+          <span className="flex items-center gap-2.5 font-semibold">
+            <Avatar className="size-7 rounded-full">
+              <AvatarFallback className="bg-primary text-[11px] font-bold text-primary-foreground">
+                {getRosterMemberInitials(member.display_name)}
+              </AvatarFallback>
+            </Avatar>
+            {member.display_name}
+            {member.paused ? (
+              <Badge variant="outline" className="font-normal">
+                Paused
+              </Badge>
+            ) : null}
+          </span>
+        );
+      },
     },
     {
       accessorKey: "email",
@@ -145,119 +149,27 @@ export function TeamRoster({
     {
       id: "timezone",
       header: "Timezone",
-      cell: ({ row }) => {
-        const member = row.original;
-        const effective = member.effective_timezone;
-
-        if (!canEdit) {
-          return (
-            <span className="text-muted-foreground">
-              {getTimezoneLabel(effective)}
-            </span>
-          );
-        }
-
-        const hasEffectiveInList = TIMEZONE_OPTIONS.some(
-          (timezone) => timezone.value === effective,
-        );
-
-        return (
-          <select
-            aria-label={`Timezone for ${member.display_name}`}
-            className={selectClassName}
-            value={effective}
-            disabled={isPending || !slackConnected}
-            onChange={(event) =>
-              handleTimezoneChange(member, event.target.value)
-            }
-          >
-            {!hasEffectiveInList ? (
-              <option value={effective}>{getTimezoneLabel(effective)}</option>
-            ) : null}
-            {Object.entries(timezoneGroups).map(([region, options]) => (
-              <optgroup key={region} label={region}>
-                {options.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        );
-      },
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {getTimezoneLabel(row.original.effective_timezone)}
+        </span>
+      ),
     },
     {
       id: "language",
       header: "Language",
-      cell: ({ row }) => {
-        const member = row.original;
-        const effective = member.effective_language;
-
-        if (!canEdit) {
-          return (
-            <span className="text-muted-foreground">
-              {getLanguageLabel(effective)}
-            </span>
-          );
-        }
-
-        const hasEffectiveInList = SUPPORTED_LANGUAGES.some(
-          (language) => language.code === effective,
-        );
-
-        return (
-          <select
-            aria-label={`Language for ${member.display_name}`}
-            className={selectClassName}
-            value={effective}
-            disabled={isPending || !slackConnected}
-            onChange={(event) =>
-              handleLanguageChange(member, event.target.value)
-            }
-          >
-            {!hasEffectiveInList ? (
-              <option value={effective}>{getLanguageLabel(effective)}</option>
-            ) : null}
-            {SUPPORTED_LANGUAGES.map((language) => (
-              <option key={language.code} value={language.code}>
-                {language.label}
-              </option>
-            ))}
-          </select>
-        );
-      },
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {getLanguageLabel(row.original.effective_language)}
+        </span>
+      ),
     },
     {
       id: "data_sources",
       header: "Apps",
-      cell: ({ row }) => {
-        const sources = row.original.data_sources ?? [];
-
-        if (sources.length === 0) {
-          return <span className="text-muted-foreground">—</span>;
-        }
-
-        return (
-          <div className="flex flex-wrap gap-1">
-            {sources.includes("slack") ? (
-              <Badge variant="secondary">Slack</Badge>
-            ) : null}
-            {sources.includes("linear") ? (
-              <Badge variant="secondary">Linear</Badge>
-            ) : null}
-            {sources.includes("jira") ? (
-              <Badge variant="secondary">Jira</Badge>
-            ) : null}
-            {sources.includes("monday") ? (
-              <Badge variant="secondary">Monday</Badge>
-            ) : null}
-            {sources.includes("clickup") ? (
-              <Badge variant="secondary">ClickUp</Badge>
-            ) : null}
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <RosterMemberApps sources={row.original.data_sources ?? []} />
+      ),
     },
     ...(canEdit
       ? [
@@ -277,7 +189,7 @@ export function TeamRoster({
                           variant="ghost"
                           size="icon-sm"
                           className="text-muted-foreground"
-                          disabled={isPending || !slackConnected}
+                          disabled={isPending || !primaryConnected}
                           aria-label={`Actions for ${member.display_name}`}
                         />
                       }
@@ -288,8 +200,27 @@ export function TeamRoster({
                         <Ellipsis className="size-4" />
                       )}
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-[170px] rounded-none p-1.5"
+                    >
                       <DropdownMenuItem
+                        className="gap-2.5 rounded-none px-2.5 py-2 text-[13px]"
+                        render={<Link href="/chat" prefetch />}
+                      >
+                        <MessageSquare className="size-3.5 text-muted-foreground" />
+                        Reach out in Chat
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="gap-2.5 rounded-none px-2.5 py-2 text-[13px]"
+                        onClick={() => setEditingMember(member)}
+                      >
+                        <Pencil className="size-3.5 text-muted-foreground" />
+                        Edit details
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="gap-2.5 rounded-none px-2.5 py-2 text-[13px]"
                         onClick={() => handleTogglePaused(member)}
                       >
                         {member.paused ? <Play /> : <Pause />}
@@ -297,6 +228,7 @@ export function TeamRoster({
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         variant="destructive"
+                        className="gap-2.5 rounded-none px-2.5 py-2 text-[13px]"
                         onClick={() => handleRemove(member.id)}
                       >
                         <Trash2 />
@@ -314,36 +246,20 @@ export function TeamRoster({
 
   return (
     <div className="space-y-4">
-      {!slackConnected ? (
+      {!primaryConnected ? (
         <Alert>
           <AlertDescription>
-            Connect Slack in team settings before adding members to the roster.
+            {clickupPrimary
+              ? "Connect ClickUp in workspace settings before adding members to the roster."
+              : teamsPrimary
+                ? "Connect Microsoft Teams in workspace settings before adding members to the roster."
+                : "Connect Slack in workspace settings before adding members to the roster."}
           </AlertDescription>
         </Alert>
-      ) : slackConnected && members.length === 0 ? (
+      ) : primaryConnected && members.length === 0 ? (
         <Alert>
           <AlertDescription>
             Add team members to receive check-ins.
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
-      {(linearConnected ||
-        jiraConnected ||
-        mondayConnected ||
-        clickupConnected) &&
-        members.some(
-          (member) =>
-            (linearConnected && !member.data_sources?.includes("linear")) ||
-            (jiraConnected && !member.data_sources?.includes("jira")) ||
-            (mondayConnected && !member.data_sources?.includes("monday")) ||
-            (clickupConnected && !member.data_sources?.includes("clickup")),
-        ) ? (
-        <Alert>
-          <AlertDescription>
-            Some roster emails may not match a connected issue tracker account.
-            Check the Apps column — members without a Linear, Jira, Monday, or
-            ClickUp badge need the same email in Slack and your tracker.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -367,55 +283,101 @@ export function TeamRoster({
       ) : null}
 
       {canEdit ? (
-        <RosterImportButtons
-          workspaceId={workspaceId}
-          slackConnected={slackConnected}
-          linearConnected={linearConnected}
-          jiraConnected={jiraConnected}
-          mondayConnected={mondayConnected}
-          clickupConnected={clickupConnected}
-          communicationPlatform={communicationPlatform}
-        />
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <RosterImportButtons
+              workspaceId={workspaceId}
+              slackConnected={slackConnected}
+              linearConnected={linearConnected}
+              jiraConnected={jiraConnected}
+              mondayConnected={mondayConnected}
+              clickupConnected={clickupConnected}
+              teamsConnected={teamsConnected}
+              communicationPlatform={communicationPlatform}
+            />
+          </div>
+          <Badge variant="outline" className="shrink-0">
+            {members.length} member{members.length === 1 ? "" : "s"}
+          </Badge>
+        </div>
       ) : null}
 
       <RosterDataTable columns={columns} data={members} />
 
       {canEdit ? (
-        <form action={addAction} className="space-y-3">
+        <form action={addAction} className="space-y-2">
           <input type="hidden" name="workspaceId" value={workspaceId} />
-          <div className="space-y-2">
-            <Label htmlFor="roster-email">Add by email</Label>
-            <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <div className="relative min-w-[min(100%,16rem)] flex-1">
+              <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="roster-email"
                 name="email"
                 type="email"
                 placeholder="teammate@company.com"
+                className="pl-10"
                 required
-                disabled={!slackConnected || addPending}
+                disabled={!primaryConnected || addPending}
               />
-              <Button
-                type="submit"
-                variant="outline"
-                disabled={!slackConnected || addPending}
-              >
-                {addPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Add"
-                )}
-              </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Must match a Slack account in your connected team.
-            </p>
+            <Button
+              type="submit"
+              disabled={!primaryConnected || addPending}
+            >
+              {addPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                "Add member"
+              )}
+            </Button>
           </div>
+          <p className="text-xs text-muted-foreground">{primaryEmailHint}</p>
         </form>
       ) : (
         <p className="text-sm text-muted-foreground">
           Only workspace owners, admins, and members can manage the team roster.
         </p>
       )}
+
+      {(linearConnected ||
+        jiraConnected ||
+        mondayConnected ||
+        clickupConnected) &&
+      members.some(
+        (member) =>
+          (linearConnected && !member.data_sources?.includes("linear")) ||
+          (jiraConnected && !member.data_sources?.includes("jira")) ||
+          (mondayConnected && !member.data_sources?.includes("monday")) ||
+          (clickupConnected && !member.data_sources?.includes("clickup")),
+      ) ? (
+        <Alert>
+          <AlertDescription>
+            Some roster emails may not match a connected issue tracker account.
+            Check the Apps column — members without a Linear, Jira, Monday, or
+            ClickUp badge need the same email in Slack and your tracker.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {editingMember ? (
+        <EditRosterMemberDialog
+          key={editingMember.id}
+          member={editingMember}
+          workspaceId={workspaceId}
+          workspaceTimezone={workspaceTimezone}
+          workspaceLanguage={workspaceLanguage}
+          connectedIntegrations={{
+            slack: slackConnected,
+            linear: linearConnected,
+            jira: jiraConnected,
+            monday: mondayConnected,
+            clickup: clickupConnected,
+            teams: teamsConnected,
+          }}
+          onClose={() => setEditingMember(null)}
+          onSaved={() => setEditingMember(null)}
+        />
+      ) : null}
     </div>
   );
 }

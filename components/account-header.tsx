@@ -12,8 +12,7 @@ import { fetchActivityAttentionCount } from "@/actions/activity";
 import { signOut } from "@/actions/auth";
 import type { AuthUser } from "@/lib/api/types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,38 +91,37 @@ export function AccountHeader({ user }: AccountHeaderProps) {
   };
 
   const workspaceName = user.workspaces?.[0]?.name ?? "My Team";
+  const logoSrc =
+    mounted && (resolvedTheme ?? theme) === "light"
+      ? "/parallax-light.png"
+      : "/parallax-dark.png";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background">
-      <div className="px-6 py-2.5">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/92 backdrop-blur-xl">
+      <div className="mx-auto max-w-[1180px] px-6 py-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3">
-              <Link
-                href="/chat"
-                prefetch
-                className="cursor-pointer"
-                onClick={() => client.logEvent("logo_click")}
-              >
-                <Image
-                  src={
-                    mounted && (resolvedTheme ?? theme) === "light"
-                      ? "/parallax.png"
-                      : "/parallax-dark.png"
-                  }
-                  alt="Ceptly Logo"
-                  width={32}
-                  height={32}
-                  className="rounded"
-                />
-              </Link>
-            </div>
+          <div className="flex items-center gap-[22px]">
+            <Link
+              href="/chat"
+              prefetch
+              className="block size-[30px] shrink-0 cursor-pointer"
+              onClick={() => client.logEvent("logo_click")}
+            >
+              <Image
+                src={logoSrc}
+                alt="Ceptly"
+                width={30}
+                height={30}
+                className="size-[30px] object-contain"
+              />
+            </Link>
 
-            <nav className="flex items-center gap-1">
+            <nav className="flex items-center gap-0.5">
               <Link
                 href="/settings"
                 prefetch={false}
-                className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+                className="ceptly-nav-link ceptly-nav-ws"
+                data-active="false"
                 onClick={() => client.logEvent("workspace_nav_click")}
               >
                 {workspaceName}
@@ -138,25 +136,24 @@ export function AccountHeader({ user }: AccountHeaderProps) {
                     key={item.path}
                     href={item.path}
                     prefetch={item.prefetch}
-                    className={cn(
-                      buttonVariants({
-                        variant: active ? "default" : "ghost",
-                        size: "sm",
-                      }),
-                      "relative",
-                    )}
+                    className="ceptly-nav-link"
+                    data-active={active ? "true" : "false"}
                     onClick={() =>
                       client.logEvent("navigation_click", item.path)
                     }
                   >
                     {item.label}
-                    {item.path === "/activity" && attentionCount > 0 ? (
-                      <Badge
-                        variant="destructive"
-                        className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full p-0 text-[10px]"
+                    {item.path === "/activity" &&
+                    attentionCount > 0 &&
+                    !active ? (
+                      <span
+                        className={cn(
+                          "ceptly-nav-badge",
+                          attentionCount <= 9 && "ceptly-nav-badge-single",
+                        )}
                       >
                         {attentionCount > 9 ? "9+" : attentionCount}
-                      </Badge>
+                      </span>
                     ) : null}
                   </Link>
                 );
@@ -164,68 +161,71 @@ export function AccountHeader({ user }: AccountHeaderProps) {
             </nav>
           </div>
 
-          <div className="flex items-center gap-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  className="relative size-9 rounded-full p-0"
+                />
+              }
+            >
+              <Avatar className="size-9">
+                <AvatarFallback className="bg-primary text-[13px] font-bold tracking-wide text-primary-foreground">
+                  {getInitials(user)}
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[232px] rounded-none p-1.5" align="end">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="px-2.5 py-2 font-normal">
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-[13px] leading-none font-semibold">
+                      {getDisplayName(user)}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="gap-2.5 rounded-none px-2.5 py-2 text-[13px]"
                 render={
-                  <Button
-                    variant="ghost"
-                    className="relative size-9 rounded-full p-0"
+                  <Link
+                    href="/settings/account"
+                    prefetch
+                    onClick={() => client.logEvent("account_settings_click")}
                   />
                 }
               >
-                <Avatar className="size-9">
-                  <AvatarFallback className="bg-primary font-semibold text-primary-foreground">
-                    {getInitials(user)}
-                  </AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm leading-none font-medium">
-                        {getDisplayName(user)}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  render={
-                    <Link
-                      href="/settings/account"
-                      prefetch
-                      onClick={() => client.logEvent("account_settings_click")}
-                    />
-                  }
-                >
-                  <User />
-                  <span>Account Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  render={
-                    <Link
-                      href="/settings"
-                      prefetch
-                      onClick={() => client.logEvent("settings_click")}
-                    />
-                  }
-                >
-                  <Settings />
-                  <span>Team Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                <User className="size-[15px] text-muted-foreground" />
+                <span>Account settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2.5 rounded-none px-2.5 py-2 text-[13px]"
+                render={
+                  <Link
+                    href="/settings"
+                    prefetch
+                    onClick={() => client.logEvent("settings_click")}
+                  />
+                }
+              >
+                <Settings className="size-[15px] text-muted-foreground" />
+                <span>Workspace settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="gap-2.5 rounded-none px-2.5 py-2 text-[13px]"
+                onClick={handleSignOut}
+              >
+                <LogOut className="size-[15px] text-muted-foreground" />
+                <span>Sign out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

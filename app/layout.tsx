@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Geist, Geist_Mono, Montserrat } from "next/font/google";
+import { Aldrich, Geist_Mono, Open_Sans } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { AccountHeader } from "@/components/account-header";
 import { AccountHeaderSkeleton } from "@/components/account-header-skeleton";
@@ -15,9 +15,10 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import MyStatsig from "./my-statsig";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const openSans = Open_Sans({
+  variable: "--font-open-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -25,10 +26,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
+const aldrich = Aldrich({
+  variable: "--font-aldrich",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: "400",
 });
 
 export const metadata: Metadata = createSiteMetadata();
@@ -69,7 +70,7 @@ export default async function RootLayout({
       className={cn("h-full", initialTheme === "dark" && "dark")}
     >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} min-h-full flex flex-col antialiased bg-background text-foreground selection:bg-primary/20 selection:text-primary`}
+        className={`${openSans.variable} ${geistMono.variable} ${aldrich.variable} min-h-full flex flex-col antialiased bg-background text-foreground`}
       >
         <script
           dangerouslySetInnerHTML={{ __html: THEME_COOKIE_SEED_SCRIPT }}

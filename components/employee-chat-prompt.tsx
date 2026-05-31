@@ -689,7 +689,7 @@ export function EmployeeChatPrompt({
 
   const promptForm = (
     <form
-      className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/20"
+      className="ceptly-composer"
       onSubmit={(event) => {
         event.preventDefault();
         void handleSend(input);
@@ -729,7 +729,7 @@ export function EmployeeChatPrompt({
         >
           <Plus />
         </Button> */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -768,43 +768,49 @@ export function EmployeeChatPrompt({
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-          {dictationSupported ? (
+          <div className="ceptly-composer-send-group flex items-center">
+            {dictationSupported ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                className={cn(
+                  "rounded-none",
+                  dictationListening &&
+                    "z-10 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive",
+                )}
+                disabled={chatDisabled}
+                aria-label={
+                  dictationListening ? "Stop dictation" : "Start dictation"
+                }
+                aria-pressed={dictationListening}
+                title={
+                  dictationError ??
+                  (dictationListening ? "Stop dictation" : "Dictate message")
+                }
+                onClick={() => {
+                  clearDictationError();
+                  toggleDictation();
+                }}
+              >
+                <Mic className={cn(dictationListening && "animate-pulse")} />
+              </Button>
+            ) : null}
             <Button
-              type="button"
-              variant="outline"
+              type="submit"
+              variant="default"
               size="icon-sm"
-              className={cn(
-                "rounded-full",
-                dictationListening &&
-                  "border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive",
-              )}
-              disabled={chatDisabled}
-              aria-label={
-                dictationListening ? "Stop dictation" : "Start dictation"
-              }
-              aria-pressed={dictationListening}
-              title={
-                dictationError ??
-                (dictationListening ? "Stop dictation" : "Dictate message")
-              }
-              onClick={() => {
-                clearDictationError();
-                toggleDictation();
-              }}
+              className="rounded-none"
+              disabled={!input.trim() || chatDisabled}
+              aria-label="Send message"
             >
-              <Mic className={cn(dictationListening && "animate-pulse")} />
+              {chatPending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ArrowUp />
+              )}
             </Button>
-          ) : null}
-          <Button
-            type="submit"
-            variant="default"
-            size="icon-sm"
-            className="rounded-full"
-            disabled={!input.trim() || chatDisabled}
-            aria-label="Send message"
-          >
-            {chatPending ? <Loader2 className="animate-spin" /> : <ArrowUp />}
-          </Button>
+          </div>
         </div>
       </div>
     </form>
@@ -816,7 +822,6 @@ export function EmployeeChatPrompt({
         type="button"
         variant="outline"
         size="icon-sm"
-        className="rounded-full"
         aria-label="Start new conversation"
         onClick={handleNewChat}
       >
@@ -846,7 +851,7 @@ export function EmployeeChatPrompt({
   if (isEmptyState) {
     return (
       <div className="flex w-full flex-1 flex-col justify-center gap-4">
-        <h1 className="text-center text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+        <h1 className="text-center text-[34px] leading-tight font-normal tracking-tight text-foreground">
           What can I do for you?
         </h1>
         {promptForm}

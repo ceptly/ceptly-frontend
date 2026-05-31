@@ -10,7 +10,7 @@ export default async function AccountSettingsPage() {
   const displayName = user.fullName?.trim() || user.email.split("@")[0] || "";
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">
+    <div className="ceptly-page ceptly-page-narrow flex flex-col gap-8">
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">

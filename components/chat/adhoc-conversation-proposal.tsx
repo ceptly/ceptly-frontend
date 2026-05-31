@@ -4,7 +4,6 @@ import { ArrowRight, Loader2, MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { AdhocConversationProposal } from "@/lib/api/types";
-import { cn } from "@/lib/utils";
 
 interface AdhocConversationProposalCardProps {
   proposal: AdhocConversationProposal;
@@ -50,13 +49,7 @@ export function AdhocConversationProposalCard({
   const recipientNames = formatMemberNames(proposal.members);
 
   return (
-    <div
-      className={cn(
-        "rounded-lg border border-dashed p-4",
-        "border-[#56FF3C]/30 bg-[#E6F9E6]/70",
-        "dark:border-[#56FF3C]/40 dark:bg-[#56FF3C]/10",
-      )}
-    >
+    <div className="ceptly-proposal-card">
       <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
         <MessageSquare className="size-3.5 shrink-0" aria-hidden="true" />
         Reach out · Slack DM

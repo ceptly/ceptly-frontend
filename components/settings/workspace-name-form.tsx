@@ -54,7 +54,7 @@ export function WorkspaceNameForm({
   return (
     <Card className="dark:border-white/20">
       <CardHeader>
-        <CardTitle>Team</CardTitle>
+        <CardTitle>Workspace name</CardTitle>
         <CardDescription>
           This name appears in the header and across Ceptly.
         </CardDescription>
@@ -71,12 +71,12 @@ export function WorkspaceNameForm({
 
           {state.success ? (
             <Alert>
-              <AlertDescription>Team name updated.</AlertDescription>
+              <AlertDescription>Workspace name updated.</AlertDescription>
             </Alert>
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="workspace-name">Team name</Label>
+            <Label htmlFor="workspace-name">Workspace name</Label>
             <Input
               id="workspace-name"
               name="name"

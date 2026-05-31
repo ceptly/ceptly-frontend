@@ -1,35 +1,26 @@
-import Link from "next/link";
+"use client";
 
-import { AdhocReachOutSummary } from "@/components/activity/adhoc-reach-out-summary";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { ActivityReachOutCard } from "@/components/activity/activity-reach-out-card";
+import { REACH_OUTS_PER_PAGE } from "@/lib/activity/reach-out-card";
 import type { ActivityAdhocSession } from "@/lib/api/types";
+import { cn } from "@/lib/utils";
 
 interface ActivityAdhocListProps {
   sessions: ActivityAdhocSession[];
 }
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function statusVariant(
-  status: ActivityAdhocSession["status"],
-): "default" | "outline" | "secondary" {
-  if (status === "completed") {
-    return "default";
-  }
-  if (status === "in_progress") {
-    return "secondary";
-  }
-  return "outline";
-}
-
 export function ActivityAdhocList({ sessions }: ActivityAdhocListProps) {
+  const [page, setPage] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(sessions.length / REACH_OUTS_PER_PAGE));
+  const safePage = Math.min(page, pageCount - 1);
+  const sliceStart = safePage * REACH_OUTS_PER_PAGE;
+  const slice = sessions.slice(sliceStart, sliceStart + REACH_OUTS_PER_PAGE);
+  const rangeStart = sessions.length === 0 ? 0 : sliceStart + 1;
+  const rangeEnd = Math.min(sliceStart + REACH_OUTS_PER_PAGE, sessions.length);
+
   if (sessions.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -39,36 +30,54 @@ export function ActivityAdhocList({ sessions }: ActivityAdhocListProps) {
   }
 
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border dark:divide-white/10 dark:border-white/10">
-      {sessions.map((session) => (
-        <li key={session.session_id}>
-          <Link
-            href={`/activity/${session.conversation_id}`}
-            className="block px-4 py-3 transition-colors hover:bg-muted/50"
+    <div>
+      <div className="ceptly-reachout-list">
+        {slice.map((session) => (
+          <ActivityReachOutCard key={session.session_id} session={session} />
+        ))}
+      </div>
+
+      {pageCount > 1 ? (
+        <div className="ceptly-pager">
+          <button
+            type="button"
+            className="ceptly-pager-btn"
+            disabled={safePage === 0}
+            onClick={() => setPage((current) => Math.max(0, current - 1))}
+            aria-label="Previous page"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <AdhocReachOutSummary
-                  intentLabel={session.intent_label}
-                  topic={session.topic}
-                  deliveryFacts={session.delivery_facts}
-                  agentPrompt={session.agent_prompt}
-                  compact
-                />
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {session.member_name} · {formatTime(session.started_at)}
-                </p>
-              </div>
-              <Badge
-                variant={statusVariant(session.status)}
-                className="shrink-0"
-              >
-                {session.status.replace("_", " ")}
-              </Badge>
-            </div>
-          </Link>
-        </li>
-      ))}
-    </ul>
+            <ChevronLeft className="size-4" aria-hidden />
+          </button>
+          {Array.from({ length: pageCount }).map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              className={cn(
+                "ceptly-pager-btn",
+                index === safePage && "active",
+              )}
+              onClick={() => setPage(index)}
+            >
+              {index + 1}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="ceptly-pager-btn"
+            disabled={safePage >= pageCount - 1}
+            onClick={() =>
+              setPage((current) => Math.min(pageCount - 1, current + 1))
+            }
+            aria-label="Next page"
+          >
+            <ChevronRight className="size-4" aria-hidden />
+          </button>
+        </div>
+      ) : null}
+
+      <p className="ceptly-pager-info">
+        Showing {rangeStart}–{rangeEnd} of {sessions.length} reach-outs
+      </p>
+    </div>
   );
 }

@@ -106,10 +106,8 @@ export function ChatMessageList({
 
               <div
                 className={cn(
-                  "rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
-                  isUser
-                    ? "rounded-br-md bg-primary text-primary-foreground"
-                    : "rounded-bl-md border border-border bg-card text-card-foreground",
+                  "px-[15px] py-[11px] text-sm leading-relaxed",
+                  isUser ? "ceptly-chat-bubble-user" : "ceptly-chat-bubble-ai",
                 )}
               >
                 {isUser ? (
@@ -124,7 +122,7 @@ export function ChatMessageList({
               </div>
 
               {dayPicker ? (
-                <div className="w-full rounded-2xl border border-border bg-card p-4 shadow-sm dark:border-white/20">
+                <div className="ceptly-glass-card w-full p-4">
                   <ScheduleDaysPicker
                     daysOfWeek={dayPicker.days_of_week}
                     onChange={(days) => onDaysChange?.(index, days)}
@@ -135,7 +133,7 @@ export function ChatMessageList({
               ) : null}
 
               {memberPicker ? (
-                <div className="w-full space-y-3 rounded-2xl border border-border bg-card p-4 shadow-sm dark:border-white/20">
+                <div className="ceptly-glass-card w-full space-y-3 p-4">
                   <p className="text-sm font-medium">Confirm who to message</p>
                   <div className="flex flex-col gap-2">
                     {memberPicker.members.map((member) => {
@@ -147,7 +145,7 @@ export function ChatMessageList({
                           key={member.id}
                           type="button"
                           disabled={interactiveDisabled}
-                          className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex items-center justify-between border border-border px-3 py-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
                           onClick={() => {
                             const nextIds = selected
                               ? memberPicker.selected_member_ids.filter(

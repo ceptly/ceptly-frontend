@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-
 interface AdhocReachOutSummaryProps {
   intentLabel: string;
   topic?: string | null;
@@ -25,50 +23,34 @@ export function AdhocReachOutSummary({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {intentLabel}
-      </p>
+      <p className="ceptly-reachout-eyebrow">{intentLabel}</p>
       {topic ? (
         <p className={compact ? "text-sm font-medium" : "text-sm"}>{topic}</p>
       ) : null}
-      {deliveryFacts && !agentPrompt ? (
-        compact ? (
-          <p className="line-clamp-3 whitespace-pre-wrap text-sm text-muted-foreground">
-            {deliveryFacts}
-          </p>
-        ) : null
+      {deliveryFacts && !agentPrompt && compact ? (
+        <p className="ceptly-mono-block line-clamp-3">{deliveryFacts}</p>
       ) : null}
       {promptText ? (
         compact ? (
           agentPrompt ? (
-            <p className="line-clamp-3 whitespace-pre-wrap font-mono text-xs text-muted-foreground">
-              {agentPrompt}
-            </p>
+            <p className="ceptly-mono-block line-clamp-3">{agentPrompt}</p>
           ) : (
-            <p className="line-clamp-3 whitespace-pre-wrap text-sm text-muted-foreground">
-              {deliveryFacts}
-            </p>
+            <p className="ceptly-mono-block line-clamp-3">{deliveryFacts}</p>
           )
         ) : (
           <div className="space-y-2">
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="ceptly-collapse"
+              data-open={promptOpen}
               onClick={() => setPromptOpen((open) => !open)}
               aria-expanded={promptOpen}
             >
-              <ChevronDown
-                className={cn(
-                  "size-4 transition-transform",
-                  promptOpen && "rotate-180",
-                )}
-              />
+              <ChevronDown aria-hidden />
               view agent prompt
             </button>
             {promptOpen ? (
-              <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-3 font-mono text-xs leading-relaxed text-muted-foreground dark:border-white/10">
-                {promptText}
-              </pre>
+              <div className="ceptly-prompt-box">{promptText}</div>
             ) : null}
           </div>
         )
