@@ -128,9 +128,9 @@ function AuthPageContent() {
           />
         </div>
 
-        <Card className="ceptly-auth-card w-full gap-0 py-0 shadow-lg">
-          <CardHeader className="px-0 pt-0 text-center">
-            <CardTitle className="text-[23px] font-normal tracking-tight">
+        <Card className="ceptly-auth-card">
+          <CardHeader className="ceptly-auth-head">
+            <CardTitle className="text-[23px] leading-[1.4] tracking-[-0.2px] text-[#fafafa]">
               {isSignUp ? "Create your Ceptly account" : "Welcome back"}
             </CardTitle>
             <CardDescription>
@@ -143,7 +143,7 @@ function AuthPageContent() {
                   : "Sign in to your Ceptly account"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="ceptly-auth-body">
             {checkoutSuccess && isSignUp ? (
               <Alert>
                 <AlertDescription>
@@ -177,11 +177,8 @@ function AuthPageContent() {
               Continue with Google
             </Button>
 
-            <div className="relative text-center">
-              <div className="absolute inset-x-0 top-1/2 h-px bg-border" />
-              <span className="relative bg-card px-2.5 text-[11px] tracking-[0.08em] text-muted-foreground uppercase">
-                or
-              </span>
+            <div className="ceptly-auth-or">
+              <span>or</span>
             </div>
 
             {isSignUp ? (
@@ -189,8 +186,13 @@ function AuthPageContent() {
                 {inviteToken ? (
                   <input type="hidden" name="inviteToken" value={inviteToken} />
                 ) : null}
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                <div className="space-y-0">
+                  <Label
+                    htmlFor="email"
+                    className="mb-[7px] block text-[13px] font-semibold"
+                  >
+                    Email
+                  </Label>
                   <div className="relative">
                     <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -204,33 +206,43 @@ function AuthPageContent() {
                     />
                   </div>
                   {signUpState?.errors?.email && (
-                    <p className="text-sm text-destructive">
+                    <p className="mt-1.5 text-sm text-destructive">
                       {signUpState.errors.email[0]}
                     </p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
+                <div className="space-y-0">
+                  <Label
+                    htmlFor="fullName"
+                    className="mb-[7px] block text-[13px] font-semibold"
+                  >
+                    Full name
+                  </Label>
                   <div className="relative">
                     <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id="fullName"
                       name="fullName"
-                      placeholder="John Doe"
+                      placeholder="Jordan Avery"
                       className="pl-10"
                       required
                     />
                   </div>
                   {signUpState?.errors?.fullName && (
-                    <p className="text-sm text-destructive">
+                    <p className="mt-1.5 text-sm text-destructive">
                       {signUpState.errors.fullName[0]}
                     </p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                <div className="space-y-0">
+                  <Label
+                    htmlFor="password"
+                    className="mb-[7px] block text-[13px] font-semibold"
+                  >
+                    Password
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -243,11 +255,11 @@ function AuthPageContent() {
                     />
                   </div>
                   {signUpState?.errors?.password && (
-                    <p className="text-sm text-destructive">
+                    <p className="mt-1.5 text-sm text-destructive">
                       {signUpState.errors.password[0]}
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground">
+                  <p className="mt-[7px] text-xs text-muted-foreground">
                     Must be at least 8 characters with a letter and a number
                   </p>
                 </div>
@@ -262,59 +274,68 @@ function AuthPageContent() {
                 {inviteToken ? (
                   <input type="hidden" name="inviteToken" value={inviteToken} />
                 ) : null}
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                <div className="space-y-0">
+                  <Label
+                    htmlFor="signin-email"
+                    className="mb-[7px] block text-[13px] font-semibold"
+                  >
+                    Email
+                  </Label>
                   <Input
                     id="signin-email"
                     name="email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="you@acme.com"
                     defaultValue={prefilledEmail}
                     required
                   />
                   {signInState?.errors?.email && (
-                    <p className="text-sm text-destructive">
+                    <p className="mt-1.5 text-sm text-destructive">
                       {signInState.errors.email[0]}
                     </p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                <div className="space-y-0">
+                  <Label
+                    htmlFor="signin-password"
+                    className="mb-[7px] block text-[13px] font-semibold"
+                  >
+                    Password
+                  </Label>
                   <Input
                     id="signin-password"
                     name="password"
                     type="password"
-                    placeholder="Enter your password"
+                    placeholder="••••••••"
                     required
                   />
                   {signInState?.errors?.password && (
-                    <p className="text-sm text-destructive">
+                    <p className="mt-1.5 text-sm text-destructive">
                       {signInState.errors.password[0]}
                     </p>
                   )}
                 </div>
 
-                <SubmitButton label="Sign In" pendingLabel="Signing In..." />
+                <SubmitButton label="Sign in" pendingLabel="Signing in..." />
               </form>
             )}
-
-            <div className="mt-5 text-center text-[13px] text-muted-foreground">
-              {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-              <button
-                type="button"
-                onClick={() => setMode(isSignUp ? "sign-in" : "sign-up")}
-                className="font-semibold text-foreground hover:underline"
-              >
-                {isSignUp ? "Sign in" : "Create account"}
-              </button>
-            </div>
-
-            <p className="mt-4 text-center text-[11.5px] leading-normal text-muted-foreground">
-              By continuing, you agree to our terms of service and privacy
-              policy.
-            </p>
           </CardContent>
+
+          <div className="ceptly-auth-foot">
+            {isSignUp ? "Already have an account? " : "Don't have an account? "}
+            <button
+              type="button"
+              onClick={() => setMode(isSignUp ? "sign-in" : "sign-up")}
+            >
+              {isSignUp ? "Sign in" : "Create account"}
+            </button>
+          </div>
+
+          <p className="ceptly-auth-fine">
+            By continuing, you agree to our terms of service and privacy
+            policy.
+          </p>
         </Card>
       </div>
     </div>

@@ -10,6 +10,8 @@ import type {
 interface ConversationResultsClientProps {
   workspaceId: string;
   conversationId: string;
+  conversationName: string;
+  conversationSubtitle: string;
   runs: ConversationRunSummary[];
   initialRun: ConversationRunDetail | null;
 }
@@ -17,11 +19,15 @@ interface ConversationResultsClientProps {
 export function ConversationResultsClient({
   workspaceId,
   conversationId,
+  conversationName,
+  conversationSubtitle,
   runs,
   initialRun,
 }: ConversationResultsClientProps) {
   return (
     <ConversationResultsView
+      conversationName={conversationName}
+      conversationSubtitle={conversationSubtitle}
       runs={runs}
       initialRun={initialRun}
       onSelectRun={async (runId) => {
