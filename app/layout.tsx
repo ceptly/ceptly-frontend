@@ -35,10 +35,15 @@ const aldrich = Aldrich({
 export const metadata: Metadata = createSiteMetadata();
 
 async function AccountHeaderSlot() {
-  const user = await getCurrentUser();
+  const [user, cookieStore] = await Promise.all([
+    getCurrentUser(),
+    cookies(),
+  ]);
   if (!user) {
     return null;
   }
+
+  const showBilling = cookieStore.get("billing_can_manage")?.value === "1";
 
   return (
     <>
@@ -47,7 +52,7 @@ async function AccountHeaderSlot() {
         email={user.email}
         fullName={user.fullName ?? undefined}
       />
-      <AccountHeader user={user} />
+      <AccountHeader user={user} showBilling={showBilling} />
     </>
   );
 }

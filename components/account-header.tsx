@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { LogOut, User, Settings } from "lucide-react";
+import { LogOut, User, Settings, Users } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useStatsigClient } from "@statsig/react-bindings";
 
@@ -23,17 +23,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { canManageWorkspace } from "@/lib/roles";
+import { getVisibleSettingsNavItems } from "@/lib/settings-nav";
 import { cn } from "@/lib/utils";
 
 const baseNavigationItems = [
   { label: "Chat", path: "/chat", prefetch: true },
   { label: "Activity", path: "/activity", leadershipOnly: true, prefetch: false },
-  { label: "Team", path: "/team", prefetch: false },
+  { label: "Team", path: "/team", prefetch: false, mobileHidden: true },
   {
     label: "Settings",
     path: "/settings",
     matchPrefix: "/settings",
     prefetch: false,
+    mobileHidden: true,
   },
 ];
 
@@ -52,9 +54,10 @@ function getDisplayName(user: AuthUser) {
 
 interface AccountHeaderProps {
   user: AuthUser;
+  showBilling?: boolean;
 }
 
-export function AccountHeader({ user }: AccountHeaderProps) {
+export function AccountHeader({ user, showBilling = false }: AccountHeaderProps) {
   const pathname = usePathname();
   const { theme, resolvedTheme } = useTheme();
   const { client } = useStatsigClient();
@@ -65,6 +68,10 @@ export function AccountHeader({ user }: AccountHeaderProps) {
   const showActivity = canManageWorkspace(workspace?.role);
   const navigationItems = baseNavigationItems.filter(
     (item) => !item.leadershipOnly || showActivity,
+  );
+  const mobileSettingsNavItems = getVisibleSettingsNavItems(showBilling).filter(
+    (item) =>
+      item.href !== "/settings" && item.href !== "/settings/account",
   );
 
   useEffect(() => {
@@ -136,7 +143,12 @@ export function AccountHeader({ user }: AccountHeaderProps) {
                     key={item.path}
                     href={item.path}
                     prefetch={item.prefetch}
-                    className="ceptly-nav-link"
+                    className={cn(
+                      "ceptly-nav-link",
+                      "mobileHidden" in item &&
+                        item.mobileHidden &&
+                        "hidden md:inline",
+                    )}
                     data-active={active ? "true" : "false"}
                     onClick={() =>
                       client.logEvent("navigation_click", item.path)
@@ -191,17 +203,17 @@ export function AccountHeader({ user }: AccountHeaderProps) {
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                className="gap-2.5 rounded-none px-2.5 py-2 text-[13px]"
+                className="gap-2.5 rounded-none px-2.5 py-2 text-[13px] md:hidden"
                 render={
                   <Link
-                    href="/settings/account"
-                    prefetch
-                    onClick={() => client.logEvent("account_settings_click")}
+                    href="/team"
+                    prefetch={false}
+                    onClick={() => client.logEvent("navigation_click", "/team")}
                   />
                 }
               >
-                <User className="size-[15px] text-muted-foreground" />
-                <span>Account settings</span>
+                <Users className="size-[15px] text-muted-foreground" />
+                <span>Team</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="gap-2.5 rounded-none px-2.5 py-2 text-[13px]"
@@ -216,6 +228,41 @@ export function AccountHeader({ user }: AccountHeaderProps) {
                 <Settings className="size-[15px] text-muted-foreground" />
                 <span>Workspace settings</span>
               </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2.5 rounded-none px-2.5 py-2 text-[13px]"
+                render={
+                  <Link
+                    href="/settings/account"
+                    prefetch
+                    onClick={() => client.logEvent("account_settings_click")}
+                  />
+                }
+              >
+                <User className="size-[15px] text-muted-foreground" />
+                <span>Account settings</span>
+              </DropdownMenuItem>
+              {mobileSettingsNavItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <DropdownMenuItem
+                    key={item.href}
+                    className="gap-2.5 rounded-none px-2.5 py-2 text-[13px] md:hidden"
+                    render={
+                      <Link
+                        href={item.href}
+                        prefetch={false}
+                        onClick={() =>
+                          client.logEvent("settings_nav_click", item.href)
+                        }
+                      />
+                    }
+                  >
+                    <Icon className="size-[15px] text-muted-foreground" />
+                    <span>{item.label}</span>
+                  </DropdownMenuItem>
+                );
+              })}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="gap-2.5 rounded-none px-2.5 py-2 text-[13px]"
