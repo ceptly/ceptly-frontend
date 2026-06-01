@@ -328,7 +328,7 @@ export function OnboardingWizard({
         : "Continue";
 
   return (
-    <Card className="ceptly-auth-card w-full gap-0 py-0">
+    <Card className="ceptly-auth-card">
       <CardHeader className="space-y-4 px-0 pt-0">
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

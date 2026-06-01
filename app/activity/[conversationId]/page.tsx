@@ -6,6 +6,7 @@ import { ConversationEditPageClient } from "@/components/activity/conversation-e
 import { ConversationResultsClient } from "@/components/activity/conversation-results-client";
 import { ConversationSessionsClient } from "@/components/activity/conversation-sessions-client";
 import { buttonVariants } from "@/components/ui/button";
+import { buildConversationActivitySubtitle } from "@/lib/activity/conversation-detail";
 import { listConversationSessions } from "@/lib/api/conversation-sessions";
 import {
   getConversation,
@@ -19,7 +20,6 @@ import {
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
-import { formatSchedulePreview } from "@/lib/schedule/preview";
 import { canManageWorkspace } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
@@ -147,56 +147,33 @@ export default async function ActivityConversationPage({
 
   const runs = runsResult.data?.runs ?? [];
   const latestRun = latestResult.data?.run ?? null;
-  const schedulePreview = formatSchedulePreview(
-    conversation.time_local,
-    conversation.timezone,
-    conversation.frequency,
-    conversation.days_of_week,
-    conversation.enabled,
-  );
+  const conversationSubtitle = buildConversationActivitySubtitle(conversation);
   const conversationCount =
     allConversationsResult?.data?.conversations?.length ?? 1;
   const canDelete = canEdit && conversationCount > 1;
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">
-      <div className="space-y-4">
-        <Link
-          href="/activity"
-          className={cn(
-            buttonVariants({ variant: "ghost", size: "sm" }),
-            "-ml-3 w-fit px-3 text-muted-foreground hover:text-foreground",
-          )}
-        >
-          &lt; Activity
-        </Link>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {conversation.name}
-          </h1>
-          {conversation.summary ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {conversation.summary}
-            </p>
-          ) : null}
-          <p className="mt-1 text-sm text-muted-foreground">
-            {schedulePreview}
-          </p>
-        </div>
+    <div className="ceptly-page ceptly-page-narrow">
+      <Link href="/activity" className="ceptly-back">
+        ← Activity
+      </Link>
 
-        {canEdit ? (
+      {canEdit ? (
+        <div className="mb-6">
           <ConversationDetailActions
             workspaceId={workspace.id}
             conversationId={conversationId}
             conversationName={conversation.name}
             canDelete={canDelete}
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <ConversationResultsClient
         workspaceId={workspace.id}
         conversationId={conversationId}
+        conversationName={conversation.name}
+        conversationSubtitle={conversationSubtitle}
         runs={runs}
         initialRun={latestRun}
       />

@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 
 import { fetchStandupSessionDetail } from "@/actions/standups";
 import { CheckinTranscriptMessageList } from "@/components/activity/checkin-transcript-message-list";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
 import type {
   StandupSessionDetail,
   StandupSessionSummary,
@@ -28,6 +37,10 @@ function formatLabel(iso: string): string {
   });
 }
 
+function sessionLabel(session: StandupSessionSummary): string {
+  return `${formatLabel(session.scheduled_fire_at)} (${session.status})`;
+}
+
 export function StandupSessionDetailView({
   workspaceId,
   standupId,
@@ -45,13 +58,24 @@ export function StandupSessionDetailView({
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+
+  const preserveScrollPosition = () => {
+    const scrollY = window.scrollY;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, left: 0, behavior: "instant" });
+    });
+  };
 
   const handleSelect = async (sessionId: string) => {
+    setOpen(false);
     setSelectedSessionId(sessionId);
     setError(null);
     if (sessionId === loadedSessionId && detail) {
+      preserveScrollPosition();
       return;
     }
+    const scrollY = window.scrollY;
     setLoading(true);
     const result = await fetchStandupSessionDetail({
       workspaceId,
@@ -61,10 +85,14 @@ export function StandupSessionDetailView({
     setLoading(false);
     if (result.error) {
       setError(result.error);
+      window.scrollTo({ top: scrollY, left: 0, behavior: "instant" });
       return;
     }
     setDetail(result.session);
     setLoadedSessionId(sessionId);
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, left: 0, behavior: "instant" });
+    });
   };
 
   useEffect(() => {
@@ -83,24 +111,53 @@ export function StandupSessionDetailView({
     );
   }
 
+  const selectedSession = sessions.find(
+    (session) => session.session_id === selectedSessionId,
+  );
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <label htmlFor="standup-session-select" className="text-sm font-medium">
-          Session
-        </label>
-        <select
-          id="standup-session-select"
-          value={selectedSessionId}
-          onChange={(event) => void handleSelect(event.target.value)}
-          className="flex h-9 w-full max-w-md rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-        >
-          {sessions.map((session) => (
-            <option key={session.session_id} value={session.session_id}>
-              {formatLabel(session.scheduled_fire_at)} ({session.status})
-            </option>
-          ))}
-        </select>
+        <Label htmlFor="standup-session-select">Session</Label>
+        <DropdownMenu modal={false} open={open} onOpenChange={setOpen}>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                id="standup-session-select"
+                type="button"
+                variant="outline"
+                className="h-9 w-full max-w-md justify-between font-normal"
+                disabled={loading}
+              />
+            }
+          >
+            <span className="truncate">
+              {selectedSession
+                ? sessionLabel(selectedSession)
+                : "Select a session"}
+            </span>
+            <ChevronDown className="size-4 shrink-0 opacity-50" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="max-h-64 w-[var(--anchor-width)]"
+            finalFocus={false}
+          >
+            <DropdownMenuRadioGroup
+              value={selectedSessionId}
+              onValueChange={(value) => void handleSelect(value)}
+            >
+              {sessions.map((session) => (
+                <DropdownMenuRadioItem
+                  key={session.session_id}
+                  value={session.session_id}
+                  closeOnClick
+                >
+                  {sessionLabel(session)}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {error ? (

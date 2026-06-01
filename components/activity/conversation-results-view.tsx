@@ -1,121 +1,199 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Calendar,
+  Check,
+  ChevronDown,
+  Loader2,
+  Sparkles,
+  Users,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  memberInitials,
+  memberResponseNote,
+} from "@/lib/activity/conversation-detail";
+import { formatActivityLatestLabel } from "@/lib/activity/rollup-card";
 import type {
   ConversationRunDetail,
-  ConversationRunRespondedMember,
   ConversationRunSummary,
 } from "@/lib/api/types";
 
 interface ConversationResultsViewProps {
+  conversationName: string;
+  conversationSubtitle: string;
   runs: ConversationRunSummary[];
   initialRun: ConversationRunDetail | null;
+  rollupSummary?: string | null;
   onSelectRun: (runId: string) => Promise<ConversationRunDetail | null>;
 }
 
-function formatRunLabel(firedAt: string): string {
-  return new Date(firedAt).toLocaleString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+function formatRunPickerLabel(run: ConversationRunSummary): string {
+  return formatActivityLatestLabel(run.fired_at);
 }
 
-function formatMessageTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-export function MemberResponse({
-  member,
+function RunPicker({
+  runs,
+  selectedRunId,
+  loading,
+  onSelect,
 }: {
-  member: ConversationRunRespondedMember;
+  runs: ConversationRunSummary[];
+  selectedRunId: string;
+  loading: boolean;
+  onSelect: (runId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const selectedRun = runs.find((run) => run.run_id === selectedRunId);
+
+  const handleSelect = (runId: string) => {
+    setOpen(false);
+    onSelect(runId);
+  };
 
   return (
-    <div className="rounded-lg border border-border dark:border-white/10">
-      <button
-        type="button"
-        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
-        onClick={() => setOpen((value) => !value)}
+    <DropdownMenu modal={false} open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5 font-normal"
+            disabled={loading}
+          />
+        }
       >
-        <div className="min-w-0">
-          <p className="font-medium">{member.display_name}</p>
-          <p className="text-sm text-muted-foreground">{member.email}</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Badge variant="outline">{member.status}</Badge>
-          {open ? (
-            <ChevronDown className="size-4 text-muted-foreground" />
+        <Calendar className="size-3.5 shrink-0 opacity-70" />
+        <span className="max-w-[240px] truncate">
+          {selectedRun
+            ? formatRunPickerLabel(selectedRun)
+            : "Select session"}
+        </span>
+        <ChevronDown className="size-3.5 shrink-0 opacity-50" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-[268px]"
+        finalFocus={false}
+      >
+        <DropdownMenuLabel className="px-2 pb-1 text-[11px] font-semibold tracking-[0.05em] uppercase">
+          Past sessions
+        </DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={selectedRunId}
+          onValueChange={handleSelect}
+        >
+          {runs.map((run) => (
+            <DropdownMenuRadioItem
+              key={run.run_id}
+              value={run.run_id}
+              closeOnClick
+              className="items-start py-2"
+            >
+              <span className="min-w-0">
+                <span className="block font-medium">
+                  {formatRunPickerLabel(run)}
+                </span>
+                <span className="mt-0.5 block text-[11.5px] text-muted-foreground">
+                  {run.responded_count}/{run.expected_count} responded
+                </span>
+              </span>
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ResponseRow({
+  name,
+  note,
+  responded,
+}: {
+  name: string;
+  note: string | null;
+  responded: boolean;
+}) {
+  return (
+    <div className="ceptly-list-row items-start">
+      <span className="ceptly-avatar ceptly-avatar-sm">{memberInitials(name)}</span>
+      <div className="ceptly-list-main">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="ceptly-list-name">{name}</span>
+          {responded ? (
+            <Badge variant="complete" className="gap-1">
+              <Check className="size-3" />
+              Responded
+            </Badge>
           ) : (
-            <ChevronRight className="size-4 text-muted-foreground" />
+            <Badge variant="secondary">Waiting</Badge>
           )}
         </div>
-      </button>
-      {open ? (
-        <div className="space-y-3 border-t border-border px-4 py-3 text-sm dark:border-white/10">
-          {member.transcript?.map((message, index) => (
-            <div key={index}>
-              <p className="text-xs text-muted-foreground">
-                <span className="font-medium">
-                  {message.role === "user" ? member.display_name : "Ceptly"}
-                </span>
-                {" · "}
-                <time dateTime={message.created_at}>
-                  {formatMessageTime(message.created_at)}
-                </time>
-              </p>
-              <p className="mt-0.5 whitespace-pre-wrap">{message.content}</p>
-            </div>
-          ))}
-          {member.legacy_responses?.map((response, index) => (
-            <div key={index} className="space-y-2">
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Ceptly</span>
-                  {" · "}
-                  <time dateTime={response.question_at}>
-                    {formatMessageTime(response.question_at)}
-                  </time>
-                </p>
-                <p className="mt-0.5 whitespace-pre-wrap">
-                  {response.question_prompt}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">{member.display_name}</span>
-                  {" · "}
-                  <time dateTime={response.answered_at}>
-                    {formatMessageTime(response.answered_at)}
-                  </time>
-                </p>
-                <p className="mt-0.5 whitespace-pre-wrap">
-                  {response.answer_text}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
+        {note ? (
+          <p className="ceptly-list-desc mt-1.5">{note}</p>
+        ) : (
+          <p className="ceptly-list-desc mt-1.5 italic">No reply yet.</p>
+        )}
+      </div>
     </div>
   );
 }
 
+function buildResponseRows(runDetail: ConversationRunDetail) {
+  const respondedById = new Map(
+    runDetail.responded.map((member) => [member.roster_member_id, member]),
+  );
+  const members: Array<{
+    key: string;
+    name: string;
+    note: string | null;
+    responded: boolean;
+  }> = [];
+
+  for (const member of runDetail.expected_members) {
+    const respondedMember = respondedById.get(member.roster_member_id);
+    members.push({
+      key: member.roster_member_id,
+      name: member.display_name,
+      note: respondedMember ? memberResponseNote(respondedMember) : null,
+      responded: Boolean(respondedMember),
+    });
+  }
+
+  for (const member of runDetail.not_responded) {
+    if (members.some((row) => row.key === member.roster_member_id)) {
+      continue;
+    }
+    members.push({
+      key: member.roster_member_id,
+      name: member.display_name,
+      note: null,
+      responded: false,
+    });
+  }
+
+  return members;
+}
+
 export function ConversationResultsView({
+  conversationName,
+  conversationSubtitle,
   runs,
   initialRun,
+  rollupSummary = null,
   onSelectRun,
 }: ConversationResultsViewProps) {
   const [selectedRunId, setSelectedRunId] = useState(
@@ -132,100 +210,118 @@ export function ConversationResultsView({
   );
 
   const handleRunChange = async (runId: string) => {
+    const scrollY = window.scrollY;
     setSelectedRunId(runId);
-    if (runId === initialRun?.run_id && runDetail?.run_id === runId) {
+    if (runId === runDetail?.run_id) {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: scrollY, left: 0, behavior: "instant" });
+      });
       return;
     }
     setLoading(true);
     const detail = await onSelectRun(runId);
     setRunDetail(detail);
     setLoading(false);
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, left: 0, behavior: "instant" });
+    });
   };
 
-  if (runs.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No check-in runs yet. When the schedule fires, responses will appear
-        here.
-      </p>
-    );
-  }
+  const respondedCount = selectedSummary?.responded_count ?? 0;
+  const expectedCount = selectedSummary?.expected_count ?? 0;
+  const completionPercent =
+    expectedCount > 0
+      ? Math.round((respondedCount / expectedCount) * 100)
+      : 0;
+  const waitingCount = Math.max(expectedCount - respondedCount, 0);
+  const responseRows = runDetail ? buildResponseRows(runDetail) : [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <label htmlFor="run-select" className="text-sm font-medium">
-          Run
-        </label>
-        <select
-          id="run-select"
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-          value={selectedRunId}
-          onChange={(event) => void handleRunChange(event.target.value)}
-          disabled={loading}
-        >
-          {runs.map((run, index) => (
-            <option key={run.run_id} value={run.run_id}>
-              {index === 0 ? "Latest — " : ""}
-              {formatRunLabel(run.fired_at)} ({run.responded_count}/
-              {run.expected_count} responded)
-            </option>
-          ))}
-        </select>
-        {selectedSummary ? (
-          <p className="text-sm text-muted-foreground">
-            {selectedSummary.not_responded_count} missing
-          </p>
+    <>
+      <div className="ceptly-page-head ceptly-page-head-split">
+        <div>
+          <h1 className="ceptly-page-title">{conversationName}</h1>
+          <p className="ceptly-page-sub">{conversationSubtitle}</p>
+        </div>
+        {runs.length > 0 ? (
+          <RunPicker
+            runs={runs}
+            selectedRunId={selectedRunId}
+            loading={loading}
+            onSelect={(runId) => void handleRunChange(runId)}
+          />
         ) : null}
       </div>
 
-      {loading || !runDetail ? (
-        <p className="text-sm text-muted-foreground">
-          {loading ? "Loading run..." : "Select a run to view results."}
+      {runs.length === 0 ? (
+        <p className="ceptly-card-empty mt-0">
+          No check-in runs yet. When the schedule fires, responses will appear
+          here.
         </p>
+      ) : loading || !runDetail ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          {loading ? "Loading session…" : "Select a session to view results."}
+        </div>
       ) : (
-        <>
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold">
-              Responded ({runDetail.responded.length})
+        <div className="space-y-0">
+          <div className="ceptly-stat-grid">
+            <div className="ceptly-stat">
+              <div className="ceptly-stat-val">
+                {respondedCount}/{expectedCount}
+              </div>
+              <div className="ceptly-stat-label">Responded</div>
+            </div>
+            <div className="ceptly-stat">
+              <div className="ceptly-stat-val">{completionPercent}%</div>
+              <div className="ceptly-stat-label">Completion</div>
+            </div>
+            <div className="ceptly-stat">
+              <div className="ceptly-stat-val">{waitingCount}</div>
+              <div className="ceptly-stat-label">Still waiting</div>
+            </div>
+          </div>
+
+          {rollupSummary ? (
+            <section className="ceptly-section">
+              <h2 className="ceptly-section-title">
+                <Sparkles className="text-brand" aria-hidden />
+                Rollup summary
+              </h2>
+              <div className="ceptly-glass-card p-[18px]">
+                <p className="text-sm leading-[1.6] whitespace-pre-wrap">
+                  {rollupSummary}
+                </p>
+              </div>
+            </section>
+          ) : null}
+
+          <section className="ceptly-section">
+            <h2 className="ceptly-section-title">
+              <Users aria-hidden />
+              Responses
             </h2>
-            {runDetail.responded.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No responses yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {runDetail.responded.map((member) => (
-                  <MemberResponse key={member.session_id} member={member} />
+            {responseRows.length > 0 ? (
+              <div className="ceptly-list-card">
+                {responseRows.map((row) => (
+                  <ResponseRow
+                    key={row.key}
+                    name={row.name}
+                    note={row.note}
+                    responded={row.responded}
+                  />
                 ))}
+              </div>
+            ) : (
+              <div className="ceptly-glass-card p-5">
+                <p className="ceptly-card-empty mt-0">
+                  No individual responses to show for this session yet.
+                </p>
               </div>
             )}
           </section>
-
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold">
-              Not responded ({runDetail.not_responded.length})
-            </h2>
-            {runDetail.not_responded.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Everyone assigned to this conversation responded.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {runDetail.not_responded.map((member) => (
-                  <li
-                    key={member.roster_member_id}
-                    className="rounded-lg border border-dashed border-border px-4 py-3 dark:border-white/10"
-                  >
-                    <p className="font-medium">{member.display_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {member.email}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </>
+        </div>
       )}
-    </div>
+    </>
   );
 }
