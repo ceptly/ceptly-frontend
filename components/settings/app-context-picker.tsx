@@ -10,6 +10,14 @@ interface AppContextPickerProps {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
   disabled?: boolean;
+  /**
+   * Only render tools that are actually connected. Use this where the picker
+   * configures what an agent can reference at run time (e.g. agents/new) —
+   * tools that aren't connected can't be used, so they shouldn't appear as
+   * options. Settings surfaces leave this off so they can show "Connect in
+   * Settings" prompts for unconnected tools.
+   */
+  connectedOnly?: boolean;
 }
 
 export function AppContextPicker({
@@ -17,7 +25,12 @@ export function AppContextPicker({
   selectedIds,
   onChange,
   disabled = false,
+  connectedOnly = false,
 }: AppContextPickerProps) {
+  const visibleOptions = connectedOnly
+    ? options.filter((option) => option.connected)
+    : options;
+
   const toggle = (id: string, selectable: boolean) => {
     if (disabled || !selectable) {
       return;
@@ -36,8 +49,20 @@ export function AppContextPicker({
         Connect external tools so the check-in agent knows what each person is
         working on before messaging them in Slack.
       </p>
+      {connectedOnly && visibleOptions.length === 0 ? (
+        <p className="rounded-lg border border-border px-4 py-3 text-sm text-muted-foreground dark:border-white/10">
+          No connected tools yet.{" "}
+          <Link
+            href="/settings/integrations"
+            className="font-medium underline-offset-4 hover:underline"
+          >
+            Connect a tool in Settings
+          </Link>{" "}
+          to let this agent reference tickets and tasks.
+        </p>
+      ) : null}
       <ul className="space-y-2">
-        {options.map((option) => {
+        {visibleOptions.map((option) => {
           const checked = selectedIds.includes(option.id);
           const isDisabled = disabled || !option.selectable;
 

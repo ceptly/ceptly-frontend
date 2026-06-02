@@ -628,6 +628,7 @@ export function AgentDeployFields({
             selectedIds={contextIntegrations}
             onChange={setContextIntegrations}
             disabled={isPending}
+            connectedOnly
           />
         </AgentSection>
 
