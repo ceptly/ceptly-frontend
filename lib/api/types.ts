@@ -270,6 +270,7 @@ export interface ActivityChannelStandup {
   slack_channel_id: string;
   slack_channel_name?: string;
   style: StandupStyle;
+  enabled: boolean;
   latest_session: StandupSessionSummary | null;
   session_count: number;
 }

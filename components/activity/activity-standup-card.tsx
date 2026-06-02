@@ -14,6 +14,9 @@ export function ActivityStandupCard({ standup }: ActivityStandupCardProps) {
   const channelLabel = standup.slack_channel_name
     ? `#${standup.slack_channel_name}`
     : standup.slack_channel_id;
+  const scheduleLabel = standup.enabled
+    ? `${channelLabel} · ${styleLabel(standup.style)}`
+    : "Standup is paused";
   const session = standup.latest_session;
   const responded = session?.responded_count ?? 0;
   const expected = session?.participant_count ?? 0;
@@ -29,7 +32,7 @@ export function ActivityStandupCard({ standup }: ActivityStandupCardProps) {
     <ActivityRollupCard
       href={`/activity/standups/${standup.standup_id}`}
       title={standup.name}
-      subtitle={`${channelLabel} · ${styleLabel(standup.style)}`}
+      subtitle={scheduleLabel}
       status={status}
       latestAt={session?.scheduled_fire_at ?? null}
       responded={responded}

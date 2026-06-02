@@ -160,12 +160,6 @@ export function AppSidebar({ user, className }: AppSidebarProps) {
         className="mb-3.5 flex w-full items-center gap-[9px] border border-border px-2.5 py-[9px] text-left transition-colors hover:bg-muted"
         onClick={() => client.logEvent("workspace_nav_click")}
       >
-        <span
-          className="inline-flex size-[22px] shrink-0 items-center justify-center text-[12px] font-bold"
-          style={{ background: "var(--green-wash)", color: "var(--green-ink)" }}
-        >
-          {workspaceName.slice(0, 1)}
-        </span>
         <span className="flex-1 truncate text-[13px] font-semibold">
           {workspaceName}
         </span>

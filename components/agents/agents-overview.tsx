@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bot, CalendarCheck, CalendarClock, Plus } from "lucide-react";
+import { Bot, PauseCircle, Play, Plus } from "lucide-react";
 
 import { ActivityConversationCard } from "@/components/activity/activity-conversation-card";
 import { ActivityStandupCard } from "@/components/activity/activity-standup-card";
@@ -18,6 +18,63 @@ interface AgentsOverviewProps {
   scheduledConversations: ActivityScheduledConversation[];
 }
 
+type AgentListItem =
+  | { kind: "standup"; standup: ActivityChannelStandup }
+  | { kind: "checkin"; conversation: ActivityScheduledConversation };
+
+function isAgentActive(item: AgentListItem): boolean {
+  if (item.kind === "standup") {
+    return item.standup.enabled !== false;
+  }
+  return item.conversation.enabled;
+}
+
+function AgentListCard({ item }: { item: AgentListItem }) {
+  if (item.kind === "standup") {
+    return <ActivityStandupCard standup={item.standup} />;
+  }
+  return <ActivityConversationCard conversation={item.conversation} />;
+}
+
+function AgentSection({
+  title,
+  icon: Icon,
+  items,
+  emptyMessage,
+}: {
+  title: string;
+  icon: typeof Play;
+  items: AgentListItem[];
+  emptyMessage: string;
+}) {
+  return (
+    <section className="ceptly-section">
+      <div className="ceptly-section-head">
+        <h2 className="ceptly-section-title">
+          <Icon aria-hidden />
+          {title}
+        </h2>
+      </div>
+      {items.length === 0 ? (
+        <p className="ceptly-card-empty not-italic">{emptyMessage}</p>
+      ) : (
+        <div className="ceptly-rollup-card-grid">
+          {items.map((item) => (
+            <AgentListCard
+              key={
+                item.kind === "standup"
+                  ? item.standup.standup_id
+                  : item.conversation.id
+              }
+              item={item}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function AgentsOverview({
   channelStandups,
   scheduledConversations,
@@ -25,8 +82,6 @@ export function AgentsOverview({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Read the one-shot ?deployed flag once on mount so the confirmation persists
-  // after we strip it from the URL below.
   const [deployed, setDeployed] = useState(() =>
     Boolean(searchParams.get("deployed")),
   );
@@ -38,8 +93,25 @@ export function AgentsOverview({
     return () => clearTimeout(timer);
   }, [deployed, router]);
 
-  const hasAgents =
-    channelStandups.length > 0 || scheduledConversations.length > 0;
+  const { activeAgents, pausedAgents } = useMemo(() => {
+    const all: AgentListItem[] = [
+      ...channelStandups.map((standup) => ({
+        kind: "standup" as const,
+        standup,
+      })),
+      ...scheduledConversations.map((conversation) => ({
+        kind: "checkin" as const,
+        conversation,
+      })),
+    ];
+
+    return {
+      activeAgents: all.filter(isAgentActive),
+      pausedAgents: all.filter((item) => !isAgentActive(item)),
+    };
+  }, [channelStandups, scheduledConversations]);
+
+  const hasAgents = activeAgents.length > 0 || pausedAgents.length > 0;
 
   return (
     <div className="ceptly-page">
@@ -72,51 +144,20 @@ export function AgentsOverview({
         </div>
       ) : (
         <>
-          <section className="ceptly-section">
-            <div className="ceptly-section-head">
-              <h2 className="ceptly-section-title">
-                <CalendarCheck aria-hidden />
-                Standups
-              </h2>
-            </div>
-            {channelStandups.length === 0 ? (
-              <p className="ceptly-card-empty not-italic">
-                No channel standups yet.
-              </p>
-            ) : (
-              <div className="ceptly-rollup-card-grid">
-                {channelStandups.map((standup) => (
-                  <ActivityStandupCard
-                    key={standup.standup_id}
-                    standup={standup}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="ceptly-section">
-            <div className="ceptly-section-head">
-              <h2 className="ceptly-section-title">
-                <CalendarClock aria-hidden />
-                Scheduled check-ins
-              </h2>
-            </div>
-            {scheduledConversations.length === 0 ? (
-              <p className="ceptly-card-empty not-italic">
-                No scheduled check-ins yet.
-              </p>
-            ) : (
-              <div className="ceptly-rollup-card-grid">
-                {scheduledConversations.map((conversation) => (
-                  <ActivityConversationCard
-                    key={conversation.id}
-                    conversation={conversation}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+          <AgentSection
+            title="Active"
+            icon={Play}
+            items={activeAgents}
+            emptyMessage="No active agents. Resume a paused agent or deploy a new one."
+          />
+          {pausedAgents.length > 0 ? (
+            <AgentSection
+              title="Paused"
+              icon={PauseCircle}
+              items={pausedAgents}
+              emptyMessage="No paused agents."
+            />
+          ) : null}
         </>
       )}
 
