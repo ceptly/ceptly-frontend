@@ -31,7 +31,7 @@ export function AgentDeployForm(props: AgentDeployFormProps) {
   const router = useRouter();
 
   return (
-    <div className="mx-auto max-w-[1100px] px-8 py-8 pb-10">
+    <>
       <button
         type="button"
         className="ceptly-back"
@@ -56,6 +56,6 @@ export function AgentDeployForm(props: AgentDeployFormProps) {
       </div>
 
       <AgentDeployFields {...props} />
-    </div>
+    </>
   );
 }

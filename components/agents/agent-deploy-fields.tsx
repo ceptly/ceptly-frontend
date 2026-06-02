@@ -157,6 +157,8 @@ export function AgentDeployFields({
   const isReachout = type === "reachout";
   const isStandup = type === "standup";
   const isManual = isReachout || triggerMode === "manual";
+  const typeName =
+    DEPLOY_AGENT_TYPES.find((t) => t.id === type)?.name ?? "Agent";
 
   const rollupChannels = useMemo<SlackChannel[]>(
     () => (isStandup ? chatChannels : slackChannels),
@@ -193,25 +195,32 @@ export function AgentDeployFields({
 
   const isComplete = useMemo(() => {
     if (!name.trim()) return false;
-    if (selectedMemberIds.length === 0) return false;
-    if (!isPretrained && (!persona.trim() || !goal.trim())) return false;
     if (isStandup && !standupChannelId) return false;
+    if (selectedMemberIds.length === 0) return false;
+    if (
+      !isManual &&
+      frequency === "specific_days" &&
+      daysOfWeek.length === 0
+    ) {
+      return false;
+    }
     return true;
   }, [
     name,
-    selectedMemberIds,
-    isPretrained,
-    persona,
-    goal,
     isStandup,
     standupChannelId,
+    selectedMemberIds,
+    isManual,
+    frequency,
+    daysOfWeek,
   ]);
 
   function buildBody(): AgentDeployBody {
+    const trimmedName = name.trim();
     return {
       kind: type,
       trigger_mode: isReachout ? "manual" : triggerMode,
-      name: name.trim(),
+      name: trimmedName,
       ...(isPretrained
         ? { persona_preset: "scrum_master" as const }
         : {
@@ -232,7 +241,7 @@ export function AgentDeployFields({
         ? { channel_id: standupChannelId, style: standupStyle }
         : { template_id: dailyStandup?.id }),
       ...(isReachout
-        ? { topic: (goal.trim() || name.trim()).slice(0, 200) }
+        ? { topic: (goal.trim() || trimmedName).slice(0, 200) }
         : {}),
     };
   }
@@ -271,17 +280,13 @@ export function AgentDeployFields({
 
   function validate(): string | null {
     if (!name.trim()) return "Enter a name for this agent.";
-    if (!isPretrained) {
-      if (!persona.trim()) return "Enter a role / persona for this agent.";
-      if (!goal.trim()) return "Enter a goal or intent for this agent.";
+    if (isStandup && !standupChannelId) {
+      return "Select a channel for the standup.";
     }
     if (selectedMemberIds.length === 0) {
       return isStandup
         ? "Select at least one participant."
         : "Select at least one recipient.";
-    }
-    if (isStandup && !standupChannelId) {
-      return "Select a channel for the standup.";
     }
     if (
       !isManual &&
@@ -292,9 +297,6 @@ export function AgentDeployFields({
     }
     return null;
   }
-
-  const typeName =
-    DEPLOY_AGENT_TYPES.find((t) => t.id === type)?.name ?? "Agent";
 
   function handleDeploy() {
     const message = validate();
@@ -317,7 +319,7 @@ export function AgentDeployFields({
         return;
       }
       setDeployed({
-        name: name.trim() || typeName,
+        name: name.trim(),
         detail: triggerSummary(),
       });
     });
@@ -337,6 +339,11 @@ export function AgentDeployFields({
       });
       if (result.error) {
         setToast({ title: "Test failed", sub: result.error });
+      } else if ((result.sessionsStarted ?? 0) === 0) {
+        setToast({
+          title: "Test failed",
+          sub: "The standup did not start. Check your channel and participants.",
+        });
       } else {
         setToast({
           title: "Test started",
@@ -652,7 +659,12 @@ export function AgentDeployFields({
             type="button"
             className="flex-1"
             onClick={handleDeploy}
-            disabled={isPending || isTesting}
+            disabled={isPending || isTesting || !isComplete}
+            title={
+              isComplete
+                ? undefined
+                : "Complete the required fields to deploy"
+            }
           >
             {isPending ? (
               <Loader2 className="size-4 animate-spin" />

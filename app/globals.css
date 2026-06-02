@@ -196,6 +196,10 @@
     @apply max-w-[760px];
   }
 
+  .ceptly-page-wide {
+    @apply max-w-[1100px];
+  }
+
   .ceptly-page-head {
     @apply mb-7;
   }

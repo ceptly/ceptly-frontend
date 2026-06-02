@@ -74,7 +74,7 @@ export default async function NewAgentPage({
     : (chatChannelsResult.error ?? "Could not load channels.");
 
   return (
-    <div className="ceptly-page">
+    <div className="ceptly-page ceptly-page-wide">
       <AgentDeployForm
         workspaceId={workspace.id}
         workspaceTimezone={workspaceTimezone}
