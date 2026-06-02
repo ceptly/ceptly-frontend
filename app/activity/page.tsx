@@ -11,7 +11,6 @@ export default async function ActivityPage() {
   const user = await requireAuth();
   const workspace = user.workspaces?.[0];
   const role = workspace?.role;
-  const canManageConversations = role ? canManageWorkspace(role) : false;
 
   if (!canManageWorkspace(role)) {
     redirect("/chat");
@@ -20,7 +19,9 @@ export default async function ActivityPage() {
   if (!workspace?.id) {
     return (
       <ActivityPageShell>
-        <p className="text-sm text-muted-foreground">Could not load activity.</p>
+        <p className="text-sm text-muted-foreground">
+          Could not load activity.
+        </p>
       </ActivityPageShell>
     );
   }
@@ -28,10 +29,7 @@ export default async function ActivityPage() {
   return (
     <ActivityPageShell>
       <Suspense fallback={<ActivityPageContentSkeleton />}>
-        <ActivityPageContent
-          workspaceId={workspace.id}
-          canManageConversations={canManageConversations}
-        />
+        <ActivityPageContent workspaceId={workspace.id} />
       </Suspense>
     </ActivityPageShell>
   );

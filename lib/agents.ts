@@ -5,11 +5,13 @@ import type {
   ScheduledConversation,
   ScheduleFrequency,
   Standup,
+  StandupStyle,
 } from "@/lib/api/types";
 import {
   formatScheduleDaysPreview,
   formatScheduleTimePreview,
 } from "@/lib/schedule/preview";
+import { parseResultDestinations } from "@/lib/result-destinations";
 
 export type AgentKind = "conversation" | "standup";
 
@@ -200,6 +202,91 @@ export function conversationToAgentRow(c: ScheduledConversation): AgentRow {
       enabled: c.enabled,
     },
     href: `/activity/${c.id}`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Edit mode: prefill the deploy form (AgentDeployFields) from an existing
+// agent so editing reuses the exact same form as /agents/new.
+// ---------------------------------------------------------------------------
+
+/** Mirrors the deploy form's internal state for prefilling edit mode. */
+export interface AgentDeployInitialValues {
+  type: DeployAgentType;
+  personaMode: PersonaMode;
+  persona: string;
+  goal: string;
+  notes: string;
+  name: string;
+  standupStyle: StandupStyle;
+  standupChannelId: string;
+  timezone: string;
+  frequency: ScheduleFrequency;
+  daysOfWeek: number[];
+  timeLocal: string;
+  triggerMode: AgentTriggerMode;
+  selectedMemberIds: string[];
+  selectedChannelIds: string[];
+  selectedRosterDmIds: string[];
+  contextIntegrations: string[];
+}
+
+/** Identifies the existing agent being edited so saves hit the right record. */
+export interface AgentEditTarget {
+  id: string;
+  kind: AgentKind;
+}
+
+export function conversationToInitialValues(
+  c: ScheduledConversation,
+): AgentDeployInitialValues {
+  const destinations = parseResultDestinations(c.result_destinations);
+  const persona = c.agent_persona ?? "";
+  return {
+    type: "checkin",
+    // Default to "custom" so the stored persona/goal are shown and editable; a
+    // save only switches to the preset if the user picks it explicitly.
+    personaMode: persona ? "custom" : "pretrained",
+    persona,
+    goal: c.conversation_goal ?? "",
+    notes: c.agent_notes ?? "",
+    name: c.name,
+    standupStyle: "broadcast",
+    standupChannelId: "",
+    timezone: c.timezone,
+    frequency: c.frequency,
+    daysOfWeek: c.days_of_week,
+    timeLocal: c.time_local,
+    triggerMode: "schedule",
+    selectedMemberIds: c.roster_member_ids ?? [],
+    selectedChannelIds: destinations.channelIds,
+    selectedRosterDmIds: destinations.rosterDmIds,
+    contextIntegrations: c.context_integrations ?? [],
+  };
+}
+
+export function standupToInitialValues(s: Standup): AgentDeployInitialValues {
+  const destinations = parseResultDestinations(s.result_destinations);
+  const customInstructions = s.custom_instructions?.trim() ?? "";
+  return {
+    type: "standup",
+    personaMode: customInstructions ? "custom" : "pretrained",
+    // custom_instructions bundles persona + goal; surface it as the persona.
+    persona: customInstructions,
+    goal: "",
+    notes: s.agent_notes ?? "",
+    name: s.name,
+    standupStyle: s.style,
+    standupChannelId: s.slack_channel_id,
+    timezone: s.timezone,
+    frequency: s.frequency,
+    daysOfWeek: s.days_of_week,
+    timeLocal: s.time_local,
+    triggerMode: "schedule",
+    selectedMemberIds: s.members.map((m) => m.roster_member_id),
+    selectedChannelIds: destinations.channelIds,
+    selectedRosterDmIds: destinations.rosterDmIds,
+    contextIntegrations: s.context_integrations ?? [],
   };
 }
 

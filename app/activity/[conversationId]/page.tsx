@@ -2,17 +2,21 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ConversationDetailActions } from "@/components/activity/conversation-detail-actions";
-import { ConversationEditPageClient } from "@/components/activity/conversation-edit-page-client";
+import { AgentEditFields } from "@/components/agents/agent-edit-fields";
 import { ConversationResultsClient } from "@/components/activity/conversation-results-client";
 import { ConversationSessionsClient } from "@/components/activity/conversation-sessions-client";
 import { buttonVariants } from "@/components/ui/button";
 import { buildConversationActivitySubtitle } from "@/lib/activity/conversation-detail";
+import { conversationToInitialValues } from "@/lib/agents";
 import { listConversationSessions } from "@/lib/api/conversation-sessions";
 import {
   getConversation,
+  getWorkspaceTimezone,
   listAppContextOptions,
   listConversations,
+  listConversationTemplates,
 } from "@/lib/api/conversations";
+import { listChatChannels } from "@/lib/api/communication";
 import {
   getLatestConversationRun,
   listConversationRuns,
@@ -21,6 +25,7 @@ import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
+import { DEFAULT_CONVERSATION_TEMPLATES } from "@/lib/conversation-templates";
 import { cn } from "@/lib/utils";
 
 interface ActivityConversationPageProps {
@@ -96,12 +101,21 @@ export default async function ActivityConversationPage({
   }
 
   if (isEditing) {
-    const [rosterResult, appContextsResult, slackChannelsResult] =
-      await Promise.all([
-        listRosterMembers(token, workspace.id),
-        listAppContextOptions(token, workspace.id),
-        listSlackChannels(token, workspace.id),
-      ]);
+    const [
+      rosterResult,
+      appContextsResult,
+      slackChannelsResult,
+      templatesResult,
+      timezoneResult,
+      chatChannelsResult,
+    ] = await Promise.all([
+      listRosterMembers(token, workspace.id),
+      listAppContextOptions(token, workspace.id),
+      listSlackChannels(token, workspace.id),
+      listConversationTemplates(token, workspace.id),
+      getWorkspaceTimezone(token, workspace.id),
+      listChatChannels(token, workspace.id),
+    ]);
 
     const rosterMembers = rosterResult.data?.members ?? [];
     const appContextOptions = appContextsResult.data?.app_contexts ?? [];
@@ -109,31 +123,48 @@ export default async function ActivityConversationPage({
     const slackChannelsError = slackChannelsResult.success
       ? null
       : (slackChannelsResult.error ?? "Could not load Slack channels.");
+    const apiTemplates = templatesResult.data?.templates ?? [];
+    const templates =
+      apiTemplates.length > 0 ? apiTemplates : DEFAULT_CONVERSATION_TEMPLATES;
+    const workspaceTimezone =
+      timezoneResult.data?.timezone ?? "America/Chicago";
+    const chatChannels = chatChannelsResult.data?.channels ?? [];
+    const communicationPlatform = chatChannelsResult.data?.platform ?? "slack";
+    const chatChannelsError = chatChannelsResult.success
+      ? null
+      : (chatChannelsResult.error ?? "Could not load channels.");
 
     return (
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">
-        <div className="space-y-4">
-          <Link
-            href={`/activity/${conversationId}`}
-            className={cn(
-              buttonVariants({ variant: "ghost", size: "sm" }),
-              "-ml-3 w-fit px-3 text-muted-foreground hover:text-foreground",
-            )}
-          >
-            &lt; {conversation.name}
-          </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">
+      <div className="ceptly-page ceptly-page-wide">
+        <Link
+          href={`/activity/${conversationId}`}
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "sm" }),
+            "-ml-3 mb-4 w-fit px-3 text-muted-foreground hover:text-foreground",
+          )}
+        >
+          &lt; {conversation.name}
+        </Link>
+        <div className="mb-6">
+          <h1 className="font-[family-name:var(--font-aldrich)] text-[26px] font-normal tracking-tight">
             Edit {conversation.name}
           </h1>
         </div>
 
-        <ConversationEditPageClient
-          conversation={conversation}
+        <AgentEditFields
           workspaceId={workspace.id}
+          workspaceTimezone={workspaceTimezone}
+          templates={templates}
           rosterMembers={rosterMembers}
           appContextOptions={appContextOptions}
           slackChannels={slackChannels}
           slackChannelsError={slackChannelsError}
+          chatChannels={chatChannels}
+          communicationPlatform={communicationPlatform}
+          chatChannelsError={chatChannelsError}
+          editTarget={{ id: conversationId, kind: "conversation" }}
+          initialValues={conversationToInitialValues(conversation)}
+          closeHref={`/activity/${conversationId}`}
         />
       </div>
     );
@@ -154,8 +185,8 @@ export default async function ActivityConversationPage({
 
   return (
     <div className="ceptly-page ceptly-page-narrow">
-      <Link href="/activity" className="ceptly-back">
-        ← Activity
+      <Link href="/agents" className="ceptly-back">
+        ← Agents
       </Link>
 
       {canEdit ? (
@@ -165,6 +196,14 @@ export default async function ActivityConversationPage({
             conversationId={conversationId}
             conversationName={conversation.name}
             canDelete={canDelete}
+            enabled={conversation.enabled}
+            schedule={{
+              timezone: conversation.timezone,
+              frequency: conversation.frequency,
+              days_of_week: conversation.days_of_week,
+              time_local: conversation.time_local,
+              enabled: conversation.enabled,
+            }}
           />
         </div>
       ) : null}

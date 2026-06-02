@@ -257,6 +257,10 @@ export async function updateConversation(
     name?: string;
     summary?: string | null;
     template_id?: string | null;
+    agent_persona?: string | null;
+    conversation_goal?: string | null;
+    persona_preset?: "scrum_master";
+    agent_notes?: string | null;
     schedule?: WorkspaceSchedule;
     roster_member_ids?: string[];
     context_integrations?: string[];
