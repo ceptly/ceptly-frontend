@@ -65,6 +65,8 @@ export type StandupCreateBody = {
   slack_channel_id: string;
   style?: StandupStyle;
   custom_instructions?: string;
+  persona_preset?: "scrum_master";
+  agent_notes?: string | null;
   roster_member_ids: string[];
   context_integrations?: string[];
   result_destinations?: ConversationResultDestination[];
@@ -232,6 +234,35 @@ export async function getStandupSessionDetail(
     return parseJsonResponse<{ data?: { session: StandupSessionDetail } }>(
       response,
     );
+  } catch {
+    return {
+      success: false,
+      error: "Could not reach the API. Is the backend running?",
+    };
+  }
+}
+
+export async function runStandupNow(
+  accessToken: string,
+  workspaceId: string,
+  standupId: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+  data?: { started: boolean; reason?: string };
+}> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/standups/${standupId}/run`,
+      {
+        method: "POST",
+        headers: authHeaders(accessToken, true),
+      },
+    );
+    return parseJsonResponse<{
+      data?: { started: boolean; reason?: string };
+    }>(response);
   } catch {
     return {
       success: false,

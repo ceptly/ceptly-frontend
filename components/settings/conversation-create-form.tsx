@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { publishConversationFromTemplate } from "@/actions/create-conversation";
@@ -47,6 +48,10 @@ interface ConversationCreateFormProps {
   appContextOptions: AppContextOption[];
   slackChannels: SlackChannel[];
   slackChannelsError?: string | null;
+  /** Called after a successful publish. When omitted, navigates to the new
+   * conversation's activity page (the default settings/activity behavior). */
+  onPublished?: (conversationId: string) => void;
+  submitLabel?: string;
 }
 
 export function ConversationCreateForm({
@@ -57,7 +62,10 @@ export function ConversationCreateForm({
   appContextOptions,
   slackChannels,
   slackChannelsError,
+  onPublished,
+  submitLabel = "Publish conversation",
 }: ConversationCreateFormProps) {
+  const router = useRouter();
   const dailyStandup =
     templates.find((template) => template.id === "daily_standup") ??
     templates[0];
@@ -145,6 +153,15 @@ export function ConversationCreateForm({
 
       if (result?.error) {
         setError(result.error);
+        return;
+      }
+
+      if (result?.conversationId) {
+        if (onPublished) {
+          onPublished(result.conversationId);
+        } else {
+          router.push(`/activity/${result.conversationId}`);
+        }
       }
     });
   };
@@ -305,7 +322,7 @@ export function ConversationCreateForm({
             Publishing...
           </>
         ) : (
-          "Publish conversation"
+          submitLabel
         )}
       </Button>
     </div>

@@ -104,7 +104,7 @@ export function AccountHeader({ user, showBilling = false }: AccountHeaderProps)
       : "/parallax-dark.png";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/92 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/92 backdrop-blur-xl md:hidden">
       <div className="mx-auto max-w-[1180px] px-6 py-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-[22px]">

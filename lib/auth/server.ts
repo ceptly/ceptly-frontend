@@ -189,7 +189,7 @@ export async function requireAuth(): Promise<AuthUser> {
 
   if (!user) {
     if (await getAccessToken()) {
-      await clearAuthCookies();
+      redirect("/api/auth/clear-session");
     }
     redirect("/auth");
   }

@@ -114,7 +114,7 @@ export async function ActivityPageContent({
           </h2>
           {canManageConversations ? (
             <Link
-              href="/activity/new"
+              href="/agents/new?type=checkin"
               className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             >
               Add conversation
@@ -128,7 +128,7 @@ export async function ActivityPageContent({
               <>
                 {" "}
                 <Link
-                  href="/activity/new"
+                  href="/agents/new?type=checkin"
                   className="font-medium text-foreground not-italic underline-offset-4 hover:underline"
                 >
                   Add a conversation
