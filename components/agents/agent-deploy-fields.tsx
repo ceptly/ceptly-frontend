@@ -10,6 +10,7 @@ import {
   Hash,
   Loader2,
   Rocket,
+  Save,
   Send,
 } from "lucide-react";
 
@@ -17,6 +18,7 @@ import {
   deployAgentAction,
   previewAgentAction,
   testAgentAction,
+  updateAgentAction,
 } from "@/actions/agents";
 import { AgentDivider, AgentSection } from "@/components/agents/agent-section";
 import { AgentDeployedDialog } from "@/components/agents/agent-deployed-dialog";
@@ -34,6 +36,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   DEPLOY_AGENT_TYPES,
   SCHEDULE_PRESETS,
+  type AgentDeployInitialValues,
+  type AgentEditTarget,
   type AgentTriggerMode,
   type DeployAgentType,
   type PersonaMode,
@@ -98,6 +102,12 @@ interface AgentDeployFieldsProps {
   chatChannelsError?: string | null;
   /** Preselect an agent type, e.g. from /agents/new?type=standup. */
   initialType?: DeployAgentType;
+  /** When set, the form edits an existing agent instead of deploying a new one. */
+  editTarget?: AgentEditTarget;
+  /** Prefill values for edit mode. */
+  initialValues?: AgentDeployInitialValues;
+  /** Where to go after a successful save / cancel in edit mode. */
+  onCloseEdit?: () => void;
 }
 
 export function AgentDeployFields({
@@ -112,40 +122,70 @@ export function AgentDeployFields({
   communicationPlatform,
   chatChannelsError,
   initialType = "checkin",
+  editTarget,
+  initialValues,
+  onCloseEdit,
 }: AgentDeployFieldsProps) {
+  const isEdit = Boolean(editTarget);
   const router = useRouter();
   const dailyStandup =
     templates.find((template) => template.id === "daily_standup") ??
     templates[0];
 
-  const [type, setType] = useState<DeployAgentType>(initialType);
-  const [standupStyle, setStandupStyle] = useState<StandupStyle>("broadcast");
-  const [standupChannelId, setStandupChannelId] = useState("");
-  const [personaMode, setPersonaMode] = useState<PersonaMode>("pretrained");
-  const [persona, setPersona] = useState("");
-  const [goal, setGoal] = useState("");
-  const [notes, setNotes] = useState("");
-  const [name, setName] = useState("");
-  const [timezone, setTimezone] = useState(workspaceTimezone);
-  const [frequency, setFrequency] = useState<ScheduleFrequency>("specific_days");
-  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
-    SCHEDULE_PRESETS[0]?.days_of_week ?? [1, 2, 3, 4, 5],
+  const [type, setType] = useState<DeployAgentType>(
+    initialValues?.type ?? initialType,
   );
-  const [timeLocal, setTimeLocal] = useState("09:00");
-  const [triggerMode, setTriggerMode] = useState<AgentTriggerMode>("schedule");
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
-  const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
-  const [selectedRosterDmIds, setSelectedRosterDmIds] = useState<string[]>([]);
-  const [contextIntegrations, setContextIntegrations] = useState<string[]>(() =>
-    defaultContextIntegrations(appContextOptions),
+  const [standupStyle, setStandupStyle] = useState<StandupStyle>(
+    initialValues?.standupStyle ?? "broadcast",
+  );
+  const [standupChannelId, setStandupChannelId] = useState(
+    initialValues?.standupChannelId ?? "",
+  );
+  const [personaMode, setPersonaMode] = useState<PersonaMode>(
+    initialValues?.personaMode ?? "pretrained",
+  );
+  const [persona, setPersona] = useState(initialValues?.persona ?? "");
+  const [goal, setGoal] = useState(initialValues?.goal ?? "");
+  const [notes, setNotes] = useState(initialValues?.notes ?? "");
+  const [name, setName] = useState(initialValues?.name ?? "");
+  const [timezone, setTimezone] = useState(
+    initialValues?.timezone ?? workspaceTimezone,
+  );
+  const [frequency, setFrequency] = useState<ScheduleFrequency>(
+    initialValues?.frequency ?? "specific_days",
+  );
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
+    initialValues?.daysOfWeek ??
+      SCHEDULE_PRESETS[0]?.days_of_week ?? [1, 2, 3, 4, 5],
+  );
+  const [timeLocal, setTimeLocal] = useState(
+    initialValues?.timeLocal ?? "09:00",
+  );
+  const [triggerMode, setTriggerMode] = useState<AgentTriggerMode>(
+    initialValues?.triggerMode ?? "schedule",
+  );
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(
+    initialValues?.selectedMemberIds ?? [],
+  );
+  const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>(
+    initialValues?.selectedChannelIds ?? [],
+  );
+  const [selectedRosterDmIds, setSelectedRosterDmIds] = useState<string[]>(
+    initialValues?.selectedRosterDmIds ?? [],
+  );
+  const [contextIntegrations, setContextIntegrations] = useState<string[]>(
+    () =>
+      initialValues?.contextIntegrations ??
+      defaultContextIntegrations(appContextOptions),
   );
 
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isTesting, startTestTransition] = useTransition();
-  const [deployed, setDeployed] = useState<{ name: string; detail: string } | null>(
-    null,
-  );
+  const [deployed, setDeployed] = useState<{
+    name: string;
+    detail: string;
+  } | null>(null);
   const [toast, setToast] = useState<{ title: string; sub: string } | null>(
     null,
   );
@@ -164,7 +204,9 @@ export function AgentDeployFields({
     () => (isStandup ? chatChannels : slackChannels),
     [isStandup, slackChannels, chatChannels],
   );
-  const rollupChannelsError = isStandup ? chatChannelsError : slackChannelsError;
+  const rollupChannelsError = isStandup
+    ? chatChannelsError
+    : slackChannelsError;
 
   function selectPersonaMode(mode: PersonaMode) {
     setPersonaMode(mode);
@@ -197,11 +239,7 @@ export function AgentDeployFields({
     if (!name.trim()) return false;
     if (isStandup && !standupChannelId) return false;
     if (selectedMemberIds.length === 0) return false;
-    if (
-      !isManual &&
-      frequency === "specific_days" &&
-      daysOfWeek.length === 0
-    ) {
+    if (!isManual && frequency === "specific_days" && daysOfWeek.length === 0) {
       return false;
     }
     return true;
@@ -288,11 +326,7 @@ export function AgentDeployFields({
         ? "Select at least one participant."
         : "Select at least one recipient.";
     }
-    if (
-      !isManual &&
-      frequency === "specific_days" &&
-      daysOfWeek.length === 0
-    ) {
+    if (!isManual && frequency === "specific_days" && daysOfWeek.length === 0) {
       return "Select at least one day.";
     }
     return null;
@@ -322,6 +356,29 @@ export function AgentDeployFields({
         name: name.trim(),
         detail: triggerSummary(),
       });
+    });
+  }
+
+  function handleSave() {
+    if (!editTarget) return;
+    const message = validate();
+    if (message) {
+      setError(message);
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      const result = await updateAgentAction({
+        workspaceId,
+        agentId: editTarget.id,
+        kind: editTarget.kind,
+        body: buildBody(),
+      });
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      onCloseEdit?.();
     });
   }
 
@@ -408,7 +465,7 @@ export function AgentDeployFields({
                 <button
                   key={t.id}
                   type="button"
-                  disabled={isPending}
+                  disabled={isPending || isEdit}
                   className={cn(agentTypeCardVariants({ active }))}
                   onClick={() => setType(t.id)}
                 >
@@ -472,7 +529,8 @@ export function AgentDeployFields({
                   disabled={isPending}
                 />
                 <p className={agentFieldHintClass}>
-                  The system prompt that shapes how the agent speaks and behaves.
+                  The system prompt that shapes how the agent speaks and
+                  behaves.
                 </p>
               </div>
               <div className="space-y-2">
@@ -513,7 +571,9 @@ export function AgentDeployFields({
                   type="button"
                   disabled={isPending}
                   className={cn(
-                    agentPillVariants({ selected: standupStyle === "broadcast" }),
+                    agentPillVariants({
+                      selected: standupStyle === "broadcast",
+                    }),
                   )}
                   onClick={() => setStandupStyle("broadcast")}
                 >
@@ -583,8 +643,8 @@ export function AgentDeployFields({
         <AgentSection title="Trigger">
           {isReachout ? (
             <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-              <Clock className="size-[14px]" /> Sends once when you deploy it. No
-              recurring schedule.
+              <Clock className="size-[14px]" /> Sends once when you deploy it.
+              No recurring schedule.
             </p>
           ) : (
             <TriggerScheduleSection
@@ -628,6 +688,7 @@ export function AgentDeployFields({
             selectedIds={contextIntegrations}
             onChange={setContextIntegrations}
             disabled={isPending}
+            connectedOnly
           />
         </AgentSection>
 
@@ -654,44 +715,73 @@ export function AgentDeployFields({
           trigger={triggerSummary()}
           isEvent={!isReachout && triggerMode === "event"}
         />
-        <div className="ag-deploy-bar">
-          <Button
-            type="button"
-            className="flex-1"
-            onClick={handleDeploy}
-            disabled={isPending || isTesting || !isComplete}
-            title={
-              isComplete
-                ? undefined
-                : "Complete the required fields to deploy"
-            }
-          >
-            {isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Rocket className="size-[15px]" />
-            )}
-            {isReachout ? "Send reach-out" : "Deploy agent"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleTest}
-            disabled={isPending || isTesting || !isComplete}
-            title={
-              isComplete
-                ? "Run this agent once, right now"
-                : "Complete the form to test"
-            }
-          >
-            {isTesting ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <FlaskConical className="size-[15px]" />
-            )}
-            Test
-          </Button>
-        </div>
+        {isEdit ? (
+          <div className="ag-deploy-bar">
+            <Button
+              type="button"
+              className="flex-1"
+              onClick={handleSave}
+              disabled={isPending || !isComplete}
+              title={
+                isComplete ? undefined : "Complete the required fields to save"
+              }
+            >
+              {isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Save className="size-[15px]" />
+              )}
+              Save changes
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onCloseEdit?.()}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <div className="ag-deploy-bar">
+            <Button
+              type="button"
+              className="flex-1"
+              onClick={handleDeploy}
+              disabled={isPending || isTesting || !isComplete}
+              title={
+                isComplete
+                  ? undefined
+                  : "Complete the required fields to deploy"
+              }
+            >
+              {isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Rocket className="size-[15px]" />
+              )}
+              {isReachout ? "Send reach-out" : "Deploy agent"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleTest}
+              disabled={isPending || isTesting || !isComplete}
+              title={
+                isComplete
+                  ? "Run this agent once, right now"
+                  : "Complete the form to test"
+              }
+            >
+              {isTesting ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <FlaskConical className="size-[15px]" />
+              )}
+              Test
+            </Button>
+          </div>
+        )}
       </div>
 
       {toast ? (

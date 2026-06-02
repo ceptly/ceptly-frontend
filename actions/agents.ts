@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { updateConversation } from "@/lib/api/conversations";
 import { updateStandup } from "@/lib/api/standups";
+import { buildStandupCustomInstructions } from "@/lib/agents";
 import {
   deployAgent,
   previewAgent,
@@ -164,6 +165,77 @@ export async function deployAgentAction(input: {
     revalidatePath("/settings/standups");
     return { agent: result.data };
   });
+}
+
+const updateAgentArgsSchema = z.object({
+  workspaceId: z.string().uuid(),
+  agentId: z.string().uuid(),
+  kind: z.enum(["conversation", "standup"]),
+  body: agentDeploySchema,
+});
+
+export async function updateAgentAction(
+  input: z.infer<typeof updateAgentArgsSchema>,
+): Promise<{ error?: string }> {
+  const parsed = updateAgentArgsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: "You must be signed in." };
+  }
+
+  const { workspaceId, agentId, kind, body } = parsed.data;
+  const usesPreset = body.persona_preset === "scrum_master";
+
+  if (kind === "conversation") {
+    const result = await updateConversation(token, workspaceId, agentId, {
+      name: body.name,
+      schedule: body.schedule,
+      roster_member_ids: body.roster_member_ids,
+      context_integrations: body.context_integrations,
+      result_destinations: body.result_destinations,
+      agent_notes: body.agent_notes ?? null,
+      ...(usesPreset
+        ? { persona_preset: "scrum_master" as const }
+        : {
+            agent_persona: body.agent_persona ?? null,
+            conversation_goal: body.conversation_goal ?? null,
+          }),
+    });
+    if (!result.success) {
+      return { error: result.error ?? "Failed to save the agent." };
+    }
+  } else {
+    const result = await updateStandup(token, workspaceId, agentId, {
+      name: body.name,
+      slack_channel_id: body.channel_id,
+      style: body.style,
+      schedule: body.schedule,
+      roster_member_ids: body.roster_member_ids,
+      context_integrations: body.context_integrations,
+      result_destinations: body.result_destinations,
+      agent_notes: body.agent_notes ?? null,
+      ...(usesPreset
+        ? { persona_preset: "scrum_master" as const }
+        : {
+            custom_instructions: buildStandupCustomInstructions(
+              body.agent_persona ?? "",
+              body.conversation_goal ?? "",
+            ),
+          }),
+    });
+    if (!result.success) {
+      return { error: result.error ?? "Failed to save the agent." };
+    }
+  }
+
+  revalidatePath("/agents");
+  revalidatePath("/activity");
+  revalidatePath("/settings/standups");
+  return {};
 }
 
 export async function previewAgentAction(input: {

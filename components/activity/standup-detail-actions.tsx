@@ -5,30 +5,28 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, Pause, Pencil, Play, Trash2 } from "lucide-react";
 
-import { removeConversation } from "@/actions/conversations";
-import { setConversationAgentEnabled } from "@/actions/agents";
+import { deleteStandupAction } from "@/actions/standups";
+import { setStandupAgentEnabled } from "@/actions/agents";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { AgentSchedule } from "@/lib/agents";
 import { cn } from "@/lib/utils";
 
-interface ConversationDetailActionsProps {
+interface StandupDetailActionsProps {
   workspaceId: string;
-  conversationId: string;
-  conversationName: string;
-  canDelete: boolean;
+  standupId: string;
+  standupName: string;
   enabled: boolean;
   schedule: AgentSchedule;
 }
 
-export function ConversationDetailActions({
+export function StandupDetailActions({
   workspaceId,
-  conversationId,
-  conversationName,
-  canDelete,
+  standupId,
+  standupName,
   enabled,
   schedule,
-}: ConversationDetailActionsProps) {
+}: StandupDetailActionsProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -38,9 +36,9 @@ export function ConversationDetailActions({
   const handleToggle = () => {
     setError(null);
     startToggle(async () => {
-      const result = await setConversationAgentEnabled({
+      const result = await setStandupAgentEnabled({
         workspaceId,
-        conversationId,
+        standupId,
         schedule: { ...schedule, enabled: !enabled },
       });
       if (result.error) {
@@ -52,10 +50,6 @@ export function ConversationDetailActions({
   };
 
   const handleDelete = () => {
-    if (!canDelete) {
-      return;
-    }
-
     if (!confirmDelete) {
       setConfirmDelete(true);
       setError(null);
@@ -64,17 +58,12 @@ export function ConversationDetailActions({
 
     setError(null);
     startTransition(async () => {
-      const result = await removeConversation({
-        workspaceId,
-        conversationId,
-      });
-
+      const result = await deleteStandupAction({ workspaceId, standupId });
       if (result.error) {
         setError(result.error);
         setConfirmDelete(false);
         return;
       }
-
       router.push("/agents");
       router.refresh();
     });
@@ -84,7 +73,7 @@ export function ConversationDetailActions({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Link
-          href={`/activity/${conversationId}?edit=1`}
+          href={`/activity/standups/${standupId}?edit=1`}
           className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
         >
           <Pencil className="size-3.5" />
@@ -106,30 +95,28 @@ export function ConversationDetailActions({
           )}
           {enabled ? "Pause" : "Resume"}
         </Button>
-        {canDelete ? (
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            disabled={isPending}
-          >
-            {isPending ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="size-3.5" />
-            )}
-            Delete
-          </Button>
-        ) : null}
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          onClick={handleDelete}
+          disabled={isPending}
+        >
+          {isPending ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Trash2 className="size-3.5" />
+          )}
+          Delete
+        </Button>
       </div>
 
       {confirmDelete ? (
         <Alert variant="destructive">
           <AlertDescription className="space-y-3">
             <p>
-              Delete <span className="font-medium">{conversationName}</span>?
-              This cannot be undone.
+              Delete <span className="font-medium">{standupName}</span>? This
+              cannot be undone.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -166,13 +153,6 @@ export function ConversationDetailActions({
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      ) : null}
-
-      {!canDelete ? (
-        <p className="text-sm text-muted-foreground">
-          You need at least one scheduled conversation. Create another before
-          deleting this one.
-        </p>
       ) : null}
     </div>
   );
