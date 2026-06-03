@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { createSiteMetadata } from "@/lib/site-metadata";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import MyStatsig from "./my-statsig";
 
 const openSans = Open_Sans({
@@ -86,6 +87,7 @@ export default async function RootLayout({
         />
         <MyStatsig>
           <Analytics />
+          <SpeedInsights />
           <Providers initialTheme={initialTheme}>
             {hideHeader ? null : (
               <Suspense fallback={<AppNavSkeleton />}>
