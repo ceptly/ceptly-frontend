@@ -34,6 +34,9 @@ export interface ScheduledConversation {
   name: string;
   summary?: string | null;
   template_id?: string | null;
+  agent_persona?: string | null;
+  conversation_goal?: string | null;
+  agent_notes?: string | null;
   kind?: "scheduled" | "adhoc";
   timezone: string;
   frequency: ScheduleFrequency;
@@ -203,6 +206,7 @@ export interface Standup {
   slack_channel_name?: string;
   style: StandupStyle;
   custom_instructions: string;
+  agent_notes?: string | null;
   timezone: string;
   frequency: ScheduleFrequency;
   days_of_week: number[];
@@ -266,6 +270,7 @@ export interface ActivityChannelStandup {
   slack_channel_id: string;
   slack_channel_name?: string;
   style: StandupStyle;
+  enabled: boolean;
   latest_session: StandupSessionSummary | null;
   session_count: number;
 }

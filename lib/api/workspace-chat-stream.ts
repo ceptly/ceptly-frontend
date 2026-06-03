@@ -38,6 +38,7 @@ export type ChatStreamEvent =
       adhoc_proposal?: AdhocConversationProposal | null;
       channel_standup_proposal?: ChannelStandupProposal | null;
       ui_component?: SetupChatUiComponent | null;
+      session_id?: string | null;
     }
   | { type: "error"; message: string };
 
@@ -64,6 +65,7 @@ export interface ChatStreamDoneResult {
   adhoc_proposal?: AdhocConversationProposal | null;
   channel_standup_proposal?: ChannelStandupProposal | null;
   ui_component?: SetupChatUiComponent | null;
+  session_id?: string | null;
 }
 
 export interface ChatStreamCallbacks {
@@ -192,6 +194,7 @@ export async function streamChatWorkspace(
   messages: SetupChatMessage[],
   agent: ChatAgentId | undefined,
   callbacks: ChatStreamCallbacks,
+  sessionId?: string | null,
 ): Promise<{ error?: string; result?: ChatStreamDoneResult }> {
   let activity = createInitialActivity();
   callbacks.onActivity?.(activity);
@@ -203,6 +206,7 @@ export async function streamChatWorkspace(
       body: JSON.stringify({
         messages: normalizeChatMessagesForApi(messages),
         agent,
+        ...(sessionId ? { session_id: sessionId } : {}),
       }),
     });
 
@@ -266,6 +270,7 @@ export async function streamChatWorkspace(
               adhoc_proposal: event.adhoc_proposal,
               channel_standup_proposal: event.channel_standup_proposal,
               ui_component: event.ui_component,
+              session_id: event.session_id,
             },
           };
         }

@@ -98,6 +98,7 @@
   --card-hover: oklch(0.97 0.001 286 / 70%);
   --fg3: #a1a1aa;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+  --shadow-pop: 0 12px 32px -8px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
   --green-ink: #1f9c10;
   --green-wash: #ebffe8;
   --green-line: #9ff08e;
@@ -148,6 +149,7 @@
   --card-hover: oklch(0.22 0.01 285 / 45%);
   --fg3: #71717a;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-pop: 0 16px 40px -8px rgba(0, 0, 0, 0.6), 0 2px 10px rgba(0, 0, 0, 0.5);
   --green-ink: #56ff3c;
   --green-wash: oklch(0.75 0.22 145 / 8%);
   --green-line: oklch(0.75 0.22 145 / 30%);
@@ -192,6 +194,10 @@
 
   .ceptly-page-narrow {
     @apply max-w-[760px];
+  }
+
+  .ceptly-page-wide {
+    @apply max-w-[1100px];
   }
 
   .ceptly-page-head {
@@ -679,5 +685,601 @@
     &[data-open="true"] > svg {
       @apply rotate-180;
     }
+  }
+}
+
+/* ======================= Agents (deploy + list) ========================== */
+
+/* page header */
+.ag-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.ag-head-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green-ink);
+  margin-bottom: 8px;
+}
+.ag-head h1 {
+  font-family: var(--font-aldrich), sans-serif;
+  font-weight: 400;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+}
+.ag-head p {
+  color: var(--muted-foreground);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 52ch;
+}
+
+/* field group */
+.ag-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ag-group-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.ag-group-title {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ag-divider {
+  height: 1px;
+  background: var(--border);
+}
+
+/* agent-type cards */
+.ag-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ag-type {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+  background: var(--card-glass);
+  border: 1px solid var(--border-strong);
+  color: var(--foreground);
+  position: relative;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.ag-type:hover {
+  border-color: var(--border-2);
+  background: var(--card-hover);
+}
+.ag-type.active {
+  border-color: var(--brand-green-soft);
+  background: color-mix(in oklab, var(--brand-green) 7%, var(--card-glass));
+}
+.ag-type-ico {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+.ag-type.active .ag-type-ico {
+  background: var(--green-wash);
+  border-color: var(--green-line);
+  color: var(--brand-green-soft);
+}
+.ag-type-name {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ag-type-desc {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+.ag-type-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: var(--brand-green-soft);
+  opacity: 0;
+}
+.ag-type.active .ag-type-check {
+  opacity: 1;
+}
+
+/* ---- active agents list ---- */
+.ag-active {
+  display: flex;
+  flex-direction: column;
+}
+.ag-agent-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 16px;
+}
+.ag-agent-row + .ag-agent-row {
+  border-top: 1px solid var(--border);
+}
+.ag-agent-ico {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+.ag-agent-main {
+  flex: 1;
+  min-width: 0;
+}
+.ag-agent-name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ag-agent-meta {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.ag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-green-soft);
+  flex-shrink: 0;
+}
+.ag-dot.paused {
+  background: var(--fg3);
+}
+.ag-agent-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* empty-state mark */
+.ag-new-ico {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--green-wash);
+  border: 1px solid var(--green-line);
+  color: var(--green-ink);
+}
+
+/* small count chip next to a section title */
+.ag-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+
+/* ---- celebratory "Agent deployed" dialog ---- */
+.ag-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+}
+.ag-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  animation: ag-fade 0.28s ease both;
+}
+.ag-modal-card {
+  position: relative;
+  z-index: 2;
+  width: 380px;
+  max-width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-pop);
+  padding: 34px 30px 28px;
+  text-align: center;
+  animation: ag-modal-in 0.5s cubic-bezier(0.2, 1.25, 0.35, 1) both;
+}
+.ag-modal-title {
+  font-family: var(--font-aldrich), sans-serif;
+  font-weight: 400;
+  font-size: 25px;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+}
+.ag-modal-sub {
+  font-size: 13.5px;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+  margin: 0 0 22px;
+}
+.ag-modal-sub b {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+/* animated check */
+.ag-check {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 20px;
+}
+.ag-check svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform: rotate(-90deg);
+}
+.ag-check-circle {
+  fill: var(--green-wash);
+  stroke: var(--brand-green-soft);
+  stroke-width: 2.5;
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: ag-draw 0.5s ease-out 0.05s forwards;
+}
+.ag-check-tick {
+  fill: none;
+  stroke: var(--brand-green-soft);
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  transform: rotate(90deg);
+  transform-origin: 26px 26px;
+  animation: ag-draw 0.34s cubic-bezier(0.6, 0.2, 0.3, 1) 0.5s forwards;
+}
+.ag-check-ring {
+  position: absolute;
+  inset: -6px;
+  border: 2px solid var(--brand-green-soft);
+  border-radius: 50%;
+  opacity: 0;
+  animation: ag-ring 0.7s ease-out 0.42s 1;
+}
+@keyframes ag-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes ag-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+@keyframes ag-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.93);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ag-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* confetti burst */
+.ag-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 301;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ag-confetti i {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  display: block;
+  background: var(--c, #56ff3c);
+  opacity: 0;
+  animation-name: ag-confetti-burst;
+  animation-timing-function: cubic-bezier(0.15, 0.6, 0.4, 1);
+  animation-fill-mode: forwards;
+}
+@keyframes ag-confetti-burst {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty)))
+      rotate(var(--rot));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ag-modal-backdrop,
+  .ag-modal-card,
+  .ag-check-circle,
+  .ag-check-tick,
+  .ag-check-ring,
+  .ag-confetti i {
+    animation-duration: 0.01ms;
+  }
+  .ag-check-circle,
+  .ag-check-tick {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---- deploy: split layout (form + live-preview rail) ---- */
+.ag-split {
+  display: grid;
+  grid-template-columns: 1fr 372px;
+  gap: 26px;
+  align-items: start;
+}
+.ag-form {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  min-width: 0;
+}
+.ag-rail {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ag-group-sub {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+
+/* ---- preview rail ---- */
+.ag-preview {
+  border: 1px solid var(--border-strong);
+  background: var(--card-glass);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-card);
+}
+.ag-preview-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.ag-preview-head svg {
+  color: var(--brand-green-soft);
+}
+.ag-slack {
+  padding: 16px 14px;
+  display: flex;
+  gap: 11px;
+}
+.ag-slack-avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--green-wash);
+  border: 1px solid var(--green-line);
+  color: var(--brand-green-soft);
+  border-radius: 6px;
+}
+.ag-slack-body {
+  min-width: 0;
+}
+.ag-slack-name {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.ag-slack-name b {
+  font-size: 13px;
+}
+.ag-slack-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+}
+.ag-slack-time {
+  font-size: 11px;
+  color: var(--fg3);
+  white-space: nowrap;
+}
+.ag-slack-msg {
+  font-size: 13px;
+  line-height: 1.55;
+  margin-top: 5px;
+  white-space: pre-wrap;
+}
+.ag-slack-msg .ag-tok {
+  color: var(--brand-green-soft);
+  font-weight: 600;
+}
+.ag-slack-empty {
+  font-size: 12.5px;
+  color: var(--fg3);
+  line-height: 1.5;
+}
+.ag-slack-skeleton {
+  height: 11px;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    var(--card-hover) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: ag-shimmer 1.3s linear infinite;
+}
+@keyframes ag-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* config summary */
+.ag-summary {
+  padding: 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ag-sum-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+}
+.ag-sum-row svg {
+  color: var(--fg3);
+  flex-shrink: 0;
+}
+.ag-sum-k {
+  color: var(--muted-foreground);
+  width: 76px;
+  flex-shrink: 0;
+}
+.ag-sum-v {
+  color: var(--foreground);
+  font-weight: 500;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.45;
+}
+.ag-deploy-bar {
+  padding: 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 9px;
+}
+
+/* ---- deploy success toast ---- */
+.ag-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 30px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 290px;
+  max-width: calc(100vw - 32px);
+  padding: 13px 15px 15px;
+  background: var(--card);
+  border: 1px solid var(--green-line);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+  animation: ag-toast-in 0.42s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.ag-toast-ico {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--green-wash);
+  border: 1px solid var(--green-line);
+  color: var(--brand-green-soft);
+}
+.ag-toast-title {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.ag-toast-sub {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-top: 2px;
+}
+@keyframes ag-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* mobile: stack the form, then the preview + summary */
+@media (max-width: 860px) {
+  .ag-split {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .ag-rail {
+    position: static;
   }
 }

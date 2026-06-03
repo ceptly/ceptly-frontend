@@ -73,6 +73,8 @@ const standupBodySchema = z.object({
   slack_channel_id: z.string().trim().min(1).max(64),
   style: z.enum(["broadcast", "sequential"]).default("broadcast"),
   custom_instructions: z.string().max(4000).default(""),
+  persona_preset: z.enum(["scrum_master"]).optional(),
+  agent_notes: z.string().trim().max(2000).optional().nullable(),
   roster_member_ids: z.array(z.string().uuid()).min(1).max(20),
   context_integrations: contextIntegrationsSchema.optional(),
   result_destinations: resultDestinationsSchema,

@@ -3,6 +3,7 @@ import { listAppContextOptions } from "@/lib/api/conversations";
 import { getLinearConnectionStatus } from "@/lib/api/linear";
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
+import { loadChatHistory } from "@/lib/api/workspace-chat-history";
 import { getAccessToken } from "@/lib/auth/server";
 
 interface ChatPageContentProps {
@@ -38,11 +39,13 @@ export async function ChatPageContent({
     appContextsResult,
     slackChannelsResult,
     rosterResult,
+    chatHistory,
   ] = await Promise.all([
     getLinearConnectionStatus(token, workspaceId),
     listAppContextOptions(token, workspaceId),
     listSlackChannels(token, workspaceId),
     listRosterMembers(token, workspaceId),
+    loadChatHistory(token, workspaceId),
   ]);
 
   const linearConnected = linearStatusResult?.data?.connected ?? false;
@@ -64,6 +67,8 @@ export async function ChatPageContent({
           slackChannels={slackChannels}
           slackChannelsError={slackChannelsError}
           rosterMembers={rosterMembers}
+          initialMessages={chatHistory.messages}
+          initialSessionId={chatHistory.sessionId}
         />
       </div>
     </div>

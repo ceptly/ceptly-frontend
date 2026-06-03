@@ -109,6 +109,10 @@ export async function createConversationFromTemplate(
     template_id: string;
     name?: string;
     summary?: string | null;
+    agent_persona?: string | null;
+    conversation_goal?: string | null;
+    persona_preset?: "scrum_master";
+    agent_notes?: string | null;
     schedule?: WorkspaceSchedule;
     roster_member_ids?: string[];
     context_integrations?: string[];
@@ -253,6 +257,10 @@ export async function updateConversation(
     name?: string;
     summary?: string | null;
     template_id?: string | null;
+    agent_persona?: string | null;
+    conversation_goal?: string | null;
+    persona_preset?: "scrum_master";
+    agent_notes?: string | null;
     schedule?: WorkspaceSchedule;
     roster_member_ids?: string[];
     context_integrations?: string[];
@@ -556,6 +564,35 @@ export async function patchWorkspaceLanguage(
       },
     );
     return parseJsonResponse<{ data?: { language: string } }>(response);
+  } catch {
+    return {
+      success: false,
+      error: "Could not reach the API. Is the backend running?",
+    };
+  }
+}
+
+export async function runConversationNow(
+  accessToken: string,
+  workspaceId: string,
+  conversationId: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+  data?: { started: boolean; sessions_started: number };
+}> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/conversations/${conversationId}/run`,
+      {
+        method: "POST",
+        headers: authHeaders(accessToken, true),
+      },
+    );
+    return parseJsonResponse<{
+      data?: { started: boolean; sessions_started: number };
+    }>(response);
   } catch {
     return {
       success: false,

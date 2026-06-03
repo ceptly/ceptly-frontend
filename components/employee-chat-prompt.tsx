@@ -78,6 +78,8 @@ interface EmployeeChatPromptProps {
   slackChannels?: SlackChannel[];
   slackChannelsError?: string | null;
   rosterMembers?: RosterMember[];
+  initialMessages?: SetupChatMessage[];
+  initialSessionId?: string | null;
 }
 
 function getEditableConversationIndex(plan: ConversationSetupPlan): number {
@@ -185,10 +187,13 @@ export function EmployeeChatPrompt({
   slackChannels = [],
   slackChannelsError = null,
   rosterMembers = [],
+  initialMessages = [],
+  initialSessionId = null,
 }: EmployeeChatPromptProps) {
   const { client } = useStatsigClient();
 
-  const [messages, setMessages] = useState<SetupChatMessage[]>([]);
+  const [messages, setMessages] = useState<SetupChatMessage[]>(initialMessages);
+  const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
   const [proposal, setProposal] = useState<ConversationSetupPlan | null>(null);
   const [adhocProposal, setAdhocProposal] =
     useState<AdhocConversationProposal | null>(null);
@@ -396,6 +401,7 @@ export function EmployeeChatPrompt({
           setPendingActivity(activity);
         },
       },
+      sessionId,
     );
 
     setChatPending(false);
@@ -410,6 +416,10 @@ export function EmployeeChatPrompt({
     if (!result) {
       setChatError("Failed to send message.");
       return;
+    }
+
+    if (result.session_id) {
+      setSessionId(result.session_id);
     }
 
     if (result.agent) {
@@ -667,6 +677,7 @@ export function EmployeeChatPrompt({
 
   function handleNewChat() {
     setMessages([]);
+    setSessionId(null);
     setProposal(null);
     setAdhocProposal(null);
     setChannelStandupProposal(null);

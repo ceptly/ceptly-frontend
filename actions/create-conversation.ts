@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { createConversationFromTemplate } from "@/lib/api/conversations";
@@ -23,6 +22,10 @@ const schema = z.object({
   workspaceId: z.string().uuid(),
   templateId: z.string().trim().min(1),
   name: z.string().trim().min(1).max(100).optional(),
+  agentPersona: z.string().trim().max(4000).optional().nullable(),
+  conversationGoal: z.string().trim().max(500).optional(),
+  personaPreset: z.enum(["scrum_master"]).optional(),
+  agentNotes: z.string().trim().max(2000).optional().nullable(),
   rosterMemberIds: z.array(z.string().uuid()).min(1),
   contextIntegrations: z
     .array(z.enum(["linear", "jira", "monday", "clickup"]))
@@ -53,6 +56,10 @@ export async function publishConversationFromTemplate(input: {
   workspaceId: string;
   templateId: string;
   name?: string;
+  agentPersona?: string | null;
+  conversationGoal?: string;
+  personaPreset?: "scrum_master";
+  agentNotes?: string | null;
   rosterMemberIds: string[];
   contextIntegrations?: string[];
   resultDestinations?: ConversationResultDestination[];
@@ -74,6 +81,14 @@ export async function publishConversationFromTemplate(input: {
     {
       template_id: parsed.data.templateId,
       name: parsed.data.name,
+      agent_persona: parsed.data.personaPreset
+        ? undefined
+        : parsed.data.agentPersona,
+      conversation_goal: parsed.data.personaPreset
+        ? undefined
+        : parsed.data.conversationGoal,
+      persona_preset: parsed.data.personaPreset,
+      agent_notes: parsed.data.agentNotes,
       roster_member_ids: parsed.data.rosterMemberIds,
       context_integrations: parsed.data.contextIntegrations,
       result_destinations: parsed.data.resultDestinations,
@@ -86,5 +101,6 @@ export async function publishConversationFromTemplate(input: {
   }
 
   revalidatePath("/activity");
-  redirect(`/activity/${result.data.conversation.id}`);
+  revalidatePath("/agents");
+  return { conversationId: result.data.conversation.id };
 }

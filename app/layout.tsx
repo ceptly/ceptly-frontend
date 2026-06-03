@@ -3,7 +3,8 @@ import { Suspense } from "react";
 import { Aldrich, Geist_Mono, Open_Sans } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { AccountHeader } from "@/components/account-header";
-import { AccountHeaderSkeleton } from "@/components/account-header-skeleton";
+import { AppNavSkeleton } from "@/components/app-nav-skeleton";
+import { AppSidebar } from "@/components/app-sidebar";
 import { Providers } from "@/components/providers";
 import { StatsigIdentify } from "@/components/statsig-identify";
 import { getCurrentUser } from "@/lib/auth/server";
@@ -34,7 +35,7 @@ const aldrich = Aldrich({
 
 export const metadata: Metadata = createSiteMetadata();
 
-async function AccountHeaderSlot() {
+async function AppNavSlot() {
   const [user, cookieStore] = await Promise.all([
     getCurrentUser(),
     cookies(),
@@ -52,6 +53,9 @@ async function AccountHeaderSlot() {
         email={user.email}
         fullName={user.fullName ?? undefined}
       />
+      {/* Desktop: left sidebar replaces the top header. */}
+      <AppSidebar user={user} className="hidden md:flex" />
+      {/* Mobile: top header (unchanged) — hidden on desktop. */}
       <AccountHeader user={user} showBilling={showBilling} />
     </>
   );
@@ -75,7 +79,7 @@ export default async function RootLayout({
       className={cn("h-full", initialTheme === "dark" && "dark")}
     >
       <body
-        className={`${openSans.variable} ${geistMono.variable} ${aldrich.variable} min-h-full flex flex-col antialiased bg-background text-foreground`}
+        className={`${openSans.variable} ${geistMono.variable} ${aldrich.variable} min-h-full flex flex-col md:flex-row antialiased bg-background text-foreground`}
       >
         <script
           dangerouslySetInnerHTML={{ __html: THEME_COOKIE_SEED_SCRIPT }}
@@ -84,11 +88,11 @@ export default async function RootLayout({
           <Analytics />
           <Providers initialTheme={initialTheme}>
             {hideHeader ? null : (
-              <Suspense fallback={<AccountHeaderSkeleton />}>
-                <AccountHeaderSlot />
+              <Suspense fallback={<AppNavSkeleton />}>
+                <AppNavSlot />
               </Suspense>
             )}
-            <main className="flex flex-1 flex-col">{children}</main>
+            <main className="flex min-w-0 flex-1 flex-col">{children}</main>
           </Providers>
         </MyStatsig>
       </body>
