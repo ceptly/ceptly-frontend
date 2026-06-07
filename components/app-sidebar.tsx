@@ -9,14 +9,15 @@ import { useStatsigClient } from "@statsig/react-bindings";
 import {
   Activity,
   Bot,
+  Brain,
   ChevronDown,
   ChevronsUpDown,
   LogOut,
   MessageSquare,
+  Network,
   Settings,
   Settings2,
   User,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -58,7 +59,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: Bot,
     leadershipOnly: true,
   },
-  { id: "team", label: "Team", path: "/team", icon: Users },
+  {
+    id: "context",
+    label: "Context",
+    path: "/context",
+    icon: Brain,
+    leadershipOnly: true,
+  },
+  { id: "team", label: "Org intelligence", path: "/team", icon: Network },
   {
     id: "settings",
     label: "Settings",

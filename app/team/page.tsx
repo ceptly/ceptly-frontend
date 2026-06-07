@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { OrgPageContent } from "@/components/org/org-page-content";
 import { TeamPageContent } from "@/components/team/team-page-content";
 import { TeamPageContentSkeleton } from "@/components/page-skeletons";
 import { requireAuth } from "@/lib/auth/server";
@@ -13,16 +14,21 @@ export default async function TeamPage() {
   return (
     <div className="ceptly-page flex flex-col gap-8">
       <div className="ceptly-page-head">
-        <h1 className="ceptly-page-title">Team roster</h1>
+        <h1 className="ceptly-page-title">Org intelligence</h1>
         <p className="ceptly-page-sub">
-          People on this list receive scheduled check-in DMs in Slack.
+          Who Ceptly checks in with, and how your team is organized.
         </p>
       </div>
 
       {workspace?.id ? (
-        <Suspense fallback={<TeamPageContentSkeleton />}>
-          <TeamPageContent workspaceId={workspace.id} canEdit={canEdit} />
-        </Suspense>
+        <>
+          <Suspense fallback={<TeamPageContentSkeleton />}>
+            <TeamPageContent workspaceId={workspace.id} canEdit={canEdit} />
+          </Suspense>
+          <Suspense>
+            <OrgPageContent workspaceId={workspace.id} canEdit={canEdit} />
+          </Suspense>
+        </>
       ) : (
         <p className="text-sm text-muted-foreground">
           No team found for your account.
