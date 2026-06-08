@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-  "https://app.ceptly.ai";
+  "https://ceptly.ai";
 
 export const SITE_NAME = "Ceptly";
 
@@ -38,7 +38,7 @@ export function createSiteMetadata(overrides: Metadata = {}): Metadata {
     description,
     keywords: KEYWORDS,
     applicationName: SITE_NAME,
-    authors: [{ name: SITE_NAME, url: "https://ceptly.ai" }],
+    authors: [{ name: SITE_NAME, url: "https://ceptly.com" }],
     creator: SITE_NAME,
     publisher: SITE_NAME,
     openGraph: {

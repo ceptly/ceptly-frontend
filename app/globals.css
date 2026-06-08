@@ -381,6 +381,262 @@
     @apply w-4 min-w-4 px-0;
   }
 
+  /* Auth page — matches ceptly-public landing design system */
+  .ceptly-auth-page {
+    --font-display: var(--font-crimson-text), ui-serif, Georgia, "Times New Roman",
+      serif;
+    --font-wordmark: var(--font-crimson-pro), var(--font-crimson-text), ui-serif,
+      Georgia, serif;
+
+    --surface-page: #09090b;
+    --surface-card: #131316;
+    --surface-sunken: #1d1d21;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-tertiary: #71717a;
+    --text-accent: #b5a5ff;
+    --border-subtle: #26262b;
+    --border-default: #26262b;
+    --auth-border-strong: #3f3f46;
+    --auth-primary: #fafafa;
+    --auth-primary-hover: #e4e4e7;
+    --auth-primary-fg: #09090b;
+    --dot: rgba(255, 255, 255, 0.08);
+
+    --background: var(--surface-page);
+    --foreground: var(--text-primary);
+    --card: var(--surface-card);
+    --card-foreground: var(--text-primary);
+    --muted-foreground: var(--text-secondary);
+    --border: var(--border-default);
+    --input: var(--border-default);
+    --primary: var(--auth-primary);
+    --primary-foreground: var(--auth-primary-fg);
+    --destructive: #d81f1f;
+    --ring: #b5a5ff;
+    --border-strong: var(--auth-border-strong);
+
+    background: var(--surface-page);
+    color: var(--text-primary);
+    font-family: var(--font-open-sans), ui-sans-serif, system-ui, -apple-system,
+      "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .ceptly-auth-page ::selection {
+    background-color: #b5a5ff;
+    color: #09090b;
+  }
+
+  .ceptly-auth-page .ceptly-auth-shell {
+    @apply relative flex min-h-screen flex-1 items-center justify-center overflow-hidden px-4 py-7;
+  }
+
+  .ceptly-auth-page .ceptly-auth-bg {
+    @apply pointer-events-none absolute inset-0;
+  }
+
+  .ceptly-auth-page .ceptly-auth-dots {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      var(--dot) 1px,
+      transparent 0
+    );
+    background-size: 27px 27px;
+    mask-image: radial-gradient(
+      ellipse 75% 70% at 50% 42%,
+      #000 30%,
+      transparent 78%
+    );
+  }
+
+  .ceptly-auth-page .ceptly-auth-glow {
+    position: absolute;
+    width: 540px;
+    height: 540px;
+    left: 50%;
+    top: 8%;
+    transform: translateX(-50%);
+    background: radial-gradient(
+      circle,
+      rgba(181, 165, 255, 0.16),
+      transparent 62%
+    );
+    filter: blur(20px);
+    animation: ceptly-auth-glow-drift 9s ease-in-out infinite;
+  }
+
+  @keyframes ceptly-auth-glow-drift {
+    0%,
+    100% {
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+    50% {
+      transform: translateX(-46%) translateY(26px) scale(1.08);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ceptly-auth-page .ceptly-auth-glow {
+      animation: none;
+    }
+  }
+
+  .ceptly-auth-page .ceptly-auth-brand {
+    @apply flex items-center justify-center gap-2.5 no-underline;
+    color: inherit;
+  }
+
+  .ceptly-auth-page .ceptly-auth-brand span {
+    font-family: var(--font-wordmark);
+    font-size: 23px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+
+  .ceptly-auth-page .ceptly-auth-card {
+    box-sizing: border-box;
+    width: 420px;
+    max-width: 100%;
+    gap: 0;
+    padding: 30px;
+    border: 1px solid var(--auth-border-strong);
+    border-radius: 0;
+    background: var(--surface-card);
+    font-family: var(--font-open-sans), ui-sans-serif, system-ui, -apple-system,
+      "Segoe UI", sans-serif;
+    @apply flex flex-col;
+  }
+
+  .ceptly-auth-page .ceptly-auth-head {
+    @apply mb-6 px-0 pt-0 pb-0 text-center;
+  }
+
+  .ceptly-auth-page .ceptly-auth-head [data-slot="card-title"] {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.16;
+    color: var(--text-primary);
+  }
+
+  .ceptly-auth-page .ceptly-auth-head [data-slot="card-description"] {
+    @apply mt-2 text-[15px] leading-[1.5];
+    font-family: var(--font-open-sans), ui-sans-serif, system-ui, -apple-system,
+      "Segoe UI", sans-serif;
+    color: var(--text-secondary);
+  }
+
+  .ceptly-auth-page .ceptly-auth-body {
+    @apply flex flex-col gap-4 px-0 pb-0;
+  }
+
+  .ceptly-auth-page .ceptly-auth-or {
+    @apply relative text-center;
+  }
+
+  .ceptly-auth-page .ceptly-auth-or::before {
+    content: "";
+    @apply absolute inset-x-0 top-1/2 h-px;
+    background: var(--border-default);
+  }
+
+  .ceptly-auth-page .ceptly-auth-or span {
+    @apply relative px-2.5 text-[11px] font-medium tracking-[0.08em] uppercase;
+    background: var(--surface-card);
+    color: var(--text-tertiary);
+  }
+
+  .ceptly-auth-page .ceptly-auth-foot {
+    @apply mt-5 text-center text-[13px] font-semibold;
+    color: var(--text-secondary);
+  }
+
+  .ceptly-auth-page .ceptly-auth-foot button {
+    @apply border-0 bg-transparent p-0 font-semibold hover:underline;
+    color: var(--text-accent);
+  }
+
+  .ceptly-auth-page .ceptly-auth-fine {
+    @apply mt-4 text-center text-[11.5px] leading-[1.4];
+    color: var(--text-tertiary);
+  }
+
+  .ceptly-auth-page .ceptly-auth-fine a {
+    color: var(--text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .ceptly-auth-page .ceptly-auth-fine a:hover {
+    color: var(--text-accent);
+  }
+
+  .ceptly-auth-page [data-slot="button"].ceptly-auth-btn {
+    @apply inline-flex w-full items-center justify-center gap-2 rounded-none border text-[15px] font-semibold whitespace-nowrap shadow-none transition-all;
+    height: 50px;
+    min-height: 50px;
+    padding: 0 26px;
+  }
+
+  .ceptly-auth-page [data-slot="button"].ceptly-auth-btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .ceptly-auth-page [data-slot="button"].ceptly-auth-btn-primary {
+    border-color: transparent;
+    background: var(--auth-primary);
+    color: var(--auth-primary-fg);
+  }
+
+  .ceptly-auth-page [data-slot="button"].ceptly-auth-btn-primary:hover:not(:disabled) {
+    background: var(--auth-primary-hover);
+    color: var(--auth-primary-fg);
+  }
+
+  .ceptly-auth-page [data-slot="button"].ceptly-auth-btn-outline {
+    background: transparent;
+    color: var(--text-primary);
+    border-color: var(--auth-border-strong);
+  }
+
+  .ceptly-auth-page [data-slot="button"].ceptly-auth-btn-outline:hover:not(:disabled) {
+    background: var(--surface-sunken);
+    color: var(--text-primary);
+  }
+
+  .ceptly-auth-page [data-slot="input"] {
+    height: 50px;
+    font-size: 15px;
+    border-color: var(--auth-border-strong);
+    background: transparent;
+    color: var(--text-primary);
+  }
+
+  .ceptly-auth-page [data-slot="input"]::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .ceptly-auth-page [data-slot="input"]:focus-visible {
+    border-color: var(--text-accent);
+    --tw-ring-color: color-mix(in srgb, var(--text-accent) 50%, transparent);
+  }
+
+  .ceptly-auth-page label {
+    @apply mb-[7px] block text-[13px] font-semibold;
+    color: var(--text-primary);
+  }
+
+  .ceptly-auth-page .ceptly-auth-hint {
+    @apply mt-2 text-xs;
+    color: var(--text-tertiary);
+  }
+
+  /* Shared auth shell (onboarding still uses green grid) */
   .ceptly-auth-shell {
     @apply relative flex min-h-screen flex-1 items-center justify-center overflow-hidden px-4 py-7;
   }
@@ -1282,4 +1538,484 @@
   .ag-rail {
     position: static;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Org intelligence — people-first drill-down navigator (ported from the
+   Company Context design bundle, retokenized to Ceptly's brand-green palette).
+--------------------------------------------------------------------------- */
+.org-nav {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 14px;
+}
+.org-nav-sep {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 30px;
+}
+
+.org-spine {
+  flex-shrink: 0;
+  width: 178px;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  color: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 12px 13px;
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
+}
+.org-spine:hover {
+  border-color: var(--muted-foreground);
+  background: var(--muted);
+}
+.org-spine-id {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.org-spine-name {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.org-spine-role {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.org-spine-hint {
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.org-focus {
+  flex-shrink: 0;
+  width: 372px;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.org-focus-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 16px 10px;
+}
+.org-focus-id {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.org-focus-name {
+  font-family: var(--font-aldrich), sans-serif;
+  font-size: 17px;
+  letter-spacing: 0.005em;
+}
+.org-focus-role {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+.org-focus-x {
+  opacity: 0;
+  flex-shrink: 0;
+}
+.org-focus:hover .org-focus-x {
+  opacity: 1;
+}
+.org-focus-meta {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+  padding: 0 16px 14px;
+}
+
+.org-sections {
+  display: flex;
+  flex-direction: column;
+}
+.org-section {
+  border-top: 1px solid var(--border);
+  padding: 12px 14px;
+}
+.org-section-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 7px;
+}
+.org-section-ic {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+.org-section-name {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+.org-section-count {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+.org-section-x {
+  opacity: 0;
+  margin-left: auto;
+}
+.org-section-head:hover .org-section-x {
+  opacity: 1;
+}
+
+.org-members {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.org-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  margin: 0 -4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
+}
+.org-member:hover {
+  background: var(--muted);
+  border-color: var(--border);
+}
+.org-member-main {
+  flex: 1;
+  min-width: 0;
+}
+.org-member-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.org-member-role {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.org-member-count {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--brand-green-soft);
+  background: color-mix(in oklab, var(--brand-green) 8%, transparent);
+  border: 1px solid var(--brand-green-soft);
+  padding: 1px 5px;
+}
+.org-member-x {
+  opacity: 0;
+  flex-shrink: 0;
+}
+.org-member:hover .org-member-x {
+  opacity: 1;
+}
+.org-member-go {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+.org-empty {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  padding: 9px 8px;
+  border: 1px dashed var(--border);
+  text-align: center;
+  line-height: 1.45;
+}
+.org-focus-foot {
+  border-top: 1px solid var(--border);
+}
+.org-focus-foot .org-add-btn {
+  border: none;
+  width: 100%;
+  justify-content: center;
+  margin: 0;
+  padding: 12px;
+}
+.org-focus-foot .org-add-form {
+  padding: 10px 14px;
+}
+
+/* ---- AI banner ---- */
+.org-ai-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+.org-ai-ic {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--brand-green) 8%, transparent);
+  border: 1px solid var(--brand-green-soft);
+  color: var(--brand-green-soft);
+}
+.org-ai-main {
+  flex: 1;
+  min-width: 0;
+}
+.org-ai-title {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.org-ai-sub {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  margin-top: 4px;
+  line-height: 1.55;
+  max-width: 72ch;
+}
+
+/* ---- detected pool ---- */
+.org-pool {
+  border: 1px dashed var(--border);
+  background: var(--card);
+  padding: 16px 18px;
+  margin-bottom: 22px;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.org-pool-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.org-pool-ic {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--brand-green) 8%, transparent);
+  border: 1px solid var(--brand-green-soft);
+  color: var(--brand-green-soft);
+}
+.org-pool-title {
+  font-family: var(--font-aldrich), sans-serif;
+  font-size: 14px;
+}
+.org-pool-sub {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-top: 8px;
+  line-height: 1.5;
+  max-width: 70ch;
+}
+.org-pool-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.org-pool-person {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  padding: 12px 13px;
+  cursor: grab;
+}
+.org-pool-person:active {
+  cursor: grabbing;
+}
+.org-pool-person > .org-grip,
+.org-pool-person > .org-pool-av {
+  margin-top: 2px;
+}
+.org-pool-av {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--foreground);
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+.org-pool-main {
+  flex: 1;
+  min-width: 0;
+}
+.org-pool-name {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+.org-src {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border: 1px solid var(--border);
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+.org-pool-suggest {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+/* ---- inline edit + shared bits ---- */
+.org-editable {
+  cursor: text;
+}
+.org-editable:hover {
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+.org-inline-input {
+  height: 30px;
+  font-size: 13px;
+  padding: 0 8px;
+  background: var(--background);
+  border: 1px solid var(--border-strong);
+  color: var(--foreground);
+  outline: none;
+}
+.org-inline-input:focus {
+  border-color: var(--ring);
+}
+
+.org-zone {
+  transition:
+    background 0.12s,
+    box-shadow 0.12s;
+}
+.org-section.drop {
+  background: color-mix(in oklab, var(--brand-green) 8%, transparent);
+  box-shadow: inset 0 0 0 1px var(--brand-green-soft);
+}
+
+.org-grip {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+  cursor: grab;
+}
+.org-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: none;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.org-act:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+.org-section-x.org-act,
+.org-member-x.org-act {
+  width: 22px;
+  height: 22px;
+}
+
+.org-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: 1px dashed var(--border);
+  padding: 7px 11px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+.org-add-btn:hover {
+  color: var(--foreground);
+  border-color: var(--muted-foreground);
+}
+.org-add-btn.block {
+  width: 100%;
+  justify-content: center;
+}
+.org-add-form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+.org-add-form.block {
+  width: 100%;
+}
+.org-add-form .org-inline-input {
+  flex: 1;
 }

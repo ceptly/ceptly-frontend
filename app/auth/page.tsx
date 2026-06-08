@@ -3,8 +3,9 @@
 import { Suspense, useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { AlertCircle, Loader2, Lock, Mail, User } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 import { signIn, signUp } from "@/actions/auth";
 import { getGoogleAuthUrl, resolveGoogleAuthError } from "@/lib/auth/google";
@@ -19,6 +20,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+const MARKETING_URL =
+  process.env.NEXT_PUBLIC_MARKETING_URL?.replace(/\/$/, "") ?? "https://ceptly.com";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -53,7 +57,11 @@ function SubmitButton({
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
+    <Button
+      type="submit"
+      className="ceptly-auth-btn ceptly-auth-btn-primary"
+      disabled={pending}
+    >
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -97,40 +105,25 @@ function AuthPageContent() {
   return (
     <div className="ceptly-auth-shell">
       <div className="ceptly-auth-bg" aria-hidden>
-        <div className="ceptly-auth-bg ceptly-auth-grid absolute inset-0" />
-        <div className="ceptly-auth-bg ceptly-auth-dots absolute inset-0" />
-        <div className="ceptly-auth-watermark">
-          <Image
-            src="/parallax-light.png"
-            alt=""
-            width={460}
-            height={460}
-            className="h-auto w-full dark:hidden"
-          />
-          <Image
-            src="/parallax-dark.png"
-            alt=""
-            width={460}
-            height={460}
-            className="hidden h-auto w-full dark:block"
-          />
-        </div>
+        <div className="ceptly-auth-dots absolute inset-0" />
+        <div className="ceptly-auth-glow" />
       </div>
 
       <div className="relative z-[2] flex w-full max-w-[420px] flex-col gap-6">
-        <div className="flex justify-center">
+        <Link href={MARKETING_URL} className="ceptly-auth-brand">
           <Image
-            src="/parallax-gradient.png"
+            src="/ceptly-mark-light.png"
             alt="Ceptly"
-            width={46}
-            height={46}
-            className="size-[46px] object-contain"
+            width={22}
+            height={24}
+            className="h-6 w-[22px] object-contain"
           />
-        </div>
+          <span>Ceptly</span>
+        </Link>
 
         <Card className="ceptly-auth-card">
           <CardHeader className="ceptly-auth-head">
-            <CardTitle className="text-[23px] leading-[1.4] tracking-[-0.2px] text-[#fafafa]">
+            <CardTitle className="font-[family-name:var(--font-crimson-text)] text-[28px] leading-[1.16] font-medium tracking-[-0.01em]">
               {isSignUp ? "Create your Ceptly account" : "Welcome back"}
             </CardTitle>
             <CardDescription>
@@ -169,11 +162,11 @@ function AuthPageContent() {
 
             <Button
               variant="outline"
-              className="w-full"
+              className="ceptly-auth-btn ceptly-auth-btn-outline"
               nativeButton={false}
               render={<a href={googleAuthUrl} />}
             >
-              <GoogleIcon className="mr-2 h-4 w-4" />
+              <GoogleIcon className="h-4 w-4" />
               Continue with Google
             </Button>
 
@@ -187,24 +180,15 @@ function AuthPageContent() {
                   <input type="hidden" name="inviteToken" value={inviteToken} />
                 ) : null}
                 <div className="space-y-0">
-                  <Label
-                    htmlFor="email"
-                    className="mb-[7px] block text-[13px] font-semibold"
-                  >
-                    Email
-                  </Label>
-                  <div className="relative">
-                    <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      className="pl-10"
-                      defaultValue={prefilledEmail}
-                      required
-                    />
-                  </div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    defaultValue={prefilledEmail}
+                    required
+                  />
                   {signUpState?.errors?.email && (
                     <p className="mt-1.5 text-sm text-destructive">
                       {signUpState.errors.email[0]}
@@ -213,22 +197,13 @@ function AuthPageContent() {
                 </div>
 
                 <div className="space-y-0">
-                  <Label
-                    htmlFor="fullName"
-                    className="mb-[7px] block text-[13px] font-semibold"
-                  >
-                    Full name
-                  </Label>
-                  <div className="relative">
-                    <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="fullName"
-                      name="fullName"
-                      placeholder="Jordan Avery"
-                      className="pl-10"
-                      required
-                    />
-                  </div>
+                  <Label htmlFor="fullName">Full name</Label>
+                  <Input
+                    id="fullName"
+                    name="fullName"
+                    placeholder="Jordan Avery"
+                    required
+                  />
                   {signUpState?.errors?.fullName && (
                     <p className="mt-1.5 text-sm text-destructive">
                       {signUpState.errors.fullName[0]}
@@ -237,29 +212,20 @@ function AuthPageContent() {
                 </div>
 
                 <div className="space-y-0">
-                  <Label
-                    htmlFor="password"
-                    className="mb-[7px] block text-[13px] font-semibold"
-                  >
-                    Password
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      name="password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="pl-10"
-                      required
-                    />
-                  </div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                  />
                   {signUpState?.errors?.password && (
                     <p className="mt-1.5 text-sm text-destructive">
                       {signUpState.errors.password[0]}
                     </p>
                   )}
-                  <p className="mt-[7px] text-xs text-muted-foreground">
+                  <p className="ceptly-auth-hint">
                     Must be at least 8 characters with a letter and a number
                   </p>
                 </div>
@@ -275,12 +241,7 @@ function AuthPageContent() {
                   <input type="hidden" name="inviteToken" value={inviteToken} />
                 ) : null}
                 <div className="space-y-0">
-                  <Label
-                    htmlFor="signin-email"
-                    className="mb-[7px] block text-[13px] font-semibold"
-                  >
-                    Email
-                  </Label>
+                  <Label htmlFor="signin-email">Email</Label>
                   <Input
                     id="signin-email"
                     name="email"
@@ -297,12 +258,7 @@ function AuthPageContent() {
                 </div>
 
                 <div className="space-y-0">
-                  <Label
-                    htmlFor="signin-password"
-                    className="mb-[7px] block text-[13px] font-semibold"
-                  >
-                    Password
-                  </Label>
+                  <Label htmlFor="signin-password">Password</Label>
                   <Input
                     id="signin-password"
                     name="password"
@@ -333,8 +289,15 @@ function AuthPageContent() {
           </div>
 
           <p className="ceptly-auth-fine">
-            By continuing, you agree to our terms of service and privacy
-            policy.
+            By continuing, you agree to our terms of service and{" "}
+            <a
+              href="https://ceptly.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              privacy policy
+            </a>
+            .
           </p>
         </Card>
       </div>
@@ -346,8 +309,12 @@ export default function AuthPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="ceptly-auth-shell">
+          <div className="ceptly-auth-bg" aria-hidden>
+            <div className="ceptly-auth-dots absolute inset-0" />
+            <div className="ceptly-auth-glow" />
+          </div>
+          <Loader2 className="relative z-[2] h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       }
     >

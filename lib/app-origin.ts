@@ -2,7 +2,7 @@
 export function getAppOrigin(): string {
   return (
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-    "https://app.ceptly.ai"
+    "https://ceptly.ai"
   );
 }
 
