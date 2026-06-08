@@ -1,7 +1,7 @@
 # Ceptly — User Story Pipeline
 
 **Sources:** [prd.md](./prd.md) · [spec.md](./spec.md) · [conversation.md](./conversation.md)  
-**Repos:** `ceptly2` (Next.js / Amplify → app.ceptly.ai) · `ceptly-public` (Amplify → ceptly.ai) · `ceptly-backend` (Express API)  
+**Repos:** `ceptly2` (Next.js / Amplify → ceptly.ai) · `ceptly-public` (Amplify → ceptly.com) · `ceptly-backend` (Express API)  
 **Last updated:** May 2026
 
 Use this file as the execution checklist. Check items when shipped and verified in staging or with one real team.
@@ -344,7 +344,7 @@ _Replace the current expanded cards (questions list, IC preview inline). List is
 - [ ] **As a founder**, I receive an automated weekly digest in `#leadership-digest` without triggering it manually.
 - [ ] **As a founder**, I get a real-time alert when an IC reports a blocker (refine detection beyond keywords).
 - [ ] **As a founder**, I get an alert when an IC misses 2+ consecutive check-ins (disengagement).
-- [x] **As a founder**, I ask questions in app.ceptly.ai to the Q&A agent and get answers grounded in stored check-in data only.
+- [x] **As a founder**, I ask questions in ceptly.ai to the Q&A agent and get answers grounded in stored check-in data only.
 - [ ] **As an executive**, I talk to a Strategy Agent in the web app and get text answers (charts optional shell; check-in data only).
 
 ### Tasks

@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const MARKETING_URL =
-  process.env.NEXT_PUBLIC_MARKETING_URL?.replace(/\/$/, "") ?? "https://ceptly.ai";
+  process.env.NEXT_PUBLIC_MARKETING_URL?.replace(/\/$/, "") ?? "https://ceptly.com";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (

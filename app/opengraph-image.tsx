@@ -65,7 +65,7 @@ export default async function Image() {
             maxWidth: 920,
           }}
         >
-          app.ceptly.ai
+          ceptly.ai
         </div>
       </div>
     </div>,
