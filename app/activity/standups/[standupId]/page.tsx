@@ -12,6 +12,7 @@ import {
   listAppContextOptions,
   listConversationTemplates,
 } from "@/lib/api/conversations";
+import { FALLBACK_PERSONAS, listPersonas } from "@/lib/api/personas";
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import {
@@ -79,6 +80,7 @@ export default async function StandupActivityPage({
       templatesResult,
       timezoneResult,
       chatChannelsResult,
+      personasResult,
     ] = await Promise.all([
       listRosterMembers(token, workspace.id),
       listAppContextOptions(token, workspace.id),
@@ -86,6 +88,7 @@ export default async function StandupActivityPage({
       listConversationTemplates(token, workspace.id),
       getWorkspaceTimezone(token, workspace.id),
       listChatChannels(token, workspace.id),
+      listPersonas(token),
     ]);
 
     const rosterMembers = rosterResult.data?.members ?? [];
@@ -104,6 +107,9 @@ export default async function StandupActivityPage({
     const chatChannelsError = chatChannelsResult.success
       ? null
       : (chatChannelsResult.error ?? "Could not load channels.");
+    const personas = personasResult.data?.personas?.length
+      ? personasResult.data.personas
+      : FALLBACK_PERSONAS;
 
     return (
       <div className="ceptly-page ceptly-page-wide">
@@ -117,7 +123,7 @@ export default async function StandupActivityPage({
           &lt; {standup.name}
         </Link>
         <div className="mb-6">
-          <h1 className="font-[family-name:var(--font-aldrich)] text-[26px] font-normal tracking-tight">
+          <h1 className="font-[family-name:var(--font-heading)] text-[26px] font-normal tracking-tight">
             Edit {standup.name}
           </h1>
         </div>
@@ -125,6 +131,7 @@ export default async function StandupActivityPage({
         <AgentEditFields
           workspaceId={workspace.id}
           workspaceTimezone={workspaceTimezone}
+          personas={personas}
           templates={templates}
           rosterMembers={rosterMembers}
           appContextOptions={appContextOptions}

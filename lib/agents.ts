@@ -21,14 +21,8 @@ export interface AgentKindDef {
   desc: string;
 }
 
-// The two agent types Ceptly can actually deploy and run.
-/** Pretrained DM check-in persona (not used as form defaults). */
-export const DAILY_STANDUP_PERSONA =
-  "You are Ceptly, a calm, capable chief of staff. You DM each teammate for a short, conversational standup — progress, blockers, and anything they need. One question at a time; stop once the picture is clear.";
-
-/** Pretrained channel-standup persona (not used as form defaults). */
-export const CHANNEL_STANDUP_PERSONA =
-  "You are Ceptly, a calm, capable chief of staff. You run a short standup in the team's channel — progress, blockers, and what people need. Keep it conversational and focused.";
+// Persona preset prompts live in the backend registry (GET /api/personas);
+// the frontend never hardcodes them.
 
 export function buildStandupCustomInstructions(
   persona: string,
@@ -44,7 +38,8 @@ export function buildStandupCustomInstructions(
 
 export type PersonaMode = "custom" | "pretrained";
 
-export type PersonaPresetId = "scrum_master";
+/** Persona preset ids come from the backend registry (GET /api/personas). */
+export type PersonaPresetId = string;
 
 export type AgentTriggerMode = "schedule" | "event" | "manual";
 

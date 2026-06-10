@@ -24,7 +24,7 @@ const schema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
   agentPersona: z.string().trim().max(4000).optional().nullable(),
   conversationGoal: z.string().trim().max(500).optional(),
-  personaPreset: z.enum(["scrum_master"]).optional(),
+  personaPreset: z.string().trim().min(1).max(50).optional(),
   agentNotes: z.string().trim().max(2000).optional().nullable(),
   rosterMemberIds: z.array(z.string().uuid()).min(1),
   contextIntegrations: z
@@ -58,7 +58,7 @@ export async function publishConversationFromTemplate(input: {
   name?: string;
   agentPersona?: string | null;
   conversationGoal?: string;
-  personaPreset?: "scrum_master";
+  personaPreset?: string;
   agentNotes?: string | null;
   rosterMemberIds: string[];
   contextIntegrations?: string[];

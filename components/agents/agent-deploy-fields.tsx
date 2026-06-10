@@ -56,6 +56,7 @@ import type {
   ChatChannel,
   CommunicationPlatform,
 } from "@/lib/api/communication";
+import { FALLBACK_PERSONAS, type PersonaOption } from "@/lib/api/personas";
 import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
@@ -92,6 +93,8 @@ function defaultContextIntegrations(options: AppContextOption[]): string[] {
 interface AgentDeployFieldsProps {
   workspaceId: string;
   workspaceTimezone: string;
+  /** Persona presets from GET /api/personas. */
+  personas?: PersonaOption[];
   templates: ConversationTemplate[];
   rosterMembers: RosterMember[];
   appContextOptions: AppContextOption[];
@@ -113,6 +116,7 @@ interface AgentDeployFieldsProps {
 export function AgentDeployFields({
   workspaceId,
   workspaceTimezone,
+  personas = FALLBACK_PERSONAS,
   templates,
   rosterMembers,
   appContextOptions,
@@ -143,6 +147,9 @@ export function AgentDeployFields({
   );
   const [personaMode, setPersonaMode] = useState<PersonaMode>(
     initialValues?.personaMode ?? "pretrained",
+  );
+  const [presetId, setPresetId] = useState(
+    personas[0]?.id ?? "scrum_master",
   );
   const [persona, setPersona] = useState(initialValues?.persona ?? "");
   const [goal, setGoal] = useState(initialValues?.goal ?? "");
@@ -208,13 +215,14 @@ export function AgentDeployFields({
     ? chatChannelsError
     : slackChannelsError;
 
-  function selectPersonaMode(mode: PersonaMode) {
-    setPersonaMode(mode);
-    if (mode === "pretrained") {
-      setPersona("");
-      setGoal("");
-    }
+  function selectPreset(id: string) {
+    setPersonaMode("pretrained");
+    setPresetId(id);
+    setPersona("");
+    setGoal("");
   }
+
+  const selectedPersona = personas.find((p) => p.id === presetId);
 
   function buildDeploySchedule() {
     if (isManual) {
@@ -260,7 +268,7 @@ export function AgentDeployFields({
       trigger_mode: isReachout ? "manual" : triggerMode,
       name: trimmedName,
       ...(isPretrained
-        ? { persona_preset: "scrum_master" as const }
+        ? { persona_preset: presetId }
         : {
             agent_persona: persona.trim(),
             conversation_goal: goal.trim(),
@@ -305,6 +313,7 @@ export function AgentDeployFields({
     isComplete,
     type,
     personaMode,
+    presetId,
     persona,
     goal,
     notes,
@@ -498,25 +507,36 @@ export function AgentDeployFields({
 
         <AgentSection title="Persona">
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={isPending}
-              className={cn(agentPillVariants({ selected: isPretrained }))}
-              onClick={() => selectPersonaMode("pretrained")}
-            >
-              Scrum Master (pretrained)
-            </button>
+            {personas.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                disabled={isPending}
+                className={cn(
+                  agentPillVariants({
+                    selected: isPretrained && presetId === p.id,
+                  }),
+                )}
+                onClick={() => selectPreset(p.id)}
+                title={p.tagline}
+              >
+                {p.name}
+              </button>
+            ))}
             <button
               type="button"
               disabled={isPending}
               className={cn(
                 agentPillVariants({ selected: personaMode === "custom" }),
               )}
-              onClick={() => selectPersonaMode("custom")}
+              onClick={() => setPersonaMode("custom")}
             >
               Custom persona
             </button>
           </div>
+          {isPretrained && selectedPersona?.tagline ? (
+            <p className={agentFieldHintClass}>{selectedPersona.tagline}</p>
+          ) : null}
           {!isPretrained ? (
             <>
               <div className="space-y-2">
@@ -709,7 +729,11 @@ export function AgentDeployFields({
         <ConfigSummary
           kind={type}
           typeName={typeName}
-          goal={isPretrained ? "Capture progress & blockers" : goal}
+          goal={
+            isPretrained
+              ? selectedPersona?.dm.goal || "Capture progress & blockers"
+              : goal
+          }
           audience={audienceSummary}
           channel={channelSummary}
           trigger={triggerSummary()}

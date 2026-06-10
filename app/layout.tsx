@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Aldrich, Geist_Mono, Open_Sans } from "next/font/google";
+import {
+  Crimson_Pro,
+  Crimson_Text,
+  Geist_Mono,
+  Open_Sans,
+} from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { AccountHeader } from "@/components/account-header";
 import { AppNavSkeleton } from "@/components/app-nav-skeleton";
@@ -27,10 +32,18 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const aldrich = Aldrich({
-  variable: "--font-aldrich",
+// Purple Ceptly design system: Crimson Text serif headings + Crimson Pro wordmark.
+const crimsonText = Crimson_Text({
+  variable: "--font-crimson-text",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "600", "700"],
+  style: ["normal", "italic"],
+});
+
+const crimsonPro = Crimson_Pro({
+  variable: "--font-crimson-pro",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = createSiteMetadata();
@@ -79,7 +92,7 @@ export default async function RootLayout({
       className={cn("h-full", initialTheme === "dark" && "dark")}
     >
       <body
-        className={`${openSans.variable} ${geistMono.variable} ${aldrich.variable} min-h-full flex flex-col md:flex-row antialiased bg-background text-foreground`}
+        className={`${openSans.variable} ${geistMono.variable} ${crimsonText.variable} ${crimsonPro.variable} min-h-full flex flex-col md:flex-row antialiased bg-background text-foreground`}
       >
         <script
           dangerouslySetInnerHTML={{ __html: THEME_COOKIE_SEED_SCRIPT }}

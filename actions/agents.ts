@@ -110,7 +110,7 @@ const agentDeploySchema = z.object({
   kind: z.enum(["checkin", "reachout", "standup"]),
   trigger_mode: z.enum(["schedule", "manual", "event"]).optional(),
   name: z.string().trim().min(1).max(100),
-  persona_preset: z.enum(["scrum_master"]).optional(),
+  persona_preset: z.string().trim().min(1).max(50).optional(),
   agent_persona: z.string().trim().max(4000).optional().nullable(),
   conversation_goal: z.string().trim().max(500).optional().nullable(),
   agent_notes: z.string().trim().max(2000).optional().nullable(),
@@ -188,7 +188,7 @@ export async function updateAgentAction(
   }
 
   const { workspaceId, agentId, kind, body } = parsed.data;
-  const usesPreset = body.persona_preset === "scrum_master";
+  const presetId = body.persona_preset;
 
   if (kind === "conversation") {
     const result = await updateConversation(token, workspaceId, agentId, {
@@ -198,8 +198,8 @@ export async function updateAgentAction(
       context_integrations: body.context_integrations,
       result_destinations: body.result_destinations,
       agent_notes: body.agent_notes ?? null,
-      ...(usesPreset
-        ? { persona_preset: "scrum_master" as const }
+      ...(presetId
+        ? { persona_preset: presetId }
         : {
             agent_persona: body.agent_persona ?? null,
             conversation_goal: body.conversation_goal ?? null,
@@ -218,8 +218,8 @@ export async function updateAgentAction(
       context_integrations: body.context_integrations,
       result_destinations: body.result_destinations,
       agent_notes: body.agent_notes ?? null,
-      ...(usesPreset
-        ? { persona_preset: "scrum_master" as const }
+      ...(presetId
+        ? { persona_preset: presetId }
         : {
             custom_instructions: buildStandupCustomInstructions(
               body.agent_persona ?? "",

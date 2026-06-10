@@ -7,6 +7,7 @@ import {
   ChevronRight,
   GitMerge,
   GripVertical,
+  MessagesSquare,
   Network,
   Plus,
   RefreshCw,
@@ -20,6 +21,7 @@ import { rescanOrgAction, saveOrgStructureAction } from "@/actions/org";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type {
+  OrgCommunications,
   OrgCompanyNode,
   OrgGroupInput,
   OrgGroupNode,
@@ -28,6 +30,55 @@ import type {
   OrgStructure,
 } from "@/lib/api/org";
 import { cn } from "@/lib/utils";
+
+// ---- communication helpers ----------------------------------------------
+interface ContactRanking {
+  rosterMemberId: string;
+  name: string;
+  weight: number;
+  mentionCount: number;
+  replyCount: number;
+}
+
+function topContactsFor(
+  rosterMemberId: string | null,
+  comms: OrgCommunications | undefined,
+  limit = 5,
+): ContactRanking[] {
+  if (!rosterMemberId || !comms) return [];
+  const nameById = new Map(comms.nodes.map((n) => [n.rosterMemberId, n.name]));
+  return comms.edges
+    .filter(
+      (e) => e.source === rosterMemberId || e.target === rosterMemberId,
+    )
+    .map((e) => {
+      const other = e.source === rosterMemberId ? e.target : e.source;
+      return {
+        rosterMemberId: other,
+        name: nameById.get(other) ?? "Unknown",
+        weight: e.weight,
+        mentionCount: e.mentionCount,
+        replyCount: e.replyCount,
+      };
+    })
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, limit);
+}
+
+function findPersonNodeByName(
+  node: OrgCompanyNode | OrgPersonNode,
+  name: string,
+): OrgPersonNode | null {
+  const target = name.trim().toLowerCase();
+  for (const g of node.groups) {
+    for (const p of g.people) {
+      if (p.name.trim().toLowerCase() === target) return p;
+      const deeper = findPersonNodeByName(p, name);
+      if (deeper) return deeper;
+    }
+  }
+  return null;
+}
 
 // ---- ids + helpers ------------------------------------------------------
 let _oid = 0;
@@ -249,6 +300,7 @@ interface Handlers {
   dragLeaveZone: (z: string) => void;
   dropOnGroup: (pid: string, gid: string) => void;
   placeInFocused: (id: string) => void;
+  placeSuggested: (member: OrgPoolMember) => void;
 }
 
 // ---- member row ---------------------------------------------------------
@@ -352,16 +404,47 @@ function OrgSection({
 }
 
 // ---- focused card -------------------------------------------------------
+function OrgContacts({ contacts }: { contacts: ContactRanking[] }) {
+  if (!contacts.length) return null;
+  const max = contacts[0].weight || 1;
+  return (
+    <div className="org-contacts">
+      <div className="org-contacts-head">
+        <MessagesSquare className="size-3.5" /> Talks most with
+        <span className="org-contacts-note">from Slack</span>
+      </div>
+      <div className="org-contacts-list">
+        {contacts.map((c) => (
+          <div key={c.rosterMemberId} className="org-contact">
+            <span className="org-contact-name">{c.name}</span>
+            <span className="org-contact-bar">
+              <span
+                className="org-contact-fill"
+                style={{ width: `${Math.max(8, (c.weight / max) * 100)}%` }}
+              />
+            </span>
+            <span className="org-contact-count" title="Interaction strength">
+              {c.weight}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function OrgFocus({
   focused,
   depth,
   h,
   dragOver,
+  contacts,
 }: {
   focused: OrgCompanyNode | OrgPersonNode;
   depth: number;
   h: Handlers;
   dragOver: string | null;
+  contacts: ContactRanking[];
 }) {
   const reports = countReports(focused);
   const groups = focused.groups;
@@ -400,6 +483,7 @@ function OrgFocus({
           ? `${reports} ${reports === 1 ? "person" : "people"} across ${groups.length} ${groups.length === 1 ? "group" : "groups"}`
           : `No one reports to ${focused.name.split(" ")[0]} yet`}
       </div>
+      <OrgContacts contacts={contacts} />
       <div className="org-sections">
         {groups.map((g) => (
           <OrgSection
@@ -481,14 +565,31 @@ function OrgPoolChip({
             <span className="org-src">seen in {d.source}</span>
           ) : null}
         </div>
-        <div className="org-pool-suggest">{d.role || "New teammate"}</div>
+        <div className="org-pool-suggest">
+          {d.reason || d.role || "New teammate"}
+        </div>
+        {d.suggestedGroupName || d.suggestedManagerName ? (
+          <div className="org-pool-hint">
+            <Sparkles className="size-3" />
+            Suggested: {d.suggestedGroupName || "a group"}
+            {d.suggestedManagerName ? ` · under ${d.suggestedManagerName}` : ""}
+          </div>
+        ) : null}
       </div>
       {h.canEdit ? (
         <Button
           size="sm"
           variant="outline"
-          onClick={() => h.placeInFocused(d.rosterMemberId)}
-          title={`Add under ${focusedName}`}
+          onClick={() =>
+            d.suggestedGroupName || d.suggestedManagerName
+              ? h.placeSuggested(d)
+              : h.placeInFocused(d.rosterMemberId)
+          }
+          title={
+            d.suggestedManagerName
+              ? `Place under ${d.suggestedManagerName}`
+              : `Add under ${focusedName}`
+          }
         >
           <ArrowDown className="size-3.5" /> Place
         </Button>
@@ -550,9 +651,15 @@ interface OrgEditorProps {
   workspaceId: string;
   canEdit: boolean;
   initial: OrgStructure;
+  communications?: OrgCommunications;
 }
 
-export function OrgEditor({ workspaceId, canEdit, initial }: OrgEditorProps) {
+export function OrgEditor({
+  workspaceId,
+  canEdit,
+  initial,
+  communications,
+}: OrgEditorProps) {
   const [root, setRoot] = useState<OrgCompanyNode>(initial.tree);
   const [path, setPath] = useState<string[]>([]);
   const [pool, setPool] = useState<OrgPoolMember[]>(initial.pool);
@@ -715,9 +822,61 @@ export function OrgEditor({ workspaceId, canEdit, initial }: OrgEditorProps) {
         setPool((pl) => pl.filter((x) => x.rosterMemberId !== id));
         markDirty();
       },
+      placeSuggested: (member) => {
+        const d = pool.find(
+          (x) => x.rosterMemberId === member.rosterMemberId,
+        );
+        if (!d) return;
+        // Host = the suggested manager if we can find them, else whoever's in view.
+        const host: OrgCompanyNode | OrgPersonNode =
+          (member.suggestedManagerName
+            ? findPersonNodeByName(root, member.suggestedManagerName)
+            : null) ?? focused;
+        const wantGroup = member.suggestedGroupName?.trim().toLowerCase();
+        setRoot((r) =>
+          mapNode(r, host.id, (n) => {
+            let groups = n.groups;
+            let target =
+              (wantGroup
+                ? groups.find((g) => g.name.trim().toLowerCase() === wantGroup)
+                : undefined) ?? groups[0];
+            if (!target) {
+              target = newGroup(member.suggestedGroupName || "New hires");
+              groups = [...groups, target];
+            }
+            return {
+              ...n,
+              groups: groups.map((g) =>
+                g.id === target!.id
+                  ? {
+                      ...g,
+                      people: [
+                        ...g.people,
+                        newPerson(d.name, d.role || "", d.rosterMemberId),
+                      ],
+                    }
+                  : g,
+              ),
+            };
+          }),
+        );
+        setPool((pl) =>
+          pl.filter((x) => x.rosterMemberId !== member.rosterMemberId),
+        );
+        markDirty();
+      },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [root, chain, focused, pool, canEdit],
+  );
+
+  const focusedContacts = useMemo(
+    () =>
+      topContactsFor(
+        "rosterMemberId" in focused ? focused.rosterMemberId : null,
+        communications,
+      ),
+    [focused, communications],
   );
 
   const save = () => {
@@ -804,6 +963,7 @@ export function OrgEditor({ workspaceId, canEdit, initial }: OrgEditorProps) {
           depth={chain.length - 1}
           h={h}
           dragOver={dragOver}
+          contacts={focusedContacts}
         />
       </div>
     </div>

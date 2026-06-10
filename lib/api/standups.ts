@@ -65,7 +65,7 @@ export type StandupCreateBody = {
   slack_channel_id: string;
   style?: StandupStyle;
   custom_instructions?: string;
-  persona_preset?: "scrum_master";
+  persona_preset?: string;
   agent_notes?: string | null;
   roster_member_ids: string[];
   context_integrations?: string[];

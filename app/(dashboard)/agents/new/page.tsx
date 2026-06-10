@@ -7,6 +7,7 @@ import {
   listConversationTemplates,
 } from "@/lib/api/conversations";
 import { listChatChannels } from "@/lib/api/communication";
+import { FALLBACK_PERSONAS, listPersonas } from "@/lib/api/personas";
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
@@ -48,6 +49,7 @@ export default async function NewAgentPage({
     appContextsResult,
     slackChannelsResult,
     chatChannelsResult,
+    personasResult,
   ] = await Promise.all([
     listConversationTemplates(token, workspace.id),
     listRosterMembers(token, workspace.id),
@@ -55,6 +57,7 @@ export default async function NewAgentPage({
     listAppContextOptions(token, workspace.id),
     listSlackChannels(token, workspace.id),
     listChatChannels(token, workspace.id),
+    listPersonas(token),
   ]);
 
   const apiTemplates = templatesResult.data?.templates ?? [];
@@ -72,12 +75,16 @@ export default async function NewAgentPage({
   const chatChannelsError = chatChannelsResult.success
     ? null
     : (chatChannelsResult.error ?? "Could not load channels.");
+  const personas = personasResult.data?.personas?.length
+    ? personasResult.data.personas
+    : FALLBACK_PERSONAS;
 
   return (
     <div className="ceptly-page ceptly-page-wide">
       <AgentDeployForm
         workspaceId={workspace.id}
         workspaceTimezone={workspaceTimezone}
+        personas={personas}
         templates={templates}
         rosterMembers={rosterMembers}
         appContextOptions={appContextOptions}
