@@ -138,7 +138,7 @@ export function EditRosterMemberDialog({
       >
         <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
           <div>
-            <h2 className="font-[family-name:var(--font-aldrich)] text-lg font-normal tracking-tight">
+            <h2 className="font-[family-name:var(--font-heading)] text-lg font-normal tracking-tight">
               Edit member
             </h2>
             <p className="mt-1 text-[12.5px] text-muted-foreground">

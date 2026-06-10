@@ -156,7 +156,7 @@ export function AppSidebar({ user, className }: AppSidebarProps) {
         />
         <span
           className="text-[19px] tracking-[0.01em] text-foreground"
-          style={{ fontFamily: "var(--font-aldrich), sans-serif" }}
+          style={{ fontFamily: "var(--font-crimson-pro), ui-serif, serif" }}
         >
           Ceptly
         </span>
