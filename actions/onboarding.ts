@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 
 import { postOnboardingComplete } from "@/lib/api/onboarding";
+import { getPostHogClient } from "@/lib/posthog-server";
+import { getCurrentUser } from "@/lib/auth/server";
 import type { OnboardingCompleteInput } from "@/lib/onboarding-schemas";
 import {
   getAccessToken,
@@ -35,6 +37,19 @@ export async function completeOnboarding(
 
     await setOnboardingCompleteCookie(true);
     await setWorkspaceNameCookie(payload.organizationName.trim());
+
+    const user = await getCurrentUser();
+    if (user) {
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId: user.id,
+        event: "onboarding_completed",
+        properties: {
+          organization_name: payload.organizationName.trim(),
+        },
+      });
+      await posthog.shutdown();
+    }
 
     const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
     if (base) {

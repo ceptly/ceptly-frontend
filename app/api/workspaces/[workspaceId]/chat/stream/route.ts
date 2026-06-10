@@ -2,6 +2,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { resolveApiBaseUrl } from "@/lib/api/auth";
+import { getCurrentUser } from "@/lib/auth/server";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 interface RouteContext {
   params: Promise<{ workspaceId: string }>;
@@ -47,6 +49,17 @@ export async function POST(request: Request, context: RouteContext) {
     return new NextResponse(text || "Upstream chat stream failed", {
       status: upstream.status,
     });
+  }
+
+  const user = await getCurrentUser();
+  if (user) {
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: user.id,
+      event: "chat_message_sent",
+      properties: { workspace_id: workspaceId },
+    });
+    await posthog.shutdown();
   }
 
   return new NextResponse(upstream.body, {

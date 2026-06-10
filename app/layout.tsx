@@ -10,6 +10,7 @@ import { cookies, headers } from "next/headers";
 import { AccountHeader } from "@/components/account-header";
 import { AppNavSkeleton } from "@/components/app-nav-skeleton";
 import { AppSidebar } from "@/components/app-sidebar";
+import { PostHogIdentify } from "@/components/posthog-identify";
 import { Providers } from "@/components/providers";
 import { StatsigIdentify } from "@/components/statsig-identify";
 import { getCurrentUser } from "@/lib/auth/server";
@@ -50,10 +51,7 @@ const crimsonPro = Crimson_Pro({
 export const metadata: Metadata = createSiteMetadata();
 
 async function AppNavSlot() {
-  const [user, cookieStore] = await Promise.all([
-    getCurrentUser(),
-    cookies(),
-  ]);
+  const [user, cookieStore] = await Promise.all([getCurrentUser(), cookies()]);
   if (!user) {
     return null;
   }
@@ -63,6 +61,11 @@ async function AppNavSlot() {
   return (
     <>
       <StatsigIdentify
+        userId={user.id}
+        email={user.email}
+        fullName={user.fullName ?? undefined}
+      />
+      <PostHogIdentify
         userId={user.id}
         email={user.email}
         fullName={user.fullName ?? undefined}

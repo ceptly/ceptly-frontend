@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { refreshSubscriptionCookiesAction } from "@/actions/sync-subscription";
+import { getPostHogClient } from "@/lib/posthog-server";
 import {
   createBillingCheckout,
   createBillingPortalSession,
@@ -30,6 +31,14 @@ export async function startBillingCheckoutAction(): Promise<{
     return { error: result.error ?? "Unable to start checkout" };
   }
 
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: user.id,
+    event: "billing_checkout_started",
+    properties: { workspace_id: workspace.id },
+  });
+  await posthog.shutdown();
+
   redirect(result.url);
 }
 
@@ -50,6 +59,14 @@ export async function openBillingPortalAction(): Promise<{
   if (result.error || !result.url) {
     return { error: result.error ?? "Unable to open billing portal" };
   }
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: user.id,
+    event: "billing_portal_opened",
+    properties: { workspace_id: workspace.id },
+  });
+  await posthog.shutdown();
 
   return { url: result.url };
 }
@@ -100,6 +117,14 @@ export async function updateSubscriptionSeatsAction(quantity: number): Promise<{
   if (result.error) {
     return { error: result.error };
   }
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: user.id,
+    event: "subscription_seats_updated",
+    properties: { workspace_id: workspace.id, seat_quantity: quantity },
+  });
+  await posthog.shutdown();
 
   revalidatePath("/settings");
   revalidatePath("/settings/billing");
