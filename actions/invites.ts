@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { getPostHogClient } from "@/lib/posthog-server";
+import { getCurrentUser } from "@/lib/auth/server";
 
 import {
   acceptInvite as acceptInviteApi,
@@ -68,6 +70,19 @@ export async function createInviteAction(
   }
 
   revalidatePath("/settings");
+  const user = await getCurrentUser();
+  if (user) {
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: user.id,
+      event: "team_member_invited",
+      properties: {
+        workspace_id: parsed.data.workspaceId,
+        invited_email: parsed.data.email,
+      },
+    });
+    await posthog.shutdown();
+  }
   return {
     success: true,
     inviteUrl: result.data.invite.inviteUrl,
@@ -124,5 +139,14 @@ export async function acceptInviteAction(
 
   await setOnboardingCompleteCookie(true);
   revalidatePath("/settings");
+  const acceptUser = await getCurrentUser();
+  if (acceptUser) {
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: acceptUser.id,
+      event: "invite_accepted",
+    });
+    await posthog.shutdown();
+  }
   redirect("/chat");
 }

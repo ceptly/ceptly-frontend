@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getPostHogClient } from "@/lib/posthog-server";
+import { getCurrentUser } from "@/lib/auth/server";
 
 import { updateConversation } from "@/lib/api/conversations";
 import { updateStandup } from "@/lib/api/standups";
@@ -163,6 +165,20 @@ export async function deployAgentAction(input: {
     revalidatePath("/agents");
     revalidatePath("/activity");
     revalidatePath("/settings/standups");
+    const user = await getCurrentUser();
+    if (user) {
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId: user.id,
+        event: "agent_deployed",
+        properties: {
+          workspace_id: parsed.data.workspaceId,
+          agent_kind: parsed.data.body.kind,
+          agent_name: parsed.data.body.name,
+        },
+      });
+      await posthog.shutdown();
+    }
     return { agent: result.data };
   });
 }
@@ -235,6 +251,20 @@ export async function updateAgentAction(
   revalidatePath("/agents");
   revalidatePath("/activity");
   revalidatePath("/settings/standups");
+  const user = await getCurrentUser();
+  if (user) {
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: user.id,
+      event: "agent_updated",
+      properties: {
+        workspace_id: parsed.data.workspaceId,
+        agent_kind: parsed.data.kind,
+        agent_name: parsed.data.body.name,
+      },
+    });
+    await posthog.shutdown();
+  }
   return {};
 }
 

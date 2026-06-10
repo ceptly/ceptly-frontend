@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getPostHogClient } from "@/lib/posthog-server";
+import { getCurrentUser } from "@/lib/auth/server";
 
 import { createConversationFromTemplate } from "@/lib/api/conversations";
 import type {
@@ -102,5 +104,20 @@ export async function publishConversationFromTemplate(input: {
 
   revalidatePath("/activity");
   revalidatePath("/agents");
+  const user = await getCurrentUser();
+  if (user) {
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: user.id,
+      event: "conversation_published",
+      properties: {
+        workspace_id: parsed.data.workspaceId,
+        template_id: parsed.data.templateId,
+        conversation_id: result.data.conversation.id,
+        roster_size: parsed.data.rosterMemberIds.length,
+      },
+    });
+    await posthog.shutdown();
+  }
   return { conversationId: result.data.conversation.id };
 }

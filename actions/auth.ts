@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { AUTH_ENDPOINTS, resolveApiBaseUrl } from "@/lib/api/auth";
+import { getPostHogClient } from "@/lib/posthog-server";
 import type { AuthMeResponse, AuthSessionResponse } from "@/lib/api/types";
 import {
   SignInFormSchema,
@@ -98,6 +99,29 @@ async function authenticate(
     if (result.data.user) {
       await setSubscriptionCookies(result.data.user);
     }
+
+    const posthog = getPostHogClient();
+    const userId = result.data.user?.id ?? result.data.user?.email ?? "unknown";
+    const isRegister = options?.isRegister ?? false;
+    posthog.capture({
+      distinctId: userId,
+      event: isRegister ? "user_signed_up" : "user_signed_in",
+      properties: {
+        email: result.data.user?.email,
+        method: "email",
+        has_invite: Boolean(options?.inviteToken),
+      },
+    });
+    if (result.data.user) {
+      posthog.identify({
+        distinctId: userId,
+        properties: {
+          email: result.data.user.email,
+          name: result.data.user.fullName,
+        },
+      });
+    }
+    await posthog.shutdown();
 
     if (options?.inviteToken && options.isRegister) {
       await setOnboardingCompleteCookie(true);
