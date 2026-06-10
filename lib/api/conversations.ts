@@ -111,7 +111,7 @@ export async function createConversationFromTemplate(
     summary?: string | null;
     agent_persona?: string | null;
     conversation_goal?: string | null;
-    persona_preset?: "scrum_master";
+    persona_preset?: string;
     agent_notes?: string | null;
     schedule?: WorkspaceSchedule;
     roster_member_ids?: string[];
@@ -259,7 +259,7 @@ export async function updateConversation(
     template_id?: string | null;
     agent_persona?: string | null;
     conversation_goal?: string | null;
-    persona_preset?: "scrum_master";
+    persona_preset?: string;
     agent_notes?: string | null;
     schedule?: WorkspaceSchedule;
     roster_member_ids?: string[];

@@ -9,9 +9,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-open-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-aldrich);
+  --font-heading: var(--font-crimson-text);
   --color-brand: var(--brand-green);
-  --color-brand-foreground: #09090b;
+  --color-brand-foreground: #ffffff;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,11 +48,12 @@
 }
 
 :root {
-  --brand-green: #56ff3c;
-  --brand-green-soft: #b1ffa5;
-  --brand-green-wash: #e6f9e6;
-  --proposal-border: #3dbe26;
-  --proposal-wash: #f3fff1;
+  /* Purple Ceptly design system: brand is purple, used as accent only. */
+  --brand-green: #745ae6;
+  --brand-green-soft: #b5a5ff;
+  --brand-green-wash: #f2eefe;
+  --proposal-border: #745ae6;
+  --proposal-wash: #f7f5ff;
 
   --radius: 0px;
   --radius-sm: 0px;
@@ -60,7 +61,7 @@
   --radius-lg: 0px;
   --radius-xl: 0px;
 
-  --background: #fbfffa;
+  --background: #f7f7f7;
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
@@ -99,23 +100,27 @@
   --fg3: #a1a1aa;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
   --shadow-pop: 0 12px 32px -8px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
-  --green-ink: #1f9c10;
-  --green-wash: #ebffe8;
-  --green-line: #9ff08e;
-  --grid-line: oklch(0.55 0.15 145 / 10%);
+  --green-ink: #5326c0;
+  --green-wash: #f2eefe;
+  --green-line: #b5a5ff;
+  --grid-line: oklch(0.5 0.18 285 / 10%);
   --grid-dot: oklch(0.09 0.01 285 / 5%);
   --watermark-opacity: 0.05;
 }
 
 .dark {
-  --proposal-border: #ebffe8;
-  --proposal-wash: oklch(0.55 0.2 145 / 6%);
+  /* Purple Ceptly dark theme: purple accent on true-black surfaces. */
+  --brand-green: #b5a5ff;
+  --brand-green-soft: #b5a5ff;
+  --brand-green-wash: oklch(0.6 0.18 285 / 12%);
+  --proposal-border: #b5a5ff;
+  --proposal-wash: oklch(0.6 0.18 285 / 8%);
 
-  --background: #0c0c0f;
+  --background: #09090b;
   --foreground: oklch(0.985 0 0);
-  --card: #141417;
+  --card: #131316;
   --card-foreground: oklch(0.985 0 0);
-  --popover: #141417;
+  --popover: #131316;
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.985 0 0);
   --primary-foreground: oklch(0.145 0 0);
@@ -150,10 +155,10 @@
   --fg3: #71717a;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-pop: 0 16px 40px -8px rgba(0, 0, 0, 0.6), 0 2px 10px rgba(0, 0, 0, 0.5);
-  --green-ink: #56ff3c;
-  --green-wash: oklch(0.75 0.22 145 / 8%);
-  --green-line: oklch(0.75 0.22 145 / 30%);
-  --grid-line: oklch(0.75 0.22 145 / 6%);
+  --green-ink: #b5a5ff;
+  --green-wash: oklch(0.6 0.18 285 / 10%);
+  --green-line: oklch(0.7 0.16 285 / 32%);
+  --grid-line: oklch(0.7 0.16 285 / 8%);
   --grid-dot: oklch(1 0 0 / 5%);
   --watermark-opacity: 0.045;
 }
@@ -178,12 +183,12 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-aldrich), sans-serif;
+    font-family: var(--font-heading), ui-serif, Georgia, serif;
     font-weight: 400;
   }
   ::selection {
     background: var(--brand-green);
-    color: #09090b;
+    color: #ffffff;
   }
 }
 
@@ -213,7 +218,7 @@
   }
 
   .ceptly-page-title {
-    font-family: var(--font-aldrich), sans-serif;
+    font-family: var(--font-heading), ui-serif, Georgia, serif;
     @apply mb-1.5 text-[27px] leading-tight font-normal tracking-[-0.01em];
   }
 
@@ -797,7 +802,7 @@
   }
 
   .ceptly-rollup-card-title {
-    font-family: var(--font-aldrich), sans-serif;
+    font-family: var(--font-heading), ui-serif, Georgia, serif;
     @apply text-[17px] leading-tight font-normal tracking-[-0.005em];
   }
 
@@ -923,7 +928,7 @@
   }
 
   .ceptly-stat-val {
-    font-family: var(--font-aldrich), sans-serif;
+    font-family: var(--font-heading), ui-serif, Georgia, serif;
     @apply text-[26px] leading-none;
   }
 
@@ -964,7 +969,7 @@
   margin-bottom: 8px;
 }
 .ag-head h1 {
-  font-family: var(--font-aldrich), sans-serif;
+  font-family: var(--font-heading), ui-serif, Georgia, serif;
   font-weight: 400;
   font-size: 26px;
   letter-spacing: -0.01em;
@@ -1180,7 +1185,7 @@
   animation: ag-modal-in 0.5s cubic-bezier(0.2, 1.25, 0.35, 1) both;
 }
 .ag-modal-title {
-  font-family: var(--font-aldrich), sans-serif;
+  font-family: var(--font-heading), ui-serif, Georgia, serif;
   font-weight: 400;
   font-size: 25px;
   letter-spacing: -0.01em;
@@ -1285,7 +1290,7 @@
   left: 50%;
   top: 45%;
   display: block;
-  background: var(--c, #56ff3c);
+  background: var(--c, #745ae6);
   opacity: 0;
   animation-name: ag-confetti-burst;
   animation-timing-function: cubic-bezier(0.15, 0.6, 0.4, 1);
@@ -1637,7 +1642,7 @@
   gap: 2px;
 }
 .org-focus-name {
-  font-family: var(--font-aldrich), sans-serif;
+  font-family: var(--font-heading), ui-serif, Georgia, serif;
   font-size: 17px;
   letter-spacing: 0.005em;
 }
@@ -1856,7 +1861,7 @@
   color: var(--brand-green-soft);
 }
 .org-pool-title {
-  font-family: var(--font-aldrich), sans-serif;
+  font-family: var(--font-heading), ui-serif, Georgia, serif;
   font-size: 14px;
 }
 .org-pool-sub {
@@ -1927,6 +1932,166 @@
   font-size: 11.5px;
   color: var(--muted-foreground);
   line-height: 1.5;
+}
+.org-pool-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--green-ink);
+  background: var(--green-wash);
+  border: 1px solid var(--green-line);
+  padding: 1px 7px;
+  line-height: 1.5;
+}
+.org-pool-hint svg {
+  flex-shrink: 0;
+}
+
+/* ---- talks-most-with (per-person comms) ---- */
+.org-contacts {
+  margin: 10px 0 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken, var(--muted));
+}
+.org-contacts-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+  margin-bottom: 8px;
+}
+.org-contacts-note {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fg3);
+}
+.org-contacts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.org-contact {
+  display: grid;
+  grid-template-columns: minmax(64px, 110px) 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.org-contact-name {
+  font-size: 12.5px;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.org-contact-bar {
+  height: 6px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.org-contact-fill {
+  display: block;
+  height: 100%;
+  background: var(--brand-green);
+}
+.org-contact-count {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+/* ---- communication map ---- */
+.org-map {
+  margin-bottom: 18px;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+.org-map-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.org-map-empty p {
+  margin: 0;
+}
+.org-map-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-heading), ui-serif, Georgia, serif;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+.org-map-note {
+  font-family: var(--font-open-sans), sans-serif;
+  font-size: 11.5px;
+  color: var(--fg3);
+  margin-left: auto;
+}
+.org-map-svg {
+  display: block;
+  width: 100%;
+  max-width: 620px;
+  height: auto;
+  margin: 0 auto;
+}
+.org-map-edge {
+  stroke: var(--brand-green);
+}
+.org-map-node {
+  cursor: default;
+  transition: opacity 0.12s;
+}
+.org-map-dot {
+  fill: var(--card);
+  stroke: var(--muted-foreground);
+  stroke-width: 2;
+}
+.org-map-dot.placed {
+  fill: var(--brand-green);
+  stroke: var(--brand-green);
+}
+.org-map-label {
+  font-family: var(--font-open-sans), sans-serif;
+  font-size: 11px;
+  fill: var(--foreground);
+}
+.org-map-legend {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.org-map-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.org-map-dot.legend {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--muted-foreground);
+}
+.org-map-dot.placed.legend {
+  background: var(--brand-green);
+  border-color: var(--brand-green);
 }
 
 /* ---- inline edit + shared bits ---- */

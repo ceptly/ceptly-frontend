@@ -13,7 +13,7 @@ export interface AgentDeployBody {
   kind: AgentApiKind;
   trigger_mode?: AgentApiTriggerMode;
   name: string;
-  persona_preset?: "scrum_master";
+  persona_preset?: string;
   agent_persona?: string | null;
   conversation_goal?: string | null;
   agent_notes?: string | null;

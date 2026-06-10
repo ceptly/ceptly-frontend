@@ -24,10 +24,34 @@ export interface OrgPoolMember {
   name: string;
   role: string | null;
   source: string | null;
+  /** AI placement hints, populated by a Slack/LLM re-scan. */
+  suggestedGroupName?: string | null;
+  suggestedManagerName?: string | null;
+  reason?: string | null;
 }
 export interface OrgStructure {
   tree: OrgCompanyNode;
   pool: OrgPoolMember[];
+}
+
+// ---- communication graph (who talks to whom) ----------------------------
+export interface OrgCommNode {
+  rosterMemberId: string;
+  name: string;
+  placed: boolean;
+}
+export interface OrgCommEdge {
+  source: string;
+  target: string;
+  weight: number;
+  mentionCount: number;
+  replyCount: number;
+  sharedChannelCount: number;
+  lastInteractionAt: string | null;
+}
+export interface OrgCommunications {
+  nodes: OrgCommNode[];
+  edges: OrgCommEdge[];
 }
 
 /** What the client sends back on save — ids are dropped (server regenerates). */
@@ -91,6 +115,29 @@ export async function saveOrgStructure(
       body: JSON.stringify({ tree }),
     });
     return parseJsonResponse<{ data?: OrgStructure }>(response);
+  } catch {
+    return {
+      success: false,
+      error: "Could not reach the API. Is the backend running?",
+    };
+  }
+}
+
+export async function getOrgCommunications(
+  accessToken: string,
+  workspaceId: string,
+): Promise<{ success: boolean; error?: string; data?: OrgCommunications }> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/org/communications`,
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        cache: "no-store",
+      },
+    );
+    return parseJsonResponse<{ data?: OrgCommunications }>(response);
   } catch {
     return {
       success: false,

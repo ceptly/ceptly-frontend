@@ -11,10 +11,12 @@ import type {
   CommunicationPlatform,
 } from "@/lib/api/communication";
 import type { AppContextOption, ConversationTemplate } from "@/lib/api/types";
+import type { PersonaOption } from "@/lib/api/personas";
 
 interface AgentEditFieldsProps {
   workspaceId: string;
   workspaceTimezone: string;
+  personas?: PersonaOption[];
   templates: ConversationTemplate[];
   rosterMembers: RosterMember[];
   appContextOptions: AppContextOption[];

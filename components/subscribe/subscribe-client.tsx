@@ -56,7 +56,7 @@ export function SubscribeClient() {
           access without using a paid seat. No credit card required to start.
         </p>
         {checkoutState === "success" ? (
-          <p className="rounded-lg border border-[#56FF3C]/25 bg-[#E6F9E6]/60 px-4 py-3 text-sm">
+          <p className="rounded-lg border border-[#745ae6]/25 bg-[#f2eefe]/60 px-4 py-3 text-sm">
             Checkout complete. If access hasn&apos;t unlocked yet, wait a moment
             and refresh.
           </p>
@@ -85,7 +85,7 @@ export function SubscribeClient() {
         <ul className="mb-6 space-y-3">
           {included.map((item) => (
             <li key={item} className="flex gap-3 text-sm">
-              <Check className="mt-0.5 size-4 shrink-0 text-[#56FF3C]" />
+              <Check className="mt-0.5 size-4 shrink-0 text-[#745ae6]" />
               <span>{item}</span>
             </li>
           ))}

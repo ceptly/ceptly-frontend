@@ -7,12 +7,12 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const CONFETTI_COLORS = [
-  "#56FF3C",
-  "#B1FFA5",
+  "#745ae6",
+  "#b5a5ff",
   "#ffffff",
-  "#3DBE26",
-  "#e9ffe4",
-  "#7CFF63",
+  "#5326c0",
+  "#f2eefe",
+  "#9b86f0",
 ];
 
 interface AgentDeployedDialogProps {

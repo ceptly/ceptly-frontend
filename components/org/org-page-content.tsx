@@ -1,5 +1,6 @@
+import { OrgCommMap } from "@/components/org/org-comm-map";
 import { OrgEditor } from "@/components/org/org-editor";
-import { getOrgStructure } from "@/lib/api/org";
+import { getOrgCommunications, getOrgStructure } from "@/lib/api/org";
 import { getAccessToken } from "@/lib/auth/server";
 
 interface OrgPageContentProps {
@@ -16,7 +17,10 @@ export async function OrgPageContent({
     return null;
   }
 
-  const result = await getOrgStructure(token, workspaceId);
+  const [result, comms] = await Promise.all([
+    getOrgStructure(token, workspaceId),
+    getOrgCommunications(token, workspaceId),
+  ]);
   if (!result.success || !result.data) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -26,10 +30,14 @@ export async function OrgPageContent({
   }
 
   return (
-    <OrgEditor
-      workspaceId={workspaceId}
-      canEdit={canEdit}
-      initial={result.data}
-    />
+    <>
+      <OrgCommMap communications={comms.data} />
+      <OrgEditor
+        workspaceId={workspaceId}
+        canEdit={canEdit}
+        initial={result.data}
+        communications={comms.data}
+      />
+    </>
   );
 }

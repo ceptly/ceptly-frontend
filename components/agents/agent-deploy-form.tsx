@@ -12,10 +12,12 @@ import type {
   CommunicationPlatform,
 } from "@/lib/api/communication";
 import type { AppContextOption, ConversationTemplate } from "@/lib/api/types";
+import type { PersonaOption } from "@/lib/api/personas";
 
 interface AgentDeployFormProps {
   workspaceId: string;
   workspaceTimezone: string;
+  personas?: PersonaOption[];
   templates: ConversationTemplate[];
   rosterMembers: RosterMember[];
   appContextOptions: AppContextOption[];
@@ -45,7 +47,7 @@ export function AgentDeployForm(props: AgentDeployFormProps) {
           <div className="mb-2 text-[11px] font-bold tracking-widest text-[color:var(--green-ink)] uppercase">
             New agent
           </div>
-          <h1 className="font-[family-name:var(--font-aldrich)] text-[26px] font-normal tracking-tight">
+          <h1 className="font-[family-name:var(--font-heading)] text-[26px] font-normal tracking-tight">
             Deploy an agent
           </h1>
           <p className="mt-1.5 max-w-[52ch] text-[13.5px] leading-relaxed text-muted-foreground">
