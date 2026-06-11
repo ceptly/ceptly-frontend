@@ -474,3 +474,96 @@ export interface AuthSessionResponse {
   };
   error?: string;
 }
+
+export type DashboardRangeDays = 7 | 30 | 90;
+
+export interface DashboardKpis {
+  sessions_completed: number;
+  response_rate_pct: number | null;
+  response_rate_delta_pct: number | null;
+  open_blockers: number;
+  oldest_open_blocker_days: number | null;
+  avg_resolution_hours: number | null;
+  tasks_done: number;
+  carry_over_count: number;
+}
+
+export interface DashboardParticipationPoint {
+  date: string;
+  sessions: number;
+  expected: number;
+  responded: number;
+  response_rate_pct: number | null;
+}
+
+export interface DashboardStandupParticipation {
+  standup_id: string;
+  standup_name: string;
+  sessions: number;
+  expected: number;
+  responded: number;
+  response_rate_pct: number | null;
+}
+
+export interface DashboardBlockerTrendPoint {
+  date: string;
+  reported: number;
+  resolved: number;
+  open_at_end: number;
+}
+
+export interface DashboardBlockerStats {
+  trend: DashboardBlockerTrendPoint[];
+  open_count: number;
+  reported_in_window: number;
+  resolved_in_window: number;
+  avg_resolution_hours: number | null;
+  median_resolution_hours: number | null;
+  oldest_open: {
+    id: string;
+    description: string;
+    member_name: string;
+    age_days: number;
+  } | null;
+  age_buckets: { bucket: "0-2d" | "3-6d" | "7-13d" | "14d+"; count: number }[];
+}
+
+export interface DashboardCarryOverCell {
+  roster_member_id: string;
+  date: string;
+  carried_tasks: number;
+  re_reported_blockers: number;
+}
+
+export interface DashboardCarryOverGrid {
+  days: string[];
+  members: { roster_member_id: string; display_name: string }[];
+  cells: DashboardCarryOverCell[];
+}
+
+export interface DashboardMemberMomentum {
+  roster_member_id: string;
+  display_name: string;
+  paused: boolean;
+  sessions_expected: number;
+  sessions_responded: number;
+  response_rate_pct: number | null;
+  tasks_done: number;
+  done_by_day: { date: string; count: number }[];
+  carry_overs: number;
+  blockers_reported: number;
+  blockers_resolved: number;
+}
+
+export interface DashboardData {
+  range: { days: DashboardRangeDays; start: string; end: string };
+  has_data: boolean;
+  kpis: DashboardKpis;
+  participation: {
+    by_day: DashboardParticipationPoint[];
+    by_standup: DashboardStandupParticipation[];
+  };
+  blockers: DashboardBlockerStats;
+  carry_over: DashboardCarryOverGrid;
+  members: DashboardMemberMomentum[];
+}
