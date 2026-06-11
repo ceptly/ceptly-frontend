@@ -9,7 +9,7 @@ import { deleteStandupAction } from "@/actions/standups";
 import { setStandupAgentEnabled } from "@/actions/agents";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
-import type { AgentSchedule } from "@/lib/agents";
+import { standupAgentHref, type AgentSchedule } from "@/lib/agents";
 import { cn } from "@/lib/utils";
 
 interface StandupDetailActionsProps {
@@ -73,7 +73,7 @@ export function StandupDetailActions({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Link
-          href={`/activity/standups/${standupId}?edit=1`}
+          href={standupAgentHref(standupId, true)}
           className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
         >
           <Pencil className="size-3.5" />

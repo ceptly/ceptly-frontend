@@ -5,13 +5,12 @@ export interface WorkspaceBootstrap {
   roster: RosterMember[];
   timezone: string;
   language: string;
-  communication_platform?: "slack" | "clickup" | "teams";
+  communication_platform?: "slack" | "teams";
   integrations: {
     slack: boolean;
     linear: boolean;
     jira: boolean;
     monday: boolean;
-    clickup: boolean;
     teams: boolean;
   };
 }

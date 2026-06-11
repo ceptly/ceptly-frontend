@@ -14,6 +14,7 @@ import {
   ChevronsUpDown,
   LogOut,
   MessageSquare,
+  MessageSquarePlus,
   Network,
   Settings,
   Settings2,
@@ -41,7 +42,11 @@ interface NavItem {
   icon: LucideIcon;
   matchPrefix?: string;
   leadershipOnly?: boolean;
+  external?: boolean;
 }
+
+const FEEDBACK_FORM_URL =
+  "https://zest-sea-25b.notion.site/37af4497f6768078bd40cda4c4aeb4d9?pvs=105";
 
 const NAV_ITEMS: NavItem[] = [
   { id: "chat", label: "Chat", path: "/chat", icon: MessageSquare },
@@ -73,6 +78,13 @@ const NAV_ITEMS: NavItem[] = [
     path: "/settings",
     matchPrefix: "/settings",
     icon: Settings,
+  },
+  {
+    id: "feedback",
+    label: "Feedback",
+    path: FEEDBACK_FORM_URL,
+    icon: MessageSquarePlus,
+    external: true,
   },
 ];
 
@@ -154,10 +166,7 @@ export function AppSidebar({ user, className }: AppSidebarProps) {
           height={26}
           className="size-[26px] shrink-0 object-contain"
         />
-        <span
-          className="text-[19px] tracking-[0.01em] text-foreground"
-          style={{ fontFamily: "var(--font-crimson-pro), ui-serif, serif" }}
-        >
+        <span className="font-brand text-[19px] tracking-[0.01em] text-foreground">
           Ceptly
         </span>
       </Link>
@@ -176,25 +185,19 @@ export function AppSidebar({ user, className }: AppSidebarProps) {
 
       <nav className="flex flex-col gap-0.5">
         {items.map((item) => {
-          const active = pathname.startsWith(item.matchPrefix ?? item.path);
+          const active =
+            !item.external && pathname.startsWith(item.matchPrefix ?? item.path);
           const Icon = item.icon;
           const showBadge =
             item.id === "activity" && attentionCount > 0 && !active;
-
-          return (
-            <Link
-              key={item.id}
-              href={item.path}
-              prefetch={item.id === "chat"}
-              data-active={active ? "true" : "false"}
-              className={cn(
-                "group relative flex w-full items-center gap-[11px] px-[11px] py-[9px] text-left text-[13px] font-medium transition-colors",
-                active
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-              onClick={() => client.logEvent("navigation_click", item.path)}
-            >
+          const linkClassName = cn(
+            "group relative flex w-full items-center gap-[11px] px-[11px] py-[9px] text-left text-[13px] font-medium transition-colors",
+            active
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          );
+          const linkContent = (
+            <>
               {active ? (
                 <span
                   className="absolute top-[7px] bottom-[7px] left-0 w-0.5"
@@ -218,6 +221,34 @@ export function AppSidebar({ user, className }: AppSidebarProps) {
                   {attentionCount > 9 ? "9+" : attentionCount}
                 </span>
               ) : null}
+            </>
+          );
+
+          if (item.external) {
+            return (
+              <a
+                key={item.id}
+                href={item.path}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={linkClassName}
+                onClick={() => client.logEvent("navigation_click", item.path)}
+              >
+                {linkContent}
+              </a>
+            );
+          }
+
+          return (
+            <Link
+              key={item.id}
+              href={item.path}
+              prefetch={item.id === "chat"}
+              data-active={active ? "true" : "false"}
+              className={linkClassName}
+              onClick={() => client.logEvent("navigation_click", item.path)}
+            >
+              {linkContent}
             </Link>
           );
         })}

@@ -51,9 +51,8 @@ interface TeamRosterProps {
   linearConnected: boolean;
   jiraConnected: boolean;
   mondayConnected: boolean;
-  clickupConnected: boolean;
   teamsConnected: boolean;
-  communicationPlatform: "slack" | "clickup" | "teams";
+  communicationPlatform: "slack" | "teams";
   members: RosterMember[];
 }
 
@@ -66,18 +65,12 @@ export function TeamRoster({
   linearConnected,
   jiraConnected,
   mondayConnected,
-  clickupConnected,
   teamsConnected,
   communicationPlatform,
   members,
 }: TeamRosterProps) {
-  const clickupPrimary = communicationPlatform === "clickup";
   const teamsPrimary = communicationPlatform === "teams";
-  const primaryConnected = clickupPrimary
-    ? clickupConnected
-    : teamsPrimary
-      ? teamsConnected
-      : slackConnected;
+  const primaryConnected = teamsPrimary ? teamsConnected : slackConnected;
   const [addState, addAction, addPending] = useActionState(
     addRosterMemberAction,
     {},
@@ -86,11 +79,9 @@ export function TeamRoster({
   const [editingMember, setEditingMember] = useState<RosterMember | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const primaryEmailHint = clickupPrimary
-    ? "Must match a ClickUp account in your connected workspace."
-    : teamsPrimary
-      ? "Must match a Microsoft Teams account in your connected organization."
-      : "Must match a Slack account in your connected team.";
+  const primaryEmailHint = teamsPrimary
+    ? "Must match a Microsoft Teams account in your connected organization."
+    : "Must match a Slack account in your connected team.";
 
   const handleTogglePaused = (member: RosterMember) => {
     setActionError(null);
@@ -249,11 +240,9 @@ export function TeamRoster({
       {!primaryConnected ? (
         <Alert>
           <AlertDescription>
-            {clickupPrimary
-              ? "Connect ClickUp in workspace settings before adding members to the roster."
-              : teamsPrimary
-                ? "Connect Microsoft Teams in workspace settings before adding members to the roster."
-                : "Connect Slack in workspace settings before adding members to the roster."}
+            {teamsPrimary
+              ? "Connect Microsoft Teams in workspace settings before adding members to the roster."
+              : "Connect Slack in workspace settings before adding members to the roster."}
           </AlertDescription>
         </Alert>
       ) : primaryConnected && members.length === 0 ? (
@@ -291,7 +280,6 @@ export function TeamRoster({
               linearConnected={linearConnected}
               jiraConnected={jiraConnected}
               mondayConnected={mondayConnected}
-              clickupConnected={clickupConnected}
               teamsConnected={teamsConnected}
               communicationPlatform={communicationPlatform}
             />
@@ -339,22 +327,18 @@ export function TeamRoster({
         </p>
       )}
 
-      {(linearConnected ||
-        jiraConnected ||
-        mondayConnected ||
-        clickupConnected) &&
+      {(linearConnected || jiraConnected || mondayConnected) &&
       members.some(
         (member) =>
           (linearConnected && !member.data_sources?.includes("linear")) ||
           (jiraConnected && !member.data_sources?.includes("jira")) ||
-          (mondayConnected && !member.data_sources?.includes("monday")) ||
-          (clickupConnected && !member.data_sources?.includes("clickup")),
+          (mondayConnected && !member.data_sources?.includes("monday")),
       ) ? (
         <Alert>
           <AlertDescription>
             Some roster emails may not match a connected issue tracker account.
-            Check the Apps column — members without a Linear, Jira, Monday, or
-            ClickUp badge need the same email in Slack and your tracker.
+            Check the Apps column — members without a Linear, Jira, or Monday
+            badge need the same email in Slack and your tracker.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -371,7 +355,6 @@ export function TeamRoster({
             linear: linearConnected,
             jira: jiraConnected,
             monday: mondayConnected,
-            clickup: clickupConnected,
             teams: teamsConnected,
           }}
           onClose={() => setEditingMember(null)}

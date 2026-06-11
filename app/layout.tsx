@@ -92,11 +92,16 @@ export default async function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("h-full", initialTheme === "dark" && "dark")}
+      className={cn(
+        "h-full",
+        openSans.variable,
+        geistMono.variable,
+        crimsonText.variable,
+        crimsonPro.variable,
+        initialTheme === "dark" && "dark",
+      )}
     >
-      <body
-        className={`${openSans.variable} ${geistMono.variable} ${crimsonText.variable} ${crimsonPro.variable} min-h-full flex flex-col md:flex-row antialiased bg-background text-foreground`}
-      >
+      <body className="min-h-full flex flex-col md:flex-row antialiased bg-background text-foreground">
         <script
           dangerouslySetInnerHTML={{ __html: THEME_COOKIE_SEED_SCRIPT }}
         />

@@ -12,7 +12,6 @@ const APP_LABELS: Record<string, string> = {
   linear: "Linear",
   jira: "Jira",
   monday: "Monday",
-  clickup: "ClickUp",
   teams: "Microsoft Teams",
 };
 

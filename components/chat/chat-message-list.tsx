@@ -1,13 +1,12 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { AgentActivityFeed } from "@/components/chat/agent-activity-feed";
+import { CeptlyAgentAvatar } from "@/components/ceptly-agent-avatar";
 import { MentionMessageContent } from "@/components/chat/mention-message-content";
 import { SetupRecapPickers } from "@/components/chat/setup-recap-pickers";
 import { ScheduleDaysPicker } from "@/components/settings/schedule-days-picker";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { AgentActivityState } from "@/lib/api/workspace-chat-stream";
 import type { RosterMember } from "@/lib/api/roster";
@@ -82,13 +81,7 @@ export function ChatMessageList({
               isUser ? "flex-row-reverse" : "flex-row",
             )}
           >
-            {!isUser ? (
-              <Avatar size="sm" className="mt-0.5">
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  <Sparkles className="size-3.5" />
-                </AvatarFallback>
-              </Avatar>
-            ) : null}
+            {!isUser ? <CeptlyAgentAvatar /> : null}
 
             <div
               className={cn(
@@ -195,11 +188,7 @@ export function ChatMessageList({
 
       {pending && pendingActivity ? (
         <div className="flex gap-2.5">
-          <Avatar size="sm" className="mt-0.5">
-            <AvatarFallback className="bg-primary/10 text-primary">
-              <Sparkles className="size-3.5" />
-            </AvatarFallback>
-          </Avatar>
+          <CeptlyAgentAvatar />
           <div className="flex max-w-[min(85%,32rem)] flex-col gap-1">
             <span className="px-1 text-xs font-medium text-muted-foreground">
               Ceptly

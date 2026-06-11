@@ -45,7 +45,7 @@ const standupScheduleSchema = z
   });
 
 const contextIntegrationsSchema = z.array(
-  z.enum(["linear", "jira", "monday", "clickup"]),
+  z.enum(["linear", "jira", "monday"]),
 );
 
 const resultDestinationsSchema = z
@@ -89,9 +89,13 @@ async function requireToken(): Promise<string> {
   return token;
 }
 
-function revalidateStandupPaths(): void {
+function revalidateStandupPaths(standupId?: string): void {
+  revalidatePath("/agents");
   revalidatePath("/activity");
   revalidatePath("/settings/standups");
+  if (standupId) {
+    revalidatePath(`/agents/${standupId}`);
+  }
 }
 
 export async function fetchStandups(input: {
@@ -137,7 +141,7 @@ export async function saveStandupAction(input: {
       return { error: result.error ?? "Failed to save standup." };
     }
 
-    revalidateStandupPaths();
+    revalidateStandupPaths(input.standupId);
     return { standup: result.data?.standup };
   } catch (error) {
     return {
@@ -162,7 +166,7 @@ export async function deleteStandupAction(input: {
       return { error: result.error ?? "Failed to delete standup." };
     }
 
-    revalidateStandupPaths();
+    revalidateStandupPaths(input.standupId);
     return {};
   } catch (error) {
     return {
@@ -193,7 +197,7 @@ export async function commitChannelStandupProposalAction(
       return { error: result.error ?? "Failed to save standup." };
     }
 
-    revalidateStandupPaths();
+    revalidateStandupPaths(parsed.data.standup_id);
     revalidatePath("/chat");
     return {};
   } catch (error) {

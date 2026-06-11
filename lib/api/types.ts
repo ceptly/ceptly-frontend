@@ -149,7 +149,7 @@ export type ActivityAttentionItem =
       roster_member_id: string;
       member_name: string;
       member_email: string;
-      missing_trackers: ("linear" | "jira" | "monday" | "clickup")[];
+      missing_trackers: ("linear" | "jira" | "monday")[];
     };
 
 export interface ActivityScheduledConversation {
@@ -248,6 +248,13 @@ export interface StandupSessionMessage {
   created_at: string;
 }
 
+export interface StandupSessionMemberResponse {
+  roster_member_id: string;
+  display_name: string;
+  responded: boolean;
+  note?: string;
+}
+
 export interface StandupSessionDetail {
   session_id: string;
   standup_id: string;
@@ -261,6 +268,7 @@ export interface StandupSessionDetail {
   summary_text?: string;
   summary_generated_at?: string;
   participants: { roster_member_id: string; display_name: string }[];
+  member_responses: StandupSessionMemberResponse[];
   messages: StandupSessionMessage[];
 }
 

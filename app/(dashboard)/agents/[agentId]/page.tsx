@@ -2,44 +2,40 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-import { ConversationDetailActions } from "@/components/activity/conversation-detail-actions";
 import { AgentEditFields } from "@/components/agents/agent-edit-fields";
-import { ConversationResultsClient } from "@/components/activity/conversation-results-client";
-import { ConversationSessionsClient } from "@/components/activity/conversation-sessions-client";
+import { StandupDetailActions } from "@/components/activity/standup-detail-actions";
+import { StandupSessionDetailView } from "@/components/activity/standup-session-detail";
 import { buttonVariants } from "@/components/ui/button";
-import { buildConversationActivitySubtitle } from "@/lib/activity/conversation-detail";
-import { conversationToInitialValues } from "@/lib/agents";
-import { listConversationSessions } from "@/lib/api/conversation-sessions";
-import {
-  getConversation,
-  getWorkspaceTimezone,
-  listAppContextOptions,
-  listConversations,
-  listConversationTemplates,
-} from "@/lib/api/conversations";
+import { standupAgentHref, standupToInitialValues } from "@/lib/agents";
 import { listChatChannels } from "@/lib/api/communication";
 import {
-  getLatestConversationRun,
-  listConversationRuns,
-} from "@/lib/api/conversation-results";
+  getWorkspaceTimezone,
+  listAppContextOptions,
+  listConversationTemplates,
+} from "@/lib/api/conversations";
 import { FALLBACK_PERSONAS, listPersonas } from "@/lib/api/personas";
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
+import {
+  getStandupSessionDetail,
+  listStandupSessions,
+  listStandups,
+} from "@/lib/api/standups";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
 import { DEFAULT_CONVERSATION_TEMPLATES } from "@/lib/conversation-templates";
 import { cn } from "@/lib/utils";
 
-interface ActivityConversationPageProps {
-  params: Promise<{ conversationId: string }>;
+interface StandupAgentPageProps {
+  params: Promise<{ agentId: string }>;
   searchParams: Promise<{ edit?: string }>;
 }
 
-export default async function ActivityConversationPage({
+export default async function StandupAgentPage({
   params,
   searchParams,
-}: ActivityConversationPageProps) {
-  const { conversationId } = await params;
+}: StandupAgentPageProps) {
+  const { agentId: standupId } = await params;
   const { edit } = await searchParams;
   const user = await requireAuth();
   const workspace = user.workspaces?.[0];
@@ -52,56 +48,31 @@ export default async function ActivityConversationPage({
   if (!workspace?.id || !token) {
     return (
       <p className="px-6 py-8 text-sm text-muted-foreground">
-        Could not load conversation.
+        Could not load standup.
       </p>
     );
   }
 
-  const conversationResult = await getConversation(
-    token,
-    workspace.id,
-    conversationId,
+  const standupsResult = await listStandups(token, workspace.id);
+  const standup = standupsResult.data?.standups.find(
+    (item) => item.id === standupId,
   );
-  if (!conversationResult.success || !conversationResult.data?.conversation) {
+
+  if (!standupsResult.success || !standup) {
     return (
       <p className="px-6 py-8 text-sm text-muted-foreground">
-        {conversationResult.error ?? "Conversation not found."}
+        {standupsResult.error ?? "Standup not found."}
       </p>
     );
   }
 
-  const conversation = conversationResult.data.conversation;
-  const isAdhoc = conversation.kind === "adhoc";
   const canEdit = canManageWorkspace(workspace.role);
-  const isEditing = edit === "1" && canEdit && !isAdhoc;
+  const isEditing = edit === "1" && canEdit;
+  const standupHref = standupAgentHref(standupId);
 
-  if (isAdhoc) {
-    const sessionsResult = await listConversationSessions(
-      token,
-      workspace.id,
-      conversationId,
-    );
-    const sessions = sessionsResult.data?.sessions ?? [];
-
-    return (
-      <div className="ceptly-page ceptly-page-narrow">
-        <Link href="/activity" className="ceptly-back">
-          <ArrowLeft className="size-[15px]" aria-hidden />
-          Activity
-        </Link>
-        <div className="ceptly-page-head">
-          <h1 className="ceptly-page-title">{conversation.name}</h1>
-          <p className="ceptly-page-sub">Reach out</p>
-        </div>
-
-        <ConversationSessionsClient
-          workspaceId={workspace.id}
-          conversationId={conversationId}
-          sessions={sessions}
-        />
-      </div>
-    );
-  }
+  const channelLabel = standup.slack_channel_name
+    ? `#${standup.slack_channel_name}`
+    : standup.slack_channel_id;
 
   if (isEditing) {
     const [
@@ -145,17 +116,17 @@ export default async function ActivityConversationPage({
     return (
       <div className="ceptly-page ceptly-page-wide">
         <Link
-          href={`/activity/${conversationId}`}
+          href={standupHref}
           className={cn(
             buttonVariants({ variant: "ghost", size: "sm" }),
             "-ml-3 mb-4 w-fit px-3 text-muted-foreground hover:text-foreground",
           )}
         >
-          &lt; {conversation.name}
+          &lt; {standup.name}
         </Link>
         <div className="mb-6">
           <h1 className="font-[family-name:var(--font-heading)] text-[26px] font-normal tracking-tight">
-            Edit {conversation.name}
+            Edit {standup.name}
           </h1>
         </div>
 
@@ -171,26 +142,31 @@ export default async function ActivityConversationPage({
           chatChannels={chatChannels}
           communicationPlatform={communicationPlatform}
           chatChannelsError={chatChannelsError}
-          editTarget={{ id: conversationId, kind: "conversation" }}
-          initialValues={conversationToInitialValues(conversation)}
-          closeHref={`/activity/${conversationId}`}
+          editTarget={{ id: standupId, kind: "standup" }}
+          initialValues={standupToInitialValues(standup)}
+          closeHref={standupHref}
         />
       </div>
     );
   }
 
-  const [runsResult, latestResult, allConversationsResult] = await Promise.all([
-    listConversationRuns(token, workspace.id, conversationId),
-    getLatestConversationRun(token, workspace.id, conversationId),
-    canEdit ? listConversations(token, workspace.id) : Promise.resolve(null),
-  ]);
+  const sessionsResult = await listStandupSessions(
+    token,
+    workspace.id,
+    standupId,
+  );
+  const sessions = sessionsResult.data?.sessions ?? [];
+  const firstSessionId = sessions[0]?.session_id;
 
-  const runs = runsResult.data?.runs ?? [];
-  const latestRun = latestResult.data?.run ?? null;
-  const conversationSubtitle = buildConversationActivitySubtitle(conversation);
-  const conversationCount =
-    allConversationsResult?.data?.conversations?.length ?? 1;
-  const canDelete = canEdit && conversationCount > 1;
+  const initialDetailResult = firstSessionId
+    ? await getStandupSessionDetail(
+        token,
+        workspace.id,
+        standupId,
+        firstSessionId,
+      )
+    : null;
+  const initialSession = initialDetailResult?.data?.session ?? null;
 
   return (
     <div className="ceptly-page ceptly-page-narrow">
@@ -198,34 +174,62 @@ export default async function ActivityConversationPage({
         <ArrowLeft className="size-[15px]" aria-hidden />
         Agents
       </Link>
-
-      {canEdit ? (
-        <div className="mb-6">
-          <ConversationDetailActions
-            workspaceId={workspace.id}
-            conversationId={conversationId}
-            conversationName={conversation.name}
-            canDelete={canDelete}
-            enabled={conversation.enabled}
-            schedule={{
-              timezone: conversation.timezone,
-              frequency: conversation.frequency,
-              days_of_week: conversation.days_of_week,
-              time_local: conversation.time_local,
-              enabled: conversation.enabled,
-            }}
-          />
-        </div>
-      ) : null}
-
-      <ConversationResultsClient
-        workspaceId={workspace.id}
-        conversationId={conversationId}
-        conversationName={conversation.name}
-        conversationSubtitle={conversationSubtitle}
-        runs={runs}
-        initialRun={latestRun}
-      />
+      {!sessionsResult.success ? (
+        <>
+          <div className="ceptly-page-head">
+            <h1 className="ceptly-page-title">{standup.name}</h1>
+            <p className="ceptly-page-sub">
+              {channelLabel} · {standup.members.length} participants
+            </p>
+          </div>
+          {canEdit ? (
+            <div className="mb-6">
+              <StandupDetailActions
+                workspaceId={workspace.id}
+                standupId={standupId}
+                standupName={standup.name}
+                enabled={standup.enabled}
+                schedule={{
+                  timezone: standup.timezone,
+                  frequency: standup.frequency,
+                  days_of_week: standup.days_of_week,
+                  time_local: standup.time_local,
+                  enabled: standup.enabled,
+                }}
+              />
+            </div>
+          ) : null}
+          <p className="text-sm text-muted-foreground">
+            {sessionsResult.error ?? "Could not load sessions."}
+          </p>
+        </>
+      ) : (
+        <StandupSessionDetailView
+          workspaceId={workspace.id}
+          standupId={standupId}
+          sessions={sessions}
+          initialSession={initialSession}
+          standupName={standup.name}
+          subtitle={`${channelLabel} · ${standup.members.length} participants`}
+          actions={
+            canEdit ? (
+              <StandupDetailActions
+                workspaceId={workspace.id}
+                standupId={standupId}
+                standupName={standup.name}
+                enabled={standup.enabled}
+                schedule={{
+                  timezone: standup.timezone,
+                  frequency: standup.frequency,
+                  days_of_week: standup.days_of_week,
+                  time_local: standup.time_local,
+                  enabled: standup.enabled,
+                }}
+              />
+            ) : null
+          }
+        />
+      )}
     </div>
   );
 }

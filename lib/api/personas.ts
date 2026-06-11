@@ -9,6 +9,17 @@ export interface PersonaOption {
   channel: { persona: string; goal: string };
   default_questions: string[];
   suggested_context_integrations: string[];
+  /** Deploy surfaces this persona supports; older backends omit it (= both). */
+  surfaces?: ("dm" | "channel")[];
+  /** "report" personas post a deterministic scheduled report, no conversation. */
+  interaction_mode?: "conversational" | "report";
+}
+
+/** Surfaces a persona supports, treating missing data as "both". */
+export function personaSurfaces(
+  persona: PersonaOption,
+): ("dm" | "channel")[] {
+  return persona.surfaces?.length ? persona.surfaces : ["dm", "channel"];
 }
 
 /** Shown if the personas API is unreachable so the deploy form still works. */
@@ -21,6 +32,8 @@ export const FALLBACK_PERSONAS: PersonaOption[] = [
     channel: { persona: "", goal: "" },
     default_questions: [],
     suggested_context_integrations: [],
+    surfaces: ["dm", "channel"],
+    interaction_mode: "conversational",
   },
 ];
 

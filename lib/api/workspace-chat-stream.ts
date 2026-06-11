@@ -12,7 +12,6 @@ export type ChatIntegrationId =
   | "linear"
   | "jira"
   | "monday"
-  | "clickup"
   | "ceptly";
 
 export type ChatStreamEvent =
@@ -145,9 +144,7 @@ export function formatToolLabel(
         ? "Jira"
         : integration === "monday"
           ? "Monday.com"
-          : integration === "clickup"
-            ? "ClickUp"
-            : integration === "slack"
+          : integration === "slack"
             ? "Slack"
             : "Ceptly";
 

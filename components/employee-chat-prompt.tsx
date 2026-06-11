@@ -862,7 +862,7 @@ export function EmployeeChatPrompt({
   if (isEmptyState) {
     return (
       <div className="flex w-full flex-1 flex-col justify-center gap-4">
-        <h1 className="text-center text-[34px] leading-tight font-normal tracking-tight text-foreground">
+        <h1 className="font-[family-name:var(--font-heading)] text-center text-[34px] leading-tight font-normal tracking-tight text-foreground">
           What can I do for you?
         </h1>
         {promptForm}

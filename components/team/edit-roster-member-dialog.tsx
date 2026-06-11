@@ -32,7 +32,6 @@ const TRACKER_SOURCES = [
   "linear",
   "jira",
   "monday",
-  "clickup",
   "teams",
 ] as const;
 
@@ -41,7 +40,6 @@ const TRACKER_LABELS: Record<(typeof TRACKER_SOURCES)[number], string> = {
   linear: "Linear",
   jira: "Jira",
   monday: "Monday",
-  clickup: "ClickUp",
   teams: "Microsoft Teams",
 };
 
@@ -55,7 +53,6 @@ interface EditRosterMemberDialogProps {
     linear: boolean;
     jira: boolean;
     monday: boolean;
-    clickup: boolean;
     teams: boolean;
   };
   onClose: () => void;

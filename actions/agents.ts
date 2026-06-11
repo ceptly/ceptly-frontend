@@ -91,6 +91,7 @@ export async function setStandupAgentEnabled(
   }
 
   revalidatePath("/agents");
+  revalidatePath(`/agents/${parsed.data.standupId}`);
   revalidatePath("/settings/standups");
   return {};
 }
@@ -119,7 +120,7 @@ const agentDeploySchema = z.object({
   intent: z.enum(["gather", "inform"]).optional(),
   roster_member_ids: z.array(z.string().uuid()).min(1).max(20),
   context_integrations: z
-    .array(z.enum(["linear", "jira", "monday", "clickup"]))
+    .array(z.enum(["linear", "jira", "monday"]))
     .optional(),
   result_destinations: z.array(resultDestinationSchema).max(20).optional(),
   schedule: scheduleSchema,
@@ -165,19 +166,23 @@ export async function deployAgentAction(input: {
     revalidatePath("/agents");
     revalidatePath("/activity");
     revalidatePath("/settings/standups");
-    const user = await getCurrentUser();
-    if (user) {
-      const posthog = getPostHogClient();
-      posthog.capture({
-        distinctId: user.id,
-        event: "agent_deployed",
-        properties: {
-          workspace_id: parsed.data.workspaceId,
-          agent_kind: parsed.data.body.kind,
-          agent_name: parsed.data.body.name,
-        },
-      });
-      await posthog.shutdown();
+    try {
+      const user = await getCurrentUser();
+      if (user) {
+        const posthog = getPostHogClient();
+        posthog.capture({
+          distinctId: user.id,
+          event: "agent_deployed",
+          properties: {
+            workspace_id: parsed.data.workspaceId,
+            agent_kind: parsed.data.body.kind,
+            agent_name: parsed.data.body.name,
+          },
+        });
+        await posthog.shutdown();
+      }
+    } catch {
+      // Analytics must never block deploy.
     }
     return { agent: result.data };
   });
@@ -250,20 +255,27 @@ export async function updateAgentAction(
 
   revalidatePath("/agents");
   revalidatePath("/activity");
+  if (kind === "standup") {
+    revalidatePath(`/agents/${agentId}`);
+  }
   revalidatePath("/settings/standups");
-  const user = await getCurrentUser();
-  if (user) {
-    const posthog = getPostHogClient();
-    posthog.capture({
-      distinctId: user.id,
-      event: "agent_updated",
-      properties: {
-        workspace_id: parsed.data.workspaceId,
-        agent_kind: parsed.data.kind,
-        agent_name: parsed.data.body.name,
-      },
-    });
-    await posthog.shutdown();
+  try {
+    const user = await getCurrentUser();
+    if (user) {
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId: user.id,
+        event: "agent_updated",
+        properties: {
+          workspace_id: parsed.data.workspaceId,
+          agent_kind: parsed.data.kind,
+          agent_name: parsed.data.body.name,
+        },
+      });
+      await posthog.shutdown();
+    }
+  } catch {
+    // Analytics must never block save.
   }
   return {};
 }

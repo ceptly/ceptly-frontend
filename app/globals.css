@@ -9,7 +9,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-open-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-crimson-text);
+  --font-heading: var(--font-crimson-text), ui-serif, Georgia, serif;
+  --font-brand: var(--font-crimson-pro);
   --color-brand: var(--brand-green);
   --color-brand-foreground: #ffffff;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -183,7 +184,7 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-heading), ui-serif, Georgia, serif;
+    font-family: var(--font-crimson-text), ui-serif, Georgia, serif;
     font-weight: 400;
   }
   ::selection {
@@ -227,14 +228,22 @@
   }
 
   .ceptly-section {
-    @apply mb-[34px];
+    @apply mb-[44px];
+  }
+
+  .ceptly-section-stack {
+    @apply flex flex-col gap-10;
+  }
+
+  .ceptly-section-stack > .ceptly-section {
+    @apply mb-0;
   }
 
   .ceptly-section-title {
-    @apply mb-3.5 flex items-center gap-[9px] text-sm font-bold tracking-[0.01em] text-foreground;
+    @apply mb-4 flex items-center gap-[9px] font-sans text-base font-semibold tracking-[0.01em] text-foreground;
 
     & > svg {
-      @apply size-[15px] shrink-0 text-muted-foreground;
+      @apply size-4 shrink-0 text-muted-foreground;
     }
   }
 

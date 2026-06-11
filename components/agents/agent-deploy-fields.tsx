@@ -56,7 +56,11 @@ import type {
   ChatChannel,
   CommunicationPlatform,
 } from "@/lib/api/communication";
-import { FALLBACK_PERSONAS, type PersonaOption } from "@/lib/api/personas";
+import {
+  FALLBACK_PERSONAS,
+  personaSurfaces,
+  type PersonaOption,
+} from "@/lib/api/personas";
 import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
@@ -81,7 +85,6 @@ const TYPE_ICONS = {
 
 const STANDUP_CHANNEL_LABEL: Record<CommunicationPlatform, string> = {
   slack: "Slack channel",
-  clickup: "ClickUp channel",
   teams: "Teams channel",
 };
 
@@ -220,6 +223,29 @@ export function AgentDeployFields({
     setPresetId(id);
     setPersona("");
     setGoal("");
+  }
+
+  // Personas declare which surfaces they support (e.g. the 1:1 coach is
+  // DM-only, the retro facilitator channel-only); only offer matching ones.
+  const personaSurface = isStandup ? "channel" : "dm";
+  const availablePersonas = useMemo(
+    () =>
+      personas.filter((p) => personaSurfaces(p).includes(personaSurface)),
+    [personas, personaSurface],
+  );
+
+  function selectType(id: DeployAgentType) {
+    setType(id);
+    const surface = id === "standup" ? "channel" : "dm";
+    const stillAvailable = personas.some(
+      (p) => p.id === presetId && personaSurfaces(p).includes(surface),
+    );
+    if (!stillAvailable) {
+      const first = personas.find((p) => personaSurfaces(p).includes(surface));
+      if (first) {
+        setPresetId(first.id);
+      }
+    }
   }
 
   const selectedPersona = personas.find((p) => p.id === presetId);
@@ -476,7 +502,7 @@ export function AgentDeployFields({
                   type="button"
                   disabled={isPending || isEdit}
                   className={cn(agentTypeCardVariants({ active }))}
-                  onClick={() => setType(t.id)}
+                  onClick={() => selectType(t.id)}
                 >
                   <span className={cn(agentTypeIconVariants({ active }))}>
                     <Icon className="size-[18px]" />
@@ -507,7 +533,7 @@ export function AgentDeployFields({
 
         <AgentSection title="Persona">
           <div className="flex flex-wrap gap-2">
-            {personas.map((p) => (
+            {availablePersonas.map((p) => (
               <button
                 key={p.id}
                 type="button"
@@ -536,6 +562,13 @@ export function AgentDeployFields({
           </div>
           {isPretrained && selectedPersona?.tagline ? (
             <p className={agentFieldHintClass}>{selectedPersona.tagline}</p>
+          ) : null}
+          {isPretrained && selectedPersona?.interaction_mode === "report" ? (
+            <p className={agentFieldHintClass}>
+              This persona posts a compiled report on schedule — it doesn&apos;t
+              run a conversation, so questions and standup style don&apos;t
+              apply.
+            </p>
           ) : null}
           {!isPretrained ? (
             <>

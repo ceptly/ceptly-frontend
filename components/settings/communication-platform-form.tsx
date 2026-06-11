@@ -38,11 +38,6 @@ const PLATFORM_OPTIONS: {
     description: "Standups and @mentions run in Slack channels.",
   },
   {
-    value: "clickup",
-    label: "ClickUp",
-    description: "Standups and @mentions run in ClickUp Chat channels.",
-  },
-  {
     value: "teams",
     label: "Microsoft Teams",
     description: "Standups and @mentions run in Microsoft Teams channels.",
@@ -53,9 +48,6 @@ function connectedPlatformOptions(settings: CommunicationSettings) {
   return PLATFORM_OPTIONS.filter((option) => {
     if (option.value === "slack") {
       return settings.slack_connected;
-    }
-    if (option.value === "clickup") {
-      return settings.clickup_connected;
     }
     return settings.teams_connected;
   });
@@ -124,7 +116,7 @@ export function CommunicationPlatformForm({
       <CardContent className="space-y-4">
         {availableOptions.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Connect Slack, ClickUp, or Microsoft Teams in{" "}
+            Connect Slack or Microsoft Teams in{" "}
             <Link
               href="/settings/integrations"
               className="font-medium text-foreground underline-offset-4 hover:underline"

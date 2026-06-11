@@ -28,16 +28,14 @@ function attentionHref(item: ActivityAttentionItem): string {
 }
 
 function formatMissingTrackers(
-  trackers: ("linear" | "jira" | "monday" | "clickup")[],
+  trackers: ("linear" | "jira" | "monday")[],
 ): string {
   const labels = trackers.map((tracker) =>
     tracker === "linear"
       ? "Linear"
       : tracker === "jira"
         ? "Jira"
-        : tracker === "monday"
-          ? "Monday.com"
-          : "ClickUp",
+        : "Monday.com",
   );
   if (labels.length > 1) {
     return labels.slice(0, -1).join(", ") + " or " + labels[labels.length - 1];
