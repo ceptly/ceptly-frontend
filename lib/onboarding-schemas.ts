@@ -85,7 +85,8 @@ export const REFERRAL_SOURCE_OPTIONS = [
 export const TOOL_OPTIONS = [
   { value: "slack" as const, label: "Slack" },
   { value: "discord" as const, label: "Discord" },
-  { value: "ms_teams" as const, label: "MS Teams" },
+  // MS Teams integration temporarily disabled — uncomment to re-enable.
+  // { value: "ms_teams" as const, label: "MS Teams" },
   { value: "linear" as const, label: "Linear" },
   { value: "monday" as const, label: "monday.com" },
   { value: "notion" as const, label: "Notion" },

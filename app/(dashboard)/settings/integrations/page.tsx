@@ -10,7 +10,9 @@ export default async function IntegrationsPage() {
   const result =
     workspace?.id && token ? await listIntegrations(token, workspace.id) : null;
 
-  const integrations = result?.data?.integrations ?? [];
+  const integrations = (result?.data?.integrations ?? []).filter(
+    (integration) => integration.id !== "teams",
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-6 py-8">

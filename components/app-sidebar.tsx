@@ -9,7 +9,7 @@ import { useStatsigClient } from "@statsig/react-bindings";
 import {
   Activity,
   Bot,
-  Brain,
+  // Brain,
   ChevronDown,
   ChevronsUpDown,
   LogOut,
@@ -64,13 +64,13 @@ const NAV_ITEMS: NavItem[] = [
     icon: Bot,
     leadershipOnly: true,
   },
-  {
-    id: "context",
-    label: "Context",
-    path: "/context",
-    icon: Brain,
-    leadershipOnly: true,
-  },
+  // {
+  //   id: "context",
+  //   label: "Context",
+  //   path: "/context",
+  //   icon: Brain,
+  //   leadershipOnly: true,
+  // },
   { id: "team", label: "Org intelligence", path: "/team", icon: Network },
   {
     id: "settings",

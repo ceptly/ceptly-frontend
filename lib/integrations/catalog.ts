@@ -29,12 +29,13 @@ export const KNOWN_INTEGRATIONS: Record<string, KnownIntegration> = {
     description:
       "Connect Monday.com so standup check-ins reference assigned items (with links) and can update item status when someone finishes or starts work.",
   },
-  teams: {
-    id: "teams",
-    name: "Microsoft Teams",
-    description:
-      "Connect Microsoft Teams so standup agents post check-ins and @mention teammates directly in Teams channels.",
-  },
+  // MS Teams integration temporarily disabled — uncomment to re-enable.
+  // teams: {
+  //   id: "teams",
+  //   name: "Microsoft Teams",
+  //   description:
+  //     "Connect Microsoft Teams so standup agents post check-ins and @mention teammates directly in Teams channels.",
+  // },
 };
 
 export function resolveIntegration(

@@ -37,11 +37,12 @@ const PLATFORM_OPTIONS: {
     label: "Slack",
     description: "Standups and @mentions run in Slack channels.",
   },
-  {
-    value: "teams",
-    label: "Microsoft Teams",
-    description: "Standups and @mentions run in Microsoft Teams channels.",
-  },
+  // MS Teams integration temporarily disabled — uncomment to re-enable.
+  // {
+  //   value: "teams",
+  //   label: "Microsoft Teams",
+  //   description: "Standups and @mentions run in Microsoft Teams channels.",
+  // },
 ];
 
 function connectedPlatformOptions(settings: CommunicationSettings) {
@@ -116,7 +117,7 @@ export function CommunicationPlatformForm({
       <CardContent className="space-y-4">
         {availableOptions.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Connect Slack or Microsoft Teams in{" "}
+            Connect Slack in{" "}
             <Link
               href="/settings/integrations"
               className="font-medium text-foreground underline-offset-4 hover:underline"
