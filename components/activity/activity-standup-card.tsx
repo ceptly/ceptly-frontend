@@ -1,5 +1,6 @@
 import { ActivityRollupCard } from "@/components/activity/activity-rollup-card";
 import type { ActivityChannelStandup } from "@/lib/api/types";
+import { standupAgentHref } from "@/lib/agents";
 import { rollupStatusFromCounts } from "@/lib/activity/rollup-card";
 
 interface ActivityStandupCardProps {
@@ -30,7 +31,7 @@ export function ActivityStandupCard({ standup }: ActivityStandupCardProps) {
 
   return (
     <ActivityRollupCard
-      href={`/activity/standups/${standup.standup_id}`}
+      href={standupAgentHref(standup.standup_id)}
       title={standup.name}
       subtitle={scheduleLabel}
       status={status}

@@ -88,13 +88,13 @@ function RunPicker({
         className="w-[268px]"
         finalFocus={false}
       >
-        <DropdownMenuLabel className="px-2 pb-1 text-[11px] font-semibold tracking-[0.05em] uppercase">
-          Past sessions
-        </DropdownMenuLabel>
         <DropdownMenuRadioGroup
           value={selectedRunId}
           onValueChange={handleSelect}
         >
+          <DropdownMenuLabel className="px-2 pb-1 text-[11px] font-semibold tracking-[0.05em] uppercase">
+            Past sessions
+          </DropdownMenuLabel>
           {runs.map((run) => (
             <DropdownMenuRadioItem
               key={run.run_id}
@@ -264,7 +264,7 @@ export function ConversationResultsView({
           {loading ? "Loading session…" : "Select a session to view results."}
         </div>
       ) : (
-        <div className="space-y-0">
+        <div className="ceptly-section-stack">
           <div className="ceptly-stat-grid">
             <div className="ceptly-stat">
               <div className="ceptly-stat-val">

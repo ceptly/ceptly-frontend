@@ -13,7 +13,6 @@ export const INTEGRATION_LOGOS: Record<string, IntegrationLogo> = {
   },
   jira: "/integrations/Jira_icon.png",
   monday: "/integrations/monday.png",
-  clickup: "/integrations/clickup.png",
   teams: "/integrations/teams.png",
 };
 

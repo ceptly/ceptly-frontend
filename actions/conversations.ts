@@ -55,7 +55,7 @@ const saveConversationSchema = z.object({
   summary: z.string().trim().max(200).optional().nullable(),
   roster_member_ids: z.array(z.string().uuid()).min(1).optional(),
   context_integrations: z
-    .array(z.enum(["linear", "jira", "monday", "clickup"]))
+    .array(z.enum(["linear", "jira", "monday"]))
     .optional(),
   resultDestinations: z
     .array(

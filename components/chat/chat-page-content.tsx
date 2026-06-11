@@ -22,7 +22,7 @@ export async function ChatPageContent({
       <div className="flex min-h-0 flex-1 flex-col px-4 py-7">
         <div className="mx-auto flex w-full max-w-[700px] min-h-0 flex-1 flex-col">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <h1 className="text-[34px] leading-tight font-normal tracking-tight">
+            <h1 className="font-[family-name:var(--font-heading)] text-[34px] leading-tight font-normal tracking-tight">
               Welcome to Ceptly
             </h1>
             <p className="mt-2 max-w-md text-sm text-muted-foreground">

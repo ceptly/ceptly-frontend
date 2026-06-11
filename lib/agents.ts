@@ -285,6 +285,11 @@ export function standupToInitialValues(s: Standup): AgentDeployInitialValues {
   };
 }
 
+export function standupAgentHref(standupId: string, edit = false): string {
+  const base = `/agents/${standupId}`;
+  return edit ? `${base}?edit=1` : base;
+}
+
 export function standupToAgentRow(s: Standup): AgentRow {
   const channel = s.slack_channel_name
     ? `#${s.slack_channel_name.replace(/^#/, "")}`
@@ -303,6 +308,6 @@ export function standupToAgentRow(s: Standup): AgentRow {
       time_local: s.time_local,
       enabled: s.enabled,
     },
-    href: `/settings/standups`,
+    href: standupAgentHref(s.id),
   };
 }

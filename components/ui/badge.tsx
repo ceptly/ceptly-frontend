@@ -17,7 +17,7 @@ const badgeVariants = cva(
         outline:
           "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
         attention:
-          "border-0 bg-brand text-[#09090b] [a]:hover:bg-brand/90",
+          "border-0 bg-brand text-brand-foreground dark:text-[#09090b] [a]:hover:bg-brand/90",
         complete:
           "border-[color:var(--green-line)] bg-[color:var(--green-wash)] text-[color:var(--green-ink)] [a]:hover:opacity-90",
         ghost:

@@ -7,7 +7,7 @@ import type {
 export type AgentApiKind = "checkin" | "reachout" | "standup";
 export type AgentApiTriggerMode = "schedule" | "manual" | "event";
 export type AgentApiStyle = "broadcast" | "sequential";
-export type AgentContextIntegration = "linear" | "jira" | "monday" | "clickup";
+export type AgentContextIntegration = "linear" | "jira" | "monday";
 
 export interface AgentDeployBody {
   kind: AgentApiKind;

@@ -1,15 +1,13 @@
 import { resolveApiBaseUrl } from "./auth";
 
-export type CommunicationPlatform = "slack" | "clickup" | "teams";
+export type CommunicationPlatform = "slack" | "teams";
 
 export interface CommunicationSettings {
   communication_platform: CommunicationPlatform;
   slack_connected: boolean;
-  clickup_connected: boolean;
   teams_connected: boolean;
   roster_chat_enabled: boolean;
   digest_channel_id: string | null;
-  clickup_chat_webhook_secret_set: boolean;
 }
 
 export interface ChatChannel {
@@ -85,33 +83,6 @@ export async function updateCommunicationPlatform(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ communication_platform: platform }),
-      },
-    );
-    return parseJsonResponse<CommunicationSettings>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
-}
-
-export async function updateClickUpChatWebhookSecret(
-  accessToken: string,
-  workspaceId: string,
-  webhookSecret: string | null,
-): Promise<ApiEnvelope<CommunicationSettings>> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/communication/clickup-webhook-secret`,
-      {
-        method: "PATCH",
-        headers: {
-          ...authHeaders(accessToken),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ webhook_secret: webhookSecret }),
       },
     );
     return parseJsonResponse<CommunicationSettings>(response);

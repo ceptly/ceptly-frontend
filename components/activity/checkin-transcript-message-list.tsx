@@ -1,9 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
-import { useEffect, useRef } from "react";
-
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CeptlyAgentAvatar } from "@/components/ceptly-agent-avatar";
 import type {
   ConversationRunLegacyResponse,
   ConversationRunTranscriptMessage,
@@ -85,13 +82,8 @@ export function CheckinTranscriptMessageList({
   icDisplayName,
   className,
 }: CheckinTranscriptMessageListProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
   const icLabel = icFirstName(icDisplayName);
   const bubbleMessages: BubbleMessage[] = standupMessages ?? transcript;
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [bubbleMessages, legacyResponses]);
 
   if (bubbleMessages.length === 0 && legacyResponses.length === 0) {
     return (
@@ -115,13 +107,7 @@ export function CheckinTranscriptMessageList({
               isIc ? "flex-row-reverse" : "flex-row",
             )}
           >
-            {!isIc ? (
-              <Avatar size="sm" className="mt-0.5">
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  <Sparkles className="size-3.5" />
-                </AvatarFallback>
-              </Avatar>
-            ) : null}
+            {!isIc ? <CeptlyAgentAvatar /> : null}
 
             <div
               className={cn(
@@ -153,11 +139,7 @@ export function CheckinTranscriptMessageList({
       {legacyResponses.map((response, index) => (
         <div key={`legacy-${index}`} className="flex flex-col gap-4">
           <div className="flex gap-2.5">
-            <Avatar size="sm" className="mt-0.5">
-              <AvatarFallback className="bg-primary/10 text-primary">
-                <Sparkles className="size-3.5" />
-              </AvatarFallback>
-            </Avatar>
+            <CeptlyAgentAvatar />
             <div className="flex max-w-[min(85%,32rem)] flex-col items-start gap-2">
               <MessageMeta
                 label="Ceptly"
@@ -185,8 +167,6 @@ export function CheckinTranscriptMessageList({
           </div>
         </div>
       ))}
-
-      <div ref={bottomRef} aria-hidden />
     </div>
   );
 }

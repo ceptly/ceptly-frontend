@@ -22,7 +22,6 @@ export const onboardingToolSchema = z.enum([
   "ms_teams",
   "linear",
   "jira",
-  "clickup",
   "monday",
   "notion",
 ]);
@@ -88,7 +87,6 @@ export const TOOL_OPTIONS = [
   { value: "discord" as const, label: "Discord" },
   { value: "ms_teams" as const, label: "MS Teams" },
   { value: "linear" as const, label: "Linear" },
-  { value: "clickup" as const, label: "ClickUp" },
   { value: "monday" as const, label: "monday.com" },
   { value: "notion" as const, label: "Notion" },
 ];

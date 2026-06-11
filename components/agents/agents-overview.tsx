@@ -50,10 +50,10 @@ function AgentSection({
   return (
     <section className="ceptly-section">
       <div className="ceptly-section-head">
-        <h2 className="ceptly-section-title">
+        <div className="ceptly-section-title font-sans font-normal">
           <Icon aria-hidden />
           {title}
-        </h2>
+        </div>
       </div>
       {items.length === 0 ? (
         <p className="ceptly-card-empty not-italic">{emptyMessage}</p>

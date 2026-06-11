@@ -30,7 +30,7 @@ const schema = z.object({
   agentNotes: z.string().trim().max(2000).optional().nullable(),
   rosterMemberIds: z.array(z.string().uuid()).min(1),
   contextIntegrations: z
-    .array(z.enum(["linear", "jira", "monday", "clickup"]))
+    .array(z.enum(["linear", "jira", "monday"]))
     .optional(),
   resultDestinations: z
     .array(
