@@ -1,4 +1,5 @@
 import { resolveApiBaseUrl } from "./auth";
+import { parseJsonResponse } from "./http";
 
 export interface OrgGroupNode {
   id: string;
@@ -64,19 +65,6 @@ export interface OrgPersonInput {
   role?: string | null;
   rosterMemberId?: string | null;
   groups: OrgGroupInput[];
-}
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<T & { success: boolean; error?: string }> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    } as T & { success: boolean; error?: string };
-  }
-  return (await response.json()) as T & { success: boolean; error?: string };
 }
 
 export async function getOrgStructure(

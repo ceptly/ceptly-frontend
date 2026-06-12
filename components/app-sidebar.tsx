@@ -12,6 +12,7 @@ import {
   Brain,
   ChevronDown,
   ChevronsUpDown,
+  LayoutDashboard,
   LogOut,
   MessageSquare,
   MessageSquarePlus,
@@ -51,6 +52,13 @@ const FEEDBACK_FORM_URL =
 const NAV_ITEMS: NavItem[] = [
   { id: "chat", label: "Chat", path: "/chat", icon: MessageSquare },
   {
+    id: "dashboard",
+    label: "Dashboard",
+    path: "/dashboard",
+    icon: LayoutDashboard,
+    leadershipOnly: true,
+  },
+  {
     id: "activity",
     label: "Activity",
     path: "/activity",
@@ -64,13 +72,13 @@ const NAV_ITEMS: NavItem[] = [
     icon: Bot,
     leadershipOnly: true,
   },
-  {
-    id: "context",
-    label: "Context",
-    path: "/context",
-    icon: Brain,
-    leadershipOnly: true,
-  },
+  // {
+  //   id: "context",
+  //   label: "Context",
+  //   path: "/context",
+  //   icon: Brain,
+  //   leadershipOnly: true,
+  // },
   { id: "team", label: "Org intelligence", path: "/team", icon: Network },
   {
     id: "settings",

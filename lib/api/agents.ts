@@ -1,8 +1,6 @@
 import { resolveApiBaseUrl } from "./auth";
-import type {
-  ConversationResultDestination,
-  WorkspaceSchedule,
-} from "./types";
+import type { ConversationResultDestination, WorkspaceSchedule } from "./types";
+import { parseJsonResponse } from "./http";
 
 export type AgentApiKind = "checkin" | "reachout" | "standup";
 export type AgentApiTriggerMode = "schedule" | "manual" | "event";
@@ -33,19 +31,6 @@ export interface DeployedAgent {
   kind: AgentApiKind;
   agentId?: string;
   sessionsStarted?: number;
-}
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<T & { success: boolean; error?: string }> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    } as T & { success: boolean; error?: string };
-  }
-  return (await response.json()) as T & { success: boolean; error?: string };
 }
 
 function authHeaders(accessToken: string): HeadersInit {

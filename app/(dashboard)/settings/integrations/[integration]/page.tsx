@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 
 import { DigestChannelForm } from "@/components/settings/digest-channel-form";
 import { SlackRosterChatToggle } from "@/components/settings/slack-roster-chat-toggle";
-import { TeamsIntegrationPanel } from "@/components/settings/integrations/teams-integration-panel";
+// MS Teams integration temporarily disabled — uncomment to re-enable.
+// import { TeamsIntegrationPanel } from "@/components/settings/integrations/teams-integration-panel";
 import { JiraIntegrationPanel } from "@/components/settings/integrations/jira-integration-panel";
 import { LinearIntegrationPanel } from "@/components/settings/integrations/linear-integration-panel";
 import { MondayIntegrationPanel } from "@/components/settings/integrations/monday-integration-panel";
@@ -12,7 +13,7 @@ import { getDigestSlackChannel } from "@/lib/api/digest-channel";
 import { buttonVariants } from "@/components/ui/button";
 import { listIntegrations } from "@/lib/api/integrations";
 import { resolveIntegration } from "@/lib/integrations/catalog";
-import { getTeamsConnectionStatus } from "@/lib/api/teams";
+// import { getTeamsConnectionStatus } from "@/lib/api/teams";
 import { getJiraConnectionStatus } from "@/lib/api/jira";
 import { getLinearConnectionStatus } from "@/lib/api/linear";
 import { getMondayConnectionStatus } from "@/lib/api/monday";
@@ -38,6 +39,12 @@ export default async function IntegrationDetailPage({
 }: IntegrationDetailPageProps) {
   const user = await requireAuth();
   const { integration: integrationId } = await params;
+
+  // MS Teams integration temporarily disabled — remove this guard to re-enable.
+  if (integrationId === "teams") {
+    notFound();
+  }
+
   const query = await searchParams;
 
   const workspace = user.workspaces?.[0];
@@ -65,8 +72,8 @@ export default async function IntegrationDetailPage({
   const showJiraErrorAlert = query.jira === "error";
   const showMondayConnectedAlert = query.monday === "connected";
   const showMondayErrorAlert = query.monday === "error";
-  const showTeamsConnectedAlert = query.teams === "connected";
-  const showTeamsErrorAlert = query.teams === "error";
+  // const showTeamsConnectedAlert = query.teams === "connected";
+  // const showTeamsErrorAlert = query.teams === "error";
 
   let panel: React.ReactNode = null;
 
@@ -179,24 +186,25 @@ export default async function IntegrationDetailPage({
     );
   }
 
-  if (integration.id === "teams" && workspace?.id && token) {
-    const teamsStatusResult = await getTeamsConnectionStatus(
-      token,
-      workspace.id,
-    );
-    const teamsStatus = teamsStatusResult?.data ?? { connected: false };
-
-    panel = (
-      <TeamsIntegrationPanel
-        workspaceId={workspace.id}
-        canEdit={canEdit}
-        status={teamsStatus}
-        description={integration.description}
-        showConnectedAlert={showTeamsConnectedAlert}
-        showErrorAlert={showTeamsErrorAlert}
-      />
-    );
-  }
+  // MS Teams integration temporarily disabled — uncomment to re-enable.
+  // if (integration.id === "teams" && workspace?.id && token) {
+  //   const teamsStatusResult = await getTeamsConnectionStatus(
+  //     token,
+  //     workspace.id,
+  //   );
+  //   const teamsStatus = teamsStatusResult?.data ?? { connected: false };
+  //
+  //   panel = (
+  //     <TeamsIntegrationPanel
+  //       workspaceId={workspace.id}
+  //       canEdit={canEdit}
+  //       status={teamsStatus}
+  //       description={integration.description}
+  //       showConnectedAlert={showTeamsConnectedAlert}
+  //       showErrorAlert={showTeamsErrorAlert}
+  //     />
+  //   );
+  // }
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-8">

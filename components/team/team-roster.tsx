@@ -69,7 +69,8 @@ export function TeamRoster({
   communicationPlatform,
   members,
 }: TeamRosterProps) {
-  const teamsPrimary = communicationPlatform === "teams";
+  // MS Teams integration temporarily disabled — use `communicationPlatform === "teams"` to re-enable.
+  const teamsPrimary = false;
   const primaryConnected = teamsPrimary ? teamsConnected : slackConnected;
   const [addState, addAction, addPending] = useActionState(
     addRosterMemberAction,

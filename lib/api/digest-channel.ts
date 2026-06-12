@@ -1,18 +1,5 @@
 import { resolveApiBaseUrl } from "./auth";
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<T & { success: boolean; error?: string }> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    } as T & { success: boolean; error?: string };
-  }
-
-  return (await response.json()) as T & { success: boolean; error?: string };
-}
+import { parseJsonResponse } from "./http";
 
 export async function getDigestSlackChannel(
   accessToken: string,

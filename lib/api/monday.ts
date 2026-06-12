@@ -1,4 +1,5 @@
 import { resolveApiBaseUrl } from "./auth";
+import { parseJsonResponse } from "./http";
 
 export interface MondayConnectionStatus {
   connected: boolean;
@@ -6,20 +7,6 @@ export interface MondayConnectionStatus {
   accountName?: string | null;
   accountSlug?: string | null;
   connectedAt?: string | null;
-}
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<T & { success: boolean; error?: string }> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    } as T & { success: boolean; error?: string };
-  }
-
-  return (await response.json()) as T & { success: boolean; error?: string };
 }
 
 export async function getMondayConnectionStatus(

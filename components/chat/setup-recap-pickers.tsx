@@ -31,7 +31,6 @@ export function SetupRecapPickers({
     email: member.email,
     paused: false,
     slack_user_id: null,
-    clickup_user_id: null,
     created_at: "",
     data_sources: [],
     timezone: null,

@@ -2,6 +2,7 @@
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeCookieSync } from "@/components/theme-cookie-sync";
+import { Toaster } from "@/components/ui/sonner";
 import { DEFAULT_THEME, type ThemePreference } from "@/lib/theme";
 
 export function Providers({
@@ -21,6 +22,7 @@ export function Providers({
     >
       <ThemeCookieSync />
       {children}
+      <Toaster />
     </ThemeProvider>
   );
 }

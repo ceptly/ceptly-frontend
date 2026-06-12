@@ -2,11 +2,7 @@
 
 import { cookies } from "next/headers";
 
-import {
-  type ThemePreference,
-  THEME_COOKIE_NAME,
-  parseThemeCookie,
-} from "@/lib/theme";
+import { THEME_COOKIE_NAME, parseThemeCookie } from "@/lib/theme";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 

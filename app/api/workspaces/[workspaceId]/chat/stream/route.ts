@@ -46,8 +46,18 @@ export async function POST(request: Request, context: RouteContext) {
 
   if (!upstream.ok || !upstream.body) {
     const text = await upstream.text();
+    const headers = new Headers();
+    const contentType = upstream.headers.get("content-type");
+    if (contentType) {
+      headers.set("Content-Type", contentType);
+    }
+    const retryAfter = upstream.headers.get("retry-after");
+    if (retryAfter) {
+      headers.set("Retry-After", retryAfter);
+    }
     return new NextResponse(text || "Upstream chat stream failed", {
       status: upstream.status,
+      headers,
     });
   }
 

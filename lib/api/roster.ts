@@ -1,10 +1,10 @@
 import { resolveApiBaseUrl } from "./auth";
+import { parseJsonResponse } from "./http";
 
 export interface RosterMember {
   id: string;
   email: string;
   slack_user_id: string | null;
-  clickup_user_id: string | null;
   display_name: string;
   paused: boolean;
   created_at: string;
@@ -19,20 +19,6 @@ export interface RosterImportResult {
   added: number;
   skipped: number;
   failed: number;
-}
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<T & { success: boolean; error?: string }> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    } as T & { success: boolean; error?: string };
-  }
-
-  return (await response.json()) as T & { success: boolean; error?: string };
 }
 
 export async function listRosterMembers(

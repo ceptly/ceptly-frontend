@@ -1,22 +1,9 @@
 import { resolveApiBaseUrl } from "./auth";
 import type { AdhocConversationProposal } from "./types";
+import { parseJsonResponse } from "./http";
 
 export const ACTIVE_CHECKIN_IN_PROGRESS_ERROR =
   "That person already has an active check-in in progress.";
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<T & { success: boolean; error?: string }> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    } as T & { success: boolean; error?: string };
-  }
-
-  return (await response.json()) as T & { success: boolean; error?: string };
-}
 
 export async function abandonActiveCheckin(
   accessToken: string,

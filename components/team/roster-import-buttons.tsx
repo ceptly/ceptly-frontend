@@ -36,7 +36,8 @@ export function RosterImportButtons({
   teamsConnected,
   communicationPlatform = "slack",
 }: RosterImportButtonsProps) {
-  const teamsPrimary = communicationPlatform === "teams";
+  // MS Teams integration temporarily disabled — use `communicationPlatform === "teams"` to re-enable.
+  const teamsPrimary = false;
   const primaryConnected = teamsPrimary ? teamsConnected : slackConnected;
   const { resolvedTheme, theme } = useTheme();
   const logoTheme = (resolvedTheme ?? theme) === "dark" ? "dark" : "light";
@@ -129,6 +130,7 @@ export function RosterImportButtons({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
+        {/* MS Teams integration temporarily disabled — uncomment to re-enable.
         {teamsPrimary ? (
           teamsConnected ? (
             <Button
@@ -158,6 +160,7 @@ export function RosterImportButtons({
             </Link>
           )
         ) : null}
+        */}
 
         {!teamsPrimary &&
           (slackConnected ? (

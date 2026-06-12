@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { Brain, LogOut, User, Settings, Network } from "lucide-react";
+import { LogOut, User, Settings, Network } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useStatsigClient } from "@statsig/react-bindings";
 
@@ -29,13 +29,13 @@ import { cn } from "@/lib/utils";
 const baseNavigationItems = [
   { label: "Chat", path: "/chat", prefetch: true },
   { label: "Activity", path: "/activity", leadershipOnly: true, prefetch: false },
-  {
-    label: "Context",
-    path: "/context",
-    leadershipOnly: true,
-    prefetch: false,
-    mobileHidden: true,
-  },
+  // {
+  //   label: "Context",
+  //   path: "/context",
+  //   leadershipOnly: true,
+  //   prefetch: false,
+  //   mobileHidden: true,
+  // },
   {
     label: "Org intelligence",
     path: "/team",
@@ -214,7 +214,7 @@ export function AccountHeader({ user, showBilling = false }: AccountHeaderProps)
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              {showActivity ? (
+              {/* {showActivity ? (
                 <DropdownMenuItem
                   className="gap-2.5 rounded-none px-2.5 py-2 text-[13px] md:hidden"
                   render={
@@ -230,7 +230,7 @@ export function AccountHeader({ user, showBilling = false }: AccountHeaderProps)
                   <Brain className="size-[15px] text-muted-foreground" />
                   <span>Context</span>
                 </DropdownMenuItem>
-              ) : null}
+              ) : null} */}
               <DropdownMenuItem
                 className="gap-2.5 rounded-none px-2.5 py-2 text-[13px] md:hidden"
                 render={

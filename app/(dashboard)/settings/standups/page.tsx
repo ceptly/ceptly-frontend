@@ -2,7 +2,10 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { StandupsSettings } from "@/components/settings/standups/standups-settings";
-import { getWorkspaceTimezone, listAppContextOptions } from "@/lib/api/conversations";
+import {
+  getWorkspaceTimezone,
+  listAppContextOptions,
+} from "@/lib/api/conversations";
 import { listStandups } from "@/lib/api/standups";
 import { listRosterMembers } from "@/lib/api/roster";
 import { listChatChannels } from "@/lib/api/communication";
@@ -26,22 +29,26 @@ export default async function StandupsSettingsPage() {
     redirect("/login");
   }
 
-  const [standupsResult, rosterResult, channelsResult, timezoneResult, appContextsResult] =
-    await Promise.all([
-      listStandups(token, workspace.id),
-      listRosterMembers(token, workspace.id),
-      listChatChannels(token, workspace.id),
-      getWorkspaceTimezone(token, workspace.id),
-      listAppContextOptions(token, workspace.id),
-    ]);
+  const [
+    standupsResult,
+    rosterResult,
+    channelsResult,
+    timezoneResult,
+    appContextsResult,
+  ] = await Promise.all([
+    listStandups(token, workspace.id),
+    listRosterMembers(token, workspace.id),
+    listChatChannels(token, workspace.id),
+    getWorkspaceTimezone(token, workspace.id),
+    listAppContextOptions(token, workspace.id),
+  ]);
 
   const standups = standupsResult.data?.standups ?? [];
   const rosterMembers = rosterResult.data?.members ?? [];
   const chatChannels = channelsResult.data?.channels ?? [];
   const communicationPlatform = channelsResult.data?.platform ?? "slack";
   const appContextOptions = appContextsResult.data?.app_contexts ?? [];
-  const workspaceTimezone =
-    timezoneResult.data?.timezone ?? "America/Chicago";
+  const workspaceTimezone = timezoneResult.data?.timezone ?? "America/Chicago";
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-8">
@@ -50,7 +57,8 @@ export default async function StandupsSettingsPage() {
           Channel standups
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Scheduled standups that run in your team's chat channels with your roster.
+          Scheduled standups that run in your team&apos;s chat channels with
+          your roster.
         </p>
       </div>
 
