@@ -209,6 +209,8 @@ export function conversationToAgentRow(c: ScheduledConversation): AgentRow {
 export interface AgentDeployInitialValues {
   type: DeployAgentType;
   personaMode: PersonaMode;
+  /** Pretrained persona preset id (e.g. "scrum_master"); defaults to the first available. */
+  presetId?: string;
   persona: string;
   goal: string;
   notes: string;

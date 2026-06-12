@@ -1,5 +1,10 @@
 import { EmployeeChatPrompt } from "@/components/employee-chat-prompt";
-import { listAppContextOptions } from "@/lib/api/conversations";
+import {
+  getWorkspaceTimezone,
+  listAppContextOptions,
+} from "@/lib/api/conversations";
+import { listChatChannels } from "@/lib/api/communication";
+import { FALLBACK_PERSONAS, listPersonas } from "@/lib/api/personas";
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { loadChatHistory } from "@/lib/api/workspace-chat-history";
@@ -33,13 +38,23 @@ export async function ChatPageContent({
     );
   }
 
-  const [appContextsResult, slackChannelsResult, rosterResult, chatHistory] =
-    await Promise.all([
-      listAppContextOptions(token, workspaceId),
-      listSlackChannels(token, workspaceId),
-      listRosterMembers(token, workspaceId),
-      loadChatHistory(token, workspaceId),
-    ]);
+  const [
+    appContextsResult,
+    slackChannelsResult,
+    rosterResult,
+    chatHistory,
+    timezoneResult,
+    chatChannelsResult,
+    personasResult,
+  ] = await Promise.all([
+    listAppContextOptions(token, workspaceId),
+    listSlackChannels(token, workspaceId),
+    listRosterMembers(token, workspaceId),
+    loadChatHistory(token, workspaceId),
+    getWorkspaceTimezone(token, workspaceId),
+    listChatChannels(token, workspaceId),
+    listPersonas(token),
+  ]);
 
   const appContextOptions = appContextsResult?.data?.app_contexts ?? [];
   const slackChannels = slackChannelsResult?.data?.channels ?? [];
@@ -47,10 +62,19 @@ export async function ChatPageContent({
     ? null
     : (slackChannelsResult.error ?? null);
   const rosterMembers = rosterResult?.data?.members ?? [];
+  const workspaceTimezone = timezoneResult.data?.timezone ?? "America/Chicago";
+  const chatChannels = chatChannelsResult.data?.channels ?? [];
+  const communicationPlatform = chatChannelsResult.data?.platform ?? "slack";
+  const chatChannelsError = chatChannelsResult.success
+    ? null
+    : (chatChannelsResult.error ?? "Could not load channels.");
+  const personas = personasResult.data?.personas?.length
+    ? personasResult.data.personas
+    : FALLBACK_PERSONAS;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col px-4 py-7">
-      <div className="mx-auto flex w-full max-w-[700px] min-h-0 flex-1 flex-col">
+      <div className="mx-auto flex w-full max-w-[1060px] min-h-0 flex-1 flex-col">
         <EmployeeChatPrompt
           workspaceId={workspaceId}
           canEdit={canEdit}
@@ -60,6 +84,11 @@ export async function ChatPageContent({
           rosterMembers={rosterMembers}
           initialMessages={chatHistory.messages}
           initialSessionId={chatHistory.sessionId}
+          workspaceTimezone={workspaceTimezone}
+          chatChannels={chatChannels}
+          communicationPlatform={communicationPlatform}
+          chatChannelsError={chatChannelsError}
+          personas={personas}
         />
       </div>
     </div>

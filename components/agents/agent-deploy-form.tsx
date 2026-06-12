@@ -11,14 +11,13 @@ import type {
   ChatChannel,
   CommunicationPlatform,
 } from "@/lib/api/communication";
-import type { AppContextOption, ConversationTemplate } from "@/lib/api/types";
+import type { AppContextOption } from "@/lib/api/types";
 import type { PersonaOption } from "@/lib/api/personas";
 
 interface AgentDeployFormProps {
   workspaceId: string;
   workspaceTimezone: string;
   personas?: PersonaOption[];
-  templates: ConversationTemplate[];
   rosterMembers: RosterMember[];
   appContextOptions: AppContextOption[];
   slackChannels: SlackChannel[];

@@ -4,7 +4,6 @@ import type {
   ConversationPreview,
   ConversationQuestion,
   ConversationResultDestination,
-  ConversationTemplate,
   ScheduledConversation,
   ScheduleFrequency,
   WorkspaceSchedule,
@@ -42,87 +41,6 @@ export async function listAppContextOptions(
     return parseJsonResponse<{ data?: { app_contexts: AppContextOption[] } }>(
       response,
     );
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
-}
-
-export async function listConversationTemplates(
-  accessToken: string,
-  workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { templates: ConversationTemplate[] };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/conversations/templates`,
-      {
-        method: "GET",
-        headers: authHeaders(accessToken),
-        cache: "no-store",
-      },
-    );
-    const parsed = await parseJsonResponse<{
-      data?: { templates: ConversationTemplate[] };
-    }>(response);
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error:
-          parsed.error ?? `Failed to load templates (HTTP ${response.status}).`,
-      };
-    }
-
-    return parsed;
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
-}
-
-export async function createConversationFromTemplate(
-  accessToken: string,
-  workspaceId: string,
-  body: {
-    template_id: string;
-    name?: string;
-    summary?: string | null;
-    agent_persona?: string | null;
-    conversation_goal?: string | null;
-    persona_preset?: string;
-    agent_notes?: string | null;
-    schedule?: WorkspaceSchedule;
-    roster_member_ids?: string[];
-    context_integrations?: string[];
-    result_destinations?: ConversationResultDestination[];
-  },
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { conversation: ScheduledConversation };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/conversations/from-template`,
-      {
-        method: "POST",
-        headers: authHeaders(accessToken, true),
-        body: JSON.stringify(body),
-      },
-    );
-    return parseJsonResponse<{
-      data?: { conversation: ScheduledConversation };
-    }>(response);
   } catch {
     return {
       success: false,

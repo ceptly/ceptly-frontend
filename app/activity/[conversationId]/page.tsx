@@ -15,7 +15,6 @@ import {
   getWorkspaceTimezone,
   listAppContextOptions,
   listConversations,
-  listConversationTemplates,
 } from "@/lib/api/conversations";
 import { listChatChannels } from "@/lib/api/communication";
 import {
@@ -27,7 +26,6 @@ import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
-import { DEFAULT_CONVERSATION_TEMPLATES } from "@/lib/conversation-templates";
 import { cn } from "@/lib/utils";
 
 interface ActivityConversationPageProps {
@@ -108,7 +106,6 @@ export default async function ActivityConversationPage({
       rosterResult,
       appContextsResult,
       slackChannelsResult,
-      templatesResult,
       timezoneResult,
       chatChannelsResult,
       personasResult,
@@ -116,7 +113,6 @@ export default async function ActivityConversationPage({
       listRosterMembers(token, workspace.id),
       listAppContextOptions(token, workspace.id),
       listSlackChannels(token, workspace.id),
-      listConversationTemplates(token, workspace.id),
       getWorkspaceTimezone(token, workspace.id),
       listChatChannels(token, workspace.id),
       listPersonas(token),
@@ -128,9 +124,6 @@ export default async function ActivityConversationPage({
     const slackChannelsError = slackChannelsResult.success
       ? null
       : (slackChannelsResult.error ?? "Could not load Slack channels.");
-    const apiTemplates = templatesResult.data?.templates ?? [];
-    const templates =
-      apiTemplates.length > 0 ? apiTemplates : DEFAULT_CONVERSATION_TEMPLATES;
     const workspaceTimezone =
       timezoneResult.data?.timezone ?? "America/Chicago";
     const chatChannels = chatChannelsResult.data?.channels ?? [];
@@ -163,7 +156,6 @@ export default async function ActivityConversationPage({
           workspaceId={workspace.id}
           workspaceTimezone={workspaceTimezone}
           personas={personas}
-          templates={templates}
           rosterMembers={rosterMembers}
           appContextOptions={appContextOptions}
           slackChannels={slackChannels}

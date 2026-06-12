@@ -65,7 +65,6 @@ import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
   AppContextOption,
-  ConversationTemplate,
   ScheduleFrequency,
   StandupStyle,
 } from "@/lib/api/types";
@@ -98,7 +97,6 @@ interface AgentDeployFieldsProps {
   workspaceTimezone: string;
   /** Persona presets from GET /api/personas. */
   personas?: PersonaOption[];
-  templates: ConversationTemplate[];
   rosterMembers: RosterMember[];
   appContextOptions: AppContextOption[];
   slackChannels: SlackChannel[];
@@ -114,13 +112,17 @@ interface AgentDeployFieldsProps {
   initialValues?: AgentDeployInitialValues;
   /** Where to go after a successful save / cancel in edit mode. */
   onCloseEdit?: () => void;
+  /**
+   * Reports the full form state on every change. Lets the chat keep the
+   * inline form in sync with the agent without making the form controlled.
+   */
+  onValuesChange?: (values: AgentDeployInitialValues) => void;
 }
 
 export function AgentDeployFields({
   workspaceId,
   workspaceTimezone,
   personas = FALLBACK_PERSONAS,
-  templates,
   rosterMembers,
   appContextOptions,
   slackChannels,
@@ -132,13 +134,10 @@ export function AgentDeployFields({
   editTarget,
   initialValues,
   onCloseEdit,
+  onValuesChange,
 }: AgentDeployFieldsProps) {
   const isEdit = Boolean(editTarget);
   const router = useRouter();
-  const dailyStandup =
-    templates.find((template) => template.id === "daily_standup") ??
-    templates[0];
-
   const [type, setType] = useState<DeployAgentType>(
     initialValues?.type ?? initialType,
   );
@@ -152,7 +151,7 @@ export function AgentDeployFields({
     initialValues?.personaMode ?? "pretrained",
   );
   const [presetId, setPresetId] = useState(
-    personas[0]?.id ?? "scrum_master",
+    initialValues?.presetId ?? personas[0]?.id ?? "scrum_master",
   );
   const [persona, setPersona] = useState(initialValues?.persona ?? "");
   const [goal, setGoal] = useState(initialValues?.goal ?? "");
@@ -229,8 +228,7 @@ export function AgentDeployFields({
   // DM-only, the retro facilitator channel-only); only offer matching ones.
   const personaSurface = isStandup ? "channel" : "dm";
   const availablePersonas = useMemo(
-    () =>
-      personas.filter((p) => personaSurfaces(p).includes(personaSurface)),
+    () => personas.filter((p) => personaSurfaces(p).includes(personaSurface)),
     [personas, personaSurface],
   );
 
@@ -311,7 +309,7 @@ export function AgentDeployFields({
       schedule: buildDeploySchedule(),
       ...(isStandup
         ? { channel_id: standupChannelId, style: standupStyle }
-        : { template_id: dailyStandup?.id }),
+        : {}),
       ...(isReachout
         ? { topic: (goal.trim() || trimmedName).slice(0, 200) }
         : {}),
@@ -349,6 +347,52 @@ export function AgentDeployFields({
     selectedMemberIds,
     contextIntegrations,
     triggerMode,
+  ]);
+
+  const onValuesChangeRef = useRef(onValuesChange);
+  useEffect(() => {
+    onValuesChangeRef.current = onValuesChange;
+  }, [onValuesChange]);
+  useEffect(() => {
+    onValuesChangeRef.current?.({
+      type,
+      personaMode,
+      presetId,
+      persona,
+      goal,
+      notes,
+      name,
+      standupStyle,
+      standupChannelId,
+      timezone,
+      frequency,
+      daysOfWeek,
+      timeLocal,
+      triggerMode,
+      selectedMemberIds,
+      selectedChannelIds,
+      selectedRosterDmIds,
+      contextIntegrations,
+    });
+  }, [
+    type,
+    personaMode,
+    presetId,
+    persona,
+    goal,
+    notes,
+    name,
+    standupStyle,
+    standupChannelId,
+    timezone,
+    frequency,
+    daysOfWeek,
+    timeLocal,
+    triggerMode,
+    selectedMemberIds,
+    selectedChannelIds,
+    selectedRosterDmIds,
+    contextIntegrations,
   ]);
 
   function validate(): string | null {
@@ -478,14 +522,6 @@ export function AgentDeployFields({
       : selectedRosterDmIds.length > 0
         ? `${selectedRosterDmIds.length} DM rollup${selectedRosterDmIds.length === 1 ? "" : "s"}`
         : "Not set";
-
-  if (!isStandup && !dailyStandup) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No templates available. Contact support if this persists.
-      </p>
-    );
-  }
 
   return (
     <div className="ag-split">

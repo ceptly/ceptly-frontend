@@ -50,20 +50,6 @@ export interface ScheduledConversation {
   result_destinations?: ConversationResultDestination[];
 }
 
-export interface ConversationTemplate {
-  id: string;
-  name: string;
-  summary: string;
-  schedule: {
-    frequency: ScheduleFrequency;
-    days_of_week: number[];
-    time_local: string;
-    enabled: boolean;
-  };
-  questions: string[];
-  suggested_context_integrations?: string[];
-}
-
 export interface AppContextOption {
   id: string;
   label: string;
@@ -367,10 +353,41 @@ export interface SetupRecapUiComponent {
   selected_roster_dm_ids: string[];
 }
 
+/**
+ * Snake-case mirror of the deploy form (AgentDeployFields) state. The chat
+ * agent prefills these from the conversation; the client echoes the user's
+ * edits back as `form_state` on every turn so both stay in sync.
+ */
+export interface AgentFormValues {
+  kind?: "checkin" | "reachout" | "standup";
+  name?: string;
+  notes?: string;
+  persona_preset?: string;
+  persona?: string;
+  goal?: string;
+  standup_style?: StandupStyle;
+  standup_channel_id?: string;
+  timezone?: string;
+  frequency?: ScheduleFrequency;
+  days_of_week?: number[];
+  time_local?: string;
+  trigger_mode?: "schedule" | "event" | "manual";
+  roster_member_ids?: string[];
+  result_channel_ids?: string[];
+  result_roster_dm_ids?: string[];
+  context_integrations?: string[];
+}
+
+export interface AgentFormUiComponent {
+  type: "agent_form";
+  values: AgentFormValues;
+}
+
 export type SetupChatUiComponent =
   | DayPickerUiComponent
   | MemberPickerUiComponent
-  | SetupRecapUiComponent;
+  | SetupRecapUiComponent
+  | AgentFormUiComponent;
 
 export interface AdhocConversationMember {
   id: string;
