@@ -5,7 +5,6 @@ export interface RosterMember {
   id: string;
   email: string;
   slack_user_id: string | null;
-  clickup_user_id: string | null;
   display_name: string;
   paused: boolean;
   created_at: string;
