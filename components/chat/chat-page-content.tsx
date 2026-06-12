@@ -1,6 +1,5 @@
 import { EmployeeChatPrompt } from "@/components/employee-chat-prompt";
 import { listAppContextOptions } from "@/lib/api/conversations";
-import { getLinearConnectionStatus } from "@/lib/api/linear";
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { loadChatHistory } from "@/lib/api/workspace-chat-history";
@@ -34,21 +33,14 @@ export async function ChatPageContent({
     );
   }
 
-  const [
-    linearStatusResult,
-    appContextsResult,
-    slackChannelsResult,
-    rosterResult,
-    chatHistory,
-  ] = await Promise.all([
-    getLinearConnectionStatus(token, workspaceId),
-    listAppContextOptions(token, workspaceId),
-    listSlackChannels(token, workspaceId),
-    listRosterMembers(token, workspaceId),
-    loadChatHistory(token, workspaceId),
-  ]);
+  const [appContextsResult, slackChannelsResult, rosterResult, chatHistory] =
+    await Promise.all([
+      listAppContextOptions(token, workspaceId),
+      listSlackChannels(token, workspaceId),
+      listRosterMembers(token, workspaceId),
+      loadChatHistory(token, workspaceId),
+    ]);
 
-  const linearConnected = linearStatusResult?.data?.connected ?? false;
   const appContextOptions = appContextsResult?.data?.app_contexts ?? [];
   const slackChannels = slackChannelsResult?.data?.channels ?? [];
   const slackChannelsError = slackChannelsResult.success
@@ -62,7 +54,6 @@ export async function ChatPageContent({
         <EmployeeChatPrompt
           workspaceId={workspaceId}
           canEdit={canEdit}
-          linearConnected={linearConnected}
           appContextOptions={appContextOptions}
           slackChannels={slackChannels}
           slackChannelsError={slackChannelsError}

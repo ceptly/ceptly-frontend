@@ -1,5 +1,6 @@
 import { resolveApiBaseUrl } from "./auth";
 import type { InvitePreview, WorkspaceInvite } from "./types";
+import { parseJsonResponse } from "./http";
 
 export interface ApiErrorBody {
   success: boolean;
@@ -7,20 +8,6 @@ export interface ApiErrorBody {
   code?: string;
   seatUsage?: number;
   paidSeats?: number;
-}
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<T & ApiErrorBody> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    } as T & ApiErrorBody;
-  }
-
-  return (await response.json()) as T & ApiErrorBody;
 }
 
 export async function listInvites(

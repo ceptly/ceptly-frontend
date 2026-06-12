@@ -9,7 +9,7 @@ import { useStatsigClient } from "@statsig/react-bindings";
 import {
   Activity,
   Bot,
-  // Brain,
+  Brain,
   ChevronDown,
   ChevronsUpDown,
   LayoutDashboard,

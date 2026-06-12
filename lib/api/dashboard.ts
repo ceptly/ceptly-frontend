@@ -1,19 +1,6 @@
 import { resolveApiBaseUrl } from "./auth";
 import type { DashboardData, DashboardRangeDays } from "./types";
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<T & { success: boolean; error?: string }> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    } as T & { success: boolean; error?: string };
-  }
-
-  return (await response.json()) as T & { success: boolean; error?: string };
-}
+import { parseJsonResponse } from "./http";
 
 function authHeaders(accessToken: string): HeadersInit {
   return {
@@ -40,9 +27,7 @@ export async function getDashboard(
         cache: "no-store",
       },
     );
-    return parseJsonResponse<{ data?: { dashboard: DashboardData } }>(
-      response,
-    );
+    return parseJsonResponse<{ data?: { dashboard: DashboardData } }>(response);
   } catch {
     return {
       success: false,

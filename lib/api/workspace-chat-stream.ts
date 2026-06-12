@@ -2,10 +2,40 @@ import type {
   AdhocConversationProposal,
   ChannelStandupProposal,
   ChatAgentId,
+  ChatAttachment,
   ConversationSetupPlan,
   SetupChatMessage,
   SetupChatUiComponent,
 } from "./types";
+
+/** Upload one file as a chat attachment; the returned id rides on the message. */
+export async function uploadChatAttachment(
+  workspaceId: string,
+  file: File,
+): Promise<{ attachment?: ChatAttachment; error?: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await fetch(
+      `/api/workspaces/${workspaceId}/chat/attachments`,
+      { method: "POST", body: formData },
+    );
+    const text = await response.text();
+    let parsed: { success?: boolean; error?: string; data?: { attachment?: ChatAttachment } } = {};
+    try {
+      parsed = JSON.parse(text) as typeof parsed;
+    } catch {
+      // Non-JSON body; fall through to a generic error.
+    }
+    if (!response.ok || !parsed.data?.attachment) {
+      return { error: parsed.error ?? `Upload failed (HTTP ${response.status}).` };
+    }
+    return { attachment: parsed.data.attachment };
+  } catch {
+    return { error: "Could not upload the file." };
+  }
+}
 
 export type ChatIntegrationId =
   | "slack"
@@ -166,15 +196,25 @@ export function createInitialActivity(): AgentActivityState {
 
 const MAX_CHAT_MESSAGES = 40;
 
+interface ApiChatMessage {
+  role: SetupChatMessage["role"];
+  content: string;
+  attachmentIds?: string[];
+}
+
 /** Strip UI-only fields and cap length before sending to the API. */
-export function normalizeChatMessagesForApi(
+function normalizeChatMessagesForApi(
   messages: SetupChatMessage[],
-): SetupChatMessage[] {
+): ApiChatMessage[] {
   const normalized = messages
-    .map((message) => ({
-      role: message.role,
-      content: message.content.trim(),
-    }))
+    .map((message) => {
+      const attachmentIds = message.attachments?.map((a) => a.id) ?? [];
+      return {
+        role: message.role,
+        content: message.content.trim(),
+        ...(attachmentIds.length ? { attachmentIds } : {}),
+      };
+    })
     .filter((message) => message.content.length > 0);
 
   if (normalized.length <= MAX_CHAT_MESSAGES) {
@@ -192,7 +232,12 @@ export async function streamChatWorkspace(
   agent: ChatAgentId | undefined,
   callbacks: ChatStreamCallbacks,
   sessionId?: string | null,
-): Promise<{ error?: string; result?: ChatStreamDoneResult }> {
+): Promise<{
+  error?: string;
+  /** Set when the API rate-limited the request (HTTP 429). */
+  retryAfterSeconds?: number;
+  result?: ChatStreamDoneResult;
+}> {
   let activity = createInitialActivity();
   callbacks.onActivity?.(activity);
 
@@ -209,9 +254,31 @@ export async function streamChatWorkspace(
 
     if (!response.ok) {
       const text = await response.text();
-      return {
-        error: text || `Request failed (HTTP ${response.status}).`,
-      };
+      let error = text || `Request failed (HTTP ${response.status}).`;
+      let retryAfterSeconds: number | undefined;
+      try {
+        const parsed = JSON.parse(text) as {
+          error?: string;
+          retry_after_seconds?: number;
+        };
+        if (parsed.error) {
+          error = parsed.error;
+        }
+        if (typeof parsed.retry_after_seconds === "number") {
+          retryAfterSeconds = parsed.retry_after_seconds;
+        }
+      } catch {
+        // Non-JSON error body; keep the raw text.
+      }
+      if (response.status === 429 && retryAfterSeconds === undefined) {
+        const headerSeconds = Number(response.headers.get("retry-after"));
+        if (Number.isFinite(headerSeconds) && headerSeconds > 0) {
+          retryAfterSeconds = headerSeconds;
+        }
+      }
+      return response.status === 429
+        ? { error, retryAfterSeconds: retryAfterSeconds ?? 60 }
+        : { error };
     }
 
     if (!response.body) {

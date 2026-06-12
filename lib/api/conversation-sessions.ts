@@ -3,20 +3,7 @@ import type {
   ConversationRunRespondedMember,
   ConversationSessionSummary,
 } from "./types";
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<T & { success: boolean; error?: string }> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    } as T & { success: boolean; error?: string };
-  }
-
-  return (await response.json()) as T & { success: boolean; error?: string };
-}
+import { parseJsonResponse } from "./http";
 
 function authHeaders(accessToken: string): HeadersInit {
   return { Authorization: `Bearer ${accessToken}` };

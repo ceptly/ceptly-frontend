@@ -3,14 +3,17 @@
 import {
   ArrowUp,
   ChevronDown,
+  FileText,
   Loader2,
   Mic,
-  // Plus,
+  Paperclip,
   RefreshCw,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useStatsigClient } from "@statsig/react-bindings";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { useSpeechDictation } from "@/hooks/use-speech-dictation";
 import { cn } from "@/lib/utils";
@@ -44,6 +47,7 @@ import type {
   AppContextOption,
   ChannelStandupProposal,
   ChatAgentId,
+  ChatAttachment,
   ConversationSetupPlan,
   SetupChatMessage,
   SetupRecapUiComponent,
@@ -52,8 +56,12 @@ import { buildResultDestinations } from "@/lib/result-destinations";
 import {
   createInitialActivity,
   streamChatWorkspace,
+  uploadChatAttachment,
   type AgentActivityState,
 } from "@/lib/api/workspace-chat-stream";
+
+const ATTACHMENT_ACCEPT = ".pdf,.txt,.md,.markdown";
+const MAX_ATTACHMENTS = 5;
 
 const AGENT_LABELS: Record<ChatAgentId, string> = {
   conversation_setup: "Scheduling",
@@ -73,7 +81,6 @@ const AGENT_MENU_LABELS: Record<ChatAgentId | "auto", string> = {
 interface EmployeeChatPromptProps {
   workspaceId: string;
   canEdit?: boolean;
-  linearConnected?: boolean;
   appContextOptions?: AppContextOption[];
   slackChannels?: SlackChannel[];
   slackChannelsError?: string | null;
@@ -182,7 +189,6 @@ function updateAdhocProposalMembers(
 export function EmployeeChatPrompt({
   workspaceId,
   canEdit = true,
-  linearConnected = false,
   appContextOptions = [],
   slackChannels = [],
   slackChannelsError = null,
@@ -218,6 +224,11 @@ export function EmployeeChatPrompt({
   const [agentPreference, setAgentPreference] = useState<ChatAgentId | "auto">(
     "auto",
   );
+  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>(
+    [],
+  );
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasMessages = messages.length > 0 || chatPending;
   const isEmptyState = !hasMessages && !chatError;
@@ -346,6 +357,37 @@ export function EmployeeChatPrompt({
     disabled: chatDisabled,
   });
 
+  async function handleFilesPicked(files: FileList | null) {
+    if (!files?.length) {
+      return;
+    }
+    const room = MAX_ATTACHMENTS - pendingAttachments.length;
+    if (room <= 0) {
+      toast.error(`You can attach up to ${MAX_ATTACHMENTS} files per message.`);
+      return;
+    }
+
+    setAttachmentUploading(true);
+    for (const file of Array.from(files).slice(0, room)) {
+      const { attachment, error } = await uploadChatAttachment(
+        workspaceId,
+        file,
+      );
+      if (error || !attachment) {
+        toast.error(error ?? `Could not upload ${file.name}.`);
+        continue;
+      }
+      setPendingAttachments((current) => [...current, attachment]);
+    }
+    setAttachmentUploading(false);
+  }
+
+  function removePendingAttachment(id: string) {
+    setPendingAttachments((current) =>
+      current.filter((attachment) => attachment.id !== id),
+    );
+  }
+
   async function handleSend(content: string, agentOverride?: ChatAgentId) {
     const trimmed = content.trim();
     if (!trimmed || chatPending || !canEdit) {
@@ -355,12 +397,20 @@ export function EmployeeChatPrompt({
     client.logEvent("employee_chat_submit");
     stopDictation();
 
+    const attachmentsToSend = pendingAttachments;
     const nextMessages: SetupChatMessage[] = [
       ...messages,
-      { role: "user", content: trimmed },
+      {
+        role: "user",
+        content: trimmed,
+        ...(attachmentsToSend.length
+          ? { attachments: attachmentsToSend }
+          : {}),
+      },
     ];
     setMessages(nextMessages);
     setInput("");
+    setPendingAttachments([]);
     setChatPending(true);
     const initialActivity = createInitialActivity();
     setPendingActivity(initialActivity);
@@ -392,6 +442,9 @@ export function EmployeeChatPrompt({
             rosterMembers,
             slackChannels,
           ),
+          ...(attachmentsToSend.length
+            ? { attachments: attachmentsToSend }
+            : {}),
         },
       ],
       agentToSend,
@@ -408,6 +461,12 @@ export function EmployeeChatPrompt({
     setPendingActivity(null);
 
     if (streamResult.error) {
+      if (streamResult.retryAfterSeconds !== undefined) {
+        toast.error("You're sending messages too quickly", {
+          description: streamResult.error,
+          duration: Math.min(streamResult.retryAfterSeconds, 15) * 1000,
+        });
+      }
       setChatError(streamResult.error);
       return;
     }
@@ -459,10 +518,7 @@ export function EmployeeChatPrompt({
       setAdhocProposal(result.adhoc_proposal);
     }
 
-    if (
-      result.agent === "channel_standup" &&
-      result.channel_standup_proposal
-    ) {
+    if (result.agent === "channel_standup" && result.channel_standup_proposal) {
       setChannelStandupProposal(result.channel_standup_proposal);
     }
   }
@@ -682,6 +738,7 @@ export function EmployeeChatPrompt({
     setAdhocProposal(null);
     setChannelStandupProposal(null);
     setInput("");
+    setPendingAttachments([]);
     setChatPending(false);
     setPendingActivity(null);
     setChatError(null);
@@ -729,17 +786,61 @@ export function EmployeeChatPrompt({
           void handleSend(value);
         }}
       />
-      <div className="flex items-center justify-end px-3 pb-3">
-        {/* <Button
+      {pendingAttachments.length > 0 || attachmentUploading ? (
+        <div className="flex flex-wrap items-center gap-2 px-3 pb-2">
+          {pendingAttachments.map((attachment) => (
+            <span
+              key={attachment.id}
+              className="inline-flex max-w-[220px] items-center gap-1.5 rounded-md border border-border bg-muted/40 py-1 pr-1 pl-2 text-xs text-foreground"
+            >
+              <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+              <span className="truncate">{attachment.filename}</span>
+              <button
+                type="button"
+                className="flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label={`Remove ${attachment.filename}`}
+                onClick={() => removePendingAttachment(attachment.id)}
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          ))}
+          {attachmentUploading ? (
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="size-3.5 animate-spin" />
+              Uploading…
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="flex items-center justify-between px-3 pb-3">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ATTACHMENT_ACCEPT}
+          multiple
+          className="hidden"
+          onChange={(event) => {
+            void handleFilesPicked(event.target.files);
+            event.target.value = "";
+          }}
+        />
+        <Button
           type="button"
           variant="ghost"
           size="icon-sm"
           className="rounded-full text-muted-foreground"
-          disabled={chatDisabled}
+          disabled={
+            chatDisabled ||
+            attachmentUploading ||
+            pendingAttachments.length >= MAX_ATTACHMENTS
+          }
           aria-label="Add attachment"
+          title="Attach PDF, text, or Markdown"
+          onClick={() => fileInputRef.current?.click()}
         >
-          <Plus />
-        </Button> */}
+          <Paperclip />
+        </Button>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -815,11 +916,7 @@ export function EmployeeChatPrompt({
               disabled={!input.trim() || chatDisabled}
               aria-label="Send message"
             >
-              {chatPending ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <ArrowUp />
-              )}
+              {chatPending ? <Loader2 className="animate-spin" /> : <ArrowUp />}
             </Button>
           </div>
         </div>

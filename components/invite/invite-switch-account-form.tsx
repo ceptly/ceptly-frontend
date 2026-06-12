@@ -6,7 +6,7 @@ import { useFormStatus } from "react-dom";
 import { signOutForInvite } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 
-function SwitchAccountButton({ inviteToken }: { inviteToken: string }) {
+function SwitchAccountButton() {
   const { pending } = useFormStatus();
 
   return (
@@ -37,7 +37,7 @@ export function InviteSwitchAccountForm({
 }: InviteSwitchAccountFormProps) {
   return (
     <form action={signOutForInvite.bind(null, inviteToken)}>
-      <SwitchAccountButton inviteToken={inviteToken} />
+      <SwitchAccountButton />
     </form>
   );
 }

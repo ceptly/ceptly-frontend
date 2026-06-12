@@ -1,19 +1,6 @@
 import { AUTH_ENDPOINTS, resolveApiBaseUrl } from "./auth";
 import type { AuthUser } from "./types";
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<T & { success: boolean; error?: string }> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    } as T & { success: boolean; error?: string };
-  }
-
-  return (await response.json()) as T & { success: boolean; error?: string };
-}
+import { parseJsonResponse } from "./http";
 
 export async function patchUserProfile(
   accessToken: string,

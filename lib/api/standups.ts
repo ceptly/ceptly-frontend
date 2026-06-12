@@ -8,20 +8,7 @@ import type {
   StandupSessionSummary,
   StandupStyle,
 } from "./types";
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<T & { success: boolean; error?: string }> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    } as T & { success: boolean; error?: string };
-  }
-
-  return (await response.json()) as T & { success: boolean; error?: string };
-}
+import { parseJsonResponse } from "./http";
 
 function authHeaders(accessToken: string, json = false): HeadersInit {
   const headers: HeadersInit = {
@@ -234,35 +221,6 @@ export async function getStandupSessionDetail(
     return parseJsonResponse<{ data?: { session: StandupSessionDetail } }>(
       response,
     );
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
-}
-
-export async function runStandupNow(
-  accessToken: string,
-  workspaceId: string,
-  standupId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { started: boolean; reason?: string };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/standups/${standupId}/run`,
-      {
-        method: "POST",
-        headers: authHeaders(accessToken, true),
-      },
-    );
-    return parseJsonResponse<{
-      data?: { started: boolean; reason?: string };
-    }>(response);
   } catch {
     return {
       success: false,

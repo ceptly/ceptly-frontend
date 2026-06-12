@@ -16,9 +16,7 @@ export interface PersonaOption {
 }
 
 /** Surfaces a persona supports, treating missing data as "both". */
-export function personaSurfaces(
-  persona: PersonaOption,
-): ("dm" | "channel")[] {
+export function personaSurfaces(persona: PersonaOption): ("dm" | "channel")[] {
   return persona.surfaces?.length ? persona.surfaces : ["dm", "channel"];
 }
 

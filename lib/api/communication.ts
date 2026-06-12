@@ -1,4 +1,5 @@
 import { resolveApiBaseUrl } from "./auth";
+import { parseJsonResponse } from "./http";
 
 export type CommunicationPlatform = "slack" | "teams";
 
@@ -29,19 +30,6 @@ interface ApiEnvelope<T> {
 
 function authHeaders(accessToken: string): HeadersInit {
   return { Authorization: `Bearer ${accessToken}` };
-}
-
-async function parseJsonResponse<T>(
-  response: Response,
-): Promise<ApiEnvelope<T>> {
-  const contentType = response.headers.get("content-type");
-  if (!contentType?.includes("application/json")) {
-    return {
-      success: false,
-      error: `Unexpected response (HTTP ${response.status}).`,
-    };
-  }
-  return (await response.json()) as ApiEnvelope<T>;
 }
 
 export async function getCommunicationSettings(

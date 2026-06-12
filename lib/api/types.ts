@@ -388,9 +388,18 @@ export interface AdhocConversationProposal {
   delivery_facts?: string;
 }
 
+export interface ChatAttachment {
+  id: string;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+}
+
 export interface SetupChatMessage {
   role: "user" | "assistant";
   content: string;
+  /** Files attached to a user message, sent to the model as document context. */
+  attachments?: ChatAttachment[];
   ui_component?: SetupChatUiComponent;
   activity?: import("./workspace-chat-stream").AgentActivityState;
 }
