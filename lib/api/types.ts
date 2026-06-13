@@ -205,19 +205,6 @@ export interface Standup {
   updated_at: string;
 }
 
-export interface ChannelStandupProposal {
-  name: string;
-  slack_channel_id: string;
-  slack_channel_name?: string;
-  roster_member_ids: string[];
-  members: StandupMember[];
-  style: StandupStyle;
-  custom_instructions: string;
-  schedule: StandupSchedule;
-  summary: string;
-  standup_id?: string;
-}
-
 export interface StandupSessionSummary {
   session_id: string;
   scheduled_fire_at: string;
@@ -396,22 +383,6 @@ export type SetupChatUiComponent =
   | AgentFormUiComponent
   | AgentDeployedUiComponent;
 
-export interface AdhocConversationMember {
-  id: string;
-  display_name: string;
-  email: string;
-}
-
-export interface AdhocConversationProposal {
-  roster_member_ids: string[];
-  members: AdhocConversationMember[];
-  intent: "gather" | "inform";
-  topic: string;
-  summary: string;
-  conversation_name: string;
-  delivery_facts?: string;
-}
-
 export interface ChatAttachment {
   id: string;
   filename: string;
@@ -428,11 +399,7 @@ export interface SetupChatMessage {
   activity?: import("./workspace-chat-stream").AgentActivityState;
 }
 
-export type ChatAgentId =
-  | "conversation_setup"
-  | "team_qa"
-  | "adhoc_conversation"
-  | "channel_standup";
+export type ChatAgentId = "team_qa" | "meeting_creator";
 
 export interface AuthUser {
   id: string;

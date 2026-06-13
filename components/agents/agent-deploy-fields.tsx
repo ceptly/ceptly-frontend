@@ -707,7 +707,7 @@ export function AgentDeployFields({
             destination={destinationSummary}
             goal={
               isPretrained
-                ? selectedPersona?.dm.goal || "Capture progress & blockers"
+                ? selectedPersona?.goal || "Capture progress & blockers"
                 : goal
             }
             audience={audienceSummary}

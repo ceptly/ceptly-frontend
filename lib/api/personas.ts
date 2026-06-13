@@ -5,8 +5,8 @@ export interface PersonaOption {
   id: string;
   name: string;
   tagline: string;
-  dm: { persona: string; goal: string };
-  channel: { persona: string; goal: string };
+  persona: string;
+  goal: string;
   default_questions: string[];
   suggested_context_integrations: string[];
   /** Deploy surfaces this persona supports; older backends omit it (= both). */
@@ -26,8 +26,8 @@ export const FALLBACK_PERSONAS: PersonaOption[] = [
     id: "scrum_master",
     name: "Scrum Master",
     tagline: "Runs async standups — progress, blockers, and task updates.",
-    dm: { persona: "", goal: "" },
-    channel: { persona: "", goal: "" },
+    persona: "",
+    goal: "",
     default_questions: [],
     suggested_context_integrations: [],
     surfaces: ["dm", "channel"],

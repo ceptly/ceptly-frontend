@@ -1,6 +1,5 @@
 import { resolveApiBaseUrl } from "./auth";
 import type {
-  ChannelStandupProposal,
   ConversationResultDestination,
   Standup,
   StandupSchedule,
@@ -140,34 +139,6 @@ export async function deleteStandup(
   }
 }
 
-export async function commitStandup(
-  accessToken: string,
-  workspaceId: string,
-  body: StandupCreateBody & { standup_id?: string },
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { standup: Standup };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/standups/commit`,
-      {
-        method: "POST",
-        headers: authHeaders(accessToken, true),
-        body: JSON.stringify(body),
-      },
-    );
-    return parseJsonResponse<{ data?: { standup: Standup } }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
-}
-
 export async function listStandupSessions(
   accessToken: string,
   workspaceId: string,
@@ -227,18 +198,4 @@ export async function getStandupSessionDetail(
       error: "Could not reach the API. Is the backend running?",
     };
   }
-}
-
-export function proposalToCommitBody(
-  proposal: ChannelStandupProposal,
-): StandupCreateBody & { standup_id?: string } {
-  return {
-    name: proposal.name,
-    slack_channel_id: proposal.slack_channel_id,
-    style: proposal.style,
-    custom_instructions: proposal.custom_instructions,
-    roster_member_ids: proposal.roster_member_ids,
-    schedule: proposal.schedule,
-    standup_id: proposal.standup_id,
-  };
 }

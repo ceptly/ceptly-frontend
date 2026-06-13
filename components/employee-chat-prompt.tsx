@@ -2,7 +2,6 @@
 
 import {
   ArrowUp,
-  ChevronDown,
   FileText,
   Loader2,
   Mic,
@@ -19,29 +18,14 @@ import { toast } from "sonner";
 import { useSpeechDictation } from "@/hooks/use-speech-dictation";
 import { cn } from "@/lib/utils";
 
-import {
-  abandonActiveCheckinAction,
-  commitAdhocConversationAction,
-} from "@/actions/adhoc-conversation";
-import { ACTIVE_CHECKIN_IN_PROGRESS_ERROR } from "@/lib/api/adhoc-conversation";
-import { commitChannelStandupProposalAction } from "@/actions/standups";
 import { deployAgentAction, testAgentAction } from "@/actions/agents";
 import { markChatFormDeployedAction } from "@/actions/workspace-chat";
-import { AdhocConversationProposalCard } from "@/components/chat/adhoc-conversation-proposal";
 import { AgentDeployProposalCard } from "@/components/chat/agent-deploy-proposal";
 import { AgentDeployFields } from "@/components/agents/agent-deploy-fields";
-import { ChannelStandupProposalCard } from "@/components/chat/channel-standup-proposal";
 import { ChatMessageList } from "@/components/chat/chat-message-list";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ChatMentionTextarea } from "@/components/chat/chat-mention-textarea";
 import { formatMessageWithMentionContext } from "@/lib/chat-mentions";
 import {
@@ -61,10 +45,8 @@ import { FALLBACK_PERSONAS, type PersonaOption } from "@/lib/api/personas";
 import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
-  AdhocConversationProposal,
   AgentFormValues,
   AppContextOption,
-  ChannelStandupProposal,
   ChatAgentId,
   ChatAttachment,
   SetupChatMessage,
@@ -80,18 +62,8 @@ const ATTACHMENT_ACCEPT = ".pdf,.txt,.md,.markdown";
 const MAX_ATTACHMENTS = 5;
 
 const AGENT_LABELS: Record<ChatAgentId, string> = {
-  conversation_setup: "Scheduling",
   team_qa: "Team insights",
-  adhoc_conversation: "Reach out",
-  channel_standup: "Channel standup",
-};
-
-const AGENT_MENU_LABELS: Record<ChatAgentId | "auto", string> = {
-  auto: "Auto",
-  conversation_setup: "Scheduling",
-  team_qa: "Team insights",
-  adhoc_conversation: "Reach out",
-  channel_standup: "Channel standup",
+  meeting_creator: "Meeting setup",
 };
 
 interface EmployeeChatPromptProps {
@@ -108,27 +80,6 @@ interface EmployeeChatPromptProps {
   communicationPlatform?: CommunicationPlatform;
   chatChannelsError?: string | null;
   personas?: PersonaOption[];
-}
-
-function updateAdhocProposalMembers(
-  proposal: AdhocConversationProposal,
-  memberIds: string[],
-  candidateMembers: AdhocConversationProposal["members"],
-): AdhocConversationProposal {
-  const rosterById = new Map(
-    candidateMembers.map((member) => [member.id, member]),
-  );
-
-  return {
-    ...proposal,
-    roster_member_ids: memberIds,
-    members: memberIds
-      .map((id) => rosterById.get(id))
-      .filter(
-        (member): member is AdhocConversationProposal["members"][number] =>
-          Boolean(member),
-      ),
-  };
 }
 
 function findInitialAgentFormValues(
@@ -191,32 +142,18 @@ export function EmployeeChatPrompt({
   const [agentFormVersion, setAgentFormVersion] = useState(0);
   // Latest user-edited form state; echoed back to the agent on each message.
   const agentFormDraftRef = useRef<AgentDeployInitialValues | null>(null);
-  const [adhocProposal, setAdhocProposal] =
-    useState<AdhocConversationProposal | null>(null);
-  const [channelStandupProposal, setChannelStandupProposal] =
-    useState<ChannelStandupProposal | null>(null);
   const [input, setInput] = useState("");
   const [chatPending, setChatPending] = useState(false);
   const [pendingActivity, setPendingActivity] =
     useState<AgentActivityState | null>(null);
-  const [adhocPending, setAdhocPending] = useState(false);
-  const [adhocAbandonPending, setAdhocAbandonPending] = useState(false);
-  const [standupPending, setStandupPending] = useState(false);
   const [deployPending, setDeployPending] = useState(false);
   const [testPending, setTestPending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [adhocError, setAdhocError] = useState<string | null>(null);
-  const [standupError, setStandupError] = useState<string | null>(null);
   const [deployError, setDeployError] = useState<string | null>(null);
-  const [adhocSuccess, setAdhocSuccess] = useState(false);
-  const [standupSuccess, setStandupSuccess] = useState(false);
   const [deploySuccess, setDeploySuccess] = useState(() =>
     findInitialDeploySuccess(initialMessages),
   );
   const [activeAgent, setActiveAgent] = useState<ChatAgentId | null>(null);
-  const [agentPreference, setAgentPreference] = useState<ChatAgentId | "auto">(
-    "auto",
-  );
   const [pendingAttachments, setPendingAttachments] = useState<
     ChatAttachment[]
   >([]);
@@ -230,14 +167,7 @@ export function EmployeeChatPrompt({
 
   const hasMessages = messages.length > 0 || chatPending;
   const isEmptyState = !hasMessages && !chatError;
-  const chatDisabled =
-    chatPending ||
-    adhocPending ||
-    adhocAbandonPending ||
-    standupPending ||
-    !canEdit;
-  const isAdhocAgent = activeAgent === "adhoc_conversation";
-  const isChannelStandupAgent = activeAgent === "channel_standup";
+  const chatDisabled = chatPending || !canEdit;
   const hasAgentForm = agentFormValues !== null;
 
   // The latest agent-filled form state, in the deploy form's shape. Drives the
@@ -262,45 +192,6 @@ export function EmployeeChatPrompt({
     }
     hadFormRef.current = hasAgentForm;
   }, [hasAgentForm]);
-
-  const memberPickerSelection = useMemo(() => {
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-      const message = messages[index];
-      if (
-        message?.role === "assistant" &&
-        message.ui_component?.type === "member_picker"
-      ) {
-        return message.ui_component;
-      }
-    }
-    return undefined;
-  }, [messages]);
-
-  const adhocStartDisabled = useMemo(() => {
-    if (!adhocProposal || adhocPending || chatPending || !isAdhocAgent) {
-      return true;
-    }
-
-    return adhocProposal.roster_member_ids.length === 0;
-  }, [adhocProposal, adhocPending, chatPending, isAdhocAgent]);
-
-  const standupSaveDisabled = useMemo(() => {
-    if (
-      !channelStandupProposal ||
-      standupPending ||
-      chatPending ||
-      !isChannelStandupAgent
-    ) {
-      return true;
-    }
-
-    return channelStandupProposal.roster_member_ids.length === 0;
-  }, [
-    channelStandupProposal,
-    standupPending,
-    chatPending,
-    isChannelStandupAgent,
-  ]);
 
   const {
     supported: dictationSupported,
@@ -371,18 +262,10 @@ export function EmployeeChatPrompt({
     const initialActivity = createInitialActivity();
     setPendingActivity(initialActivity);
     setChatError(null);
-    setAdhocSuccess(false);
-    setStandupSuccess(false);
     setDeploySuccess(false);
-    setAdhocProposal(null);
-    setChannelStandupProposal(null);
-    setAdhocError(null);
-    setStandupError(null);
     setDeployError(null);
 
-    const agentToSend =
-      agentOverride ??
-      (agentPreference !== "auto" ? agentPreference : undefined);
+    const agentToSend = agentOverride;
 
     // Echo the inline form (including the user's direct edits) so the agent
     // updates it instead of starting over.
@@ -459,14 +342,6 @@ export function EmployeeChatPrompt({
       ]);
     }
 
-    if (result.agent === "adhoc_conversation" && result.adhoc_proposal) {
-      setAdhocProposal(result.adhoc_proposal);
-    }
-
-    if (result.agent === "channel_standup" && result.channel_standup_proposal) {
-      setChannelStandupProposal(result.channel_standup_proposal);
-    }
-
     if (result.ui_component?.type === "agent_form") {
       // Remount the deploy form with the agent's merged values; the draft ref
       // is repopulated immediately by the form's onValuesChange.
@@ -475,116 +350,9 @@ export function EmployeeChatPrompt({
     }
   }
 
-  function handleMembersChange(messageIndex: number, memberIds: string[]) {
-    if (!adhocProposal || interactiveDisabled()) {
-      return;
-    }
-
-    const candidates = memberPickerSelection?.members ?? adhocProposal.members;
-    const updatedProposal = updateAdhocProposalMembers(
-      adhocProposal,
-      memberIds,
-      candidates,
-    );
-    setAdhocProposal(updatedProposal);
-    setMessages((current) =>
-      current.map((message, index) =>
-        index === messageIndex && message.ui_component?.type === "member_picker"
-          ? {
-              ...message,
-              ui_component: {
-                ...message.ui_component,
-                selected_member_ids: memberIds,
-              },
-            }
-          : message,
-      ),
-    );
-  }
-
   function interactiveDisabled() {
-    return chatDisabled || adhocSuccess || standupSuccess;
+    return chatDisabled;
   }
-
-  async function handleSaveChannelStandup() {
-    if (!channelStandupProposal || standupSaveDisabled) {
-      return;
-    }
-
-    setStandupPending(true);
-    setStandupError(null);
-    setStandupSuccess(false);
-
-    const result = await commitChannelStandupProposalAction(
-      workspaceId,
-      channelStandupProposal,
-    );
-
-    setStandupPending(false);
-
-    if (result.error) {
-      setStandupError(result.error);
-      return;
-    }
-
-    setChannelStandupProposal(null);
-    setStandupSuccess(true);
-  }
-
-  async function handleStartAdhocConversation() {
-    if (!adhocProposal || adhocStartDisabled) {
-      return;
-    }
-
-    setAdhocPending(true);
-    setAdhocError(null);
-    setAdhocSuccess(false);
-    setStandupSuccess(false);
-
-    const result = await commitAdhocConversationAction(workspaceId, {
-      roster_member_ids: adhocProposal.roster_member_ids,
-      intent: adhocProposal.intent,
-      topic: adhocProposal.topic,
-      conversation_name: adhocProposal.conversation_name,
-      delivery_facts: adhocProposal.delivery_facts,
-    });
-
-    setAdhocPending(false);
-
-    if (result.error) {
-      setAdhocError(result.error);
-      return;
-    }
-
-    setAdhocProposal(null);
-    setAdhocSuccess(true);
-  }
-
-  async function handleAbandonActiveCheckinAndRetry() {
-    if (!adhocProposal || adhocAbandonPending || adhocPending) {
-      return;
-    }
-
-    setAdhocAbandonPending(true);
-    setAdhocError(null);
-
-    const abandonResult = await abandonActiveCheckinAction(
-      workspaceId,
-      adhocProposal.roster_member_ids,
-    );
-
-    if (abandonResult.error) {
-      setAdhocAbandonPending(false);
-      setAdhocError(abandonResult.error);
-      return;
-    }
-
-    setAdhocAbandonPending(false);
-    await handleStartAdhocConversation();
-  }
-
-  const showAbandonActiveCheckinAction =
-    adhocError === ACTIVE_CHECKIN_IN_PROGRESS_ERROR && Boolean(adhocProposal);
 
   /** Resolve the freshest form state: the user's live form edits, else the
    * agent's latest fill. The form panel stays mounted whenever a form exists,
@@ -694,8 +462,6 @@ export function EmployeeChatPrompt({
   function handleNewChat() {
     setMessages([]);
     setSessionId(null);
-    setAdhocProposal(null);
-    setChannelStandupProposal(null);
     setAgentFormValues(null);
     setAgentFormVersion(0);
     agentFormDraftRef.current = null;
@@ -704,16 +470,11 @@ export function EmployeeChatPrompt({
     setChatPending(false);
     setPendingActivity(null);
     setChatError(null);
-    setAdhocError(null);
-    setStandupError(null);
     setDeployError(null);
-    setAdhocSuccess(false);
-    setStandupSuccess(false);
     setDeploySuccess(false);
     setDeployPending(false);
     setTestPending(false);
     setActiveAgent(null);
-    setAgentPreference("auto");
     client.logEvent("employee_chat_refresh_click");
   }
 
@@ -805,84 +566,57 @@ export function EmployeeChatPrompt({
         >
           <Paperclip />
         </Button>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5 px-2 text-muted-foreground"
-                  disabled={chatDisabled}
-                />
-              }
-            >
-              {AGENT_MENU_LABELS[agentPreference]}
-              <ChevronDown className="size-3.5 opacity-60" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuRadioGroup
-                value={agentPreference}
-                onValueChange={(value) =>
-                  setAgentPreference(value as ChatAgentId | "auto")
-                }
-              >
-                <DropdownMenuRadioItem value="auto">Auto</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="conversation_setup">
-                  Scheduling
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="team_qa">
-                  Team insights
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="adhoc_conversation">
-                  Reach out
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="channel_standup">
-                  Channel standup
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <div className="ceptly-composer-send-group flex items-center">
-            {dictationSupported ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-sm"
-                className={cn(
-                  "rounded-none",
-                  dictationListening &&
-                    "z-10 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive",
-                )}
-                disabled={chatDisabled}
-                aria-label={
-                  dictationListening ? "Stop dictation" : "Start dictation"
-                }
-                aria-pressed={dictationListening}
-                title={
-                  dictationError ??
-                  (dictationListening ? "Stop dictation" : "Dictate message")
-                }
-                onClick={() => {
-                  clearDictationError();
-                  toggleDictation();
-                }}
-              >
-                <Mic className={cn(dictationListening && "animate-pulse")} />
-              </Button>
-            ) : null}
+        <div className="ceptly-composer-send-group flex items-center">
+          {hasMessages ? (
             <Button
-              type="submit"
-              variant="default"
+              type="button"
+              variant="outline"
               size="icon-sm"
               className="rounded-none"
-              disabled={!input.trim() || chatDisabled}
-              aria-label="Send message"
+              aria-label="Start new conversation"
+              title="Start new conversation"
+              onClick={handleNewChat}
             >
-              {chatPending ? <Loader2 className="animate-spin" /> : <ArrowUp />}
+              <RefreshCw />
             </Button>
-          </div>
+          ) : null}
+          {dictationSupported ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              className={cn(
+                "rounded-none",
+                dictationListening &&
+                  "z-10 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive",
+              )}
+              disabled={chatDisabled}
+              aria-label={
+                dictationListening ? "Stop dictation" : "Start dictation"
+              }
+              aria-pressed={dictationListening}
+              title={
+                dictationError ??
+                (dictationListening ? "Stop dictation" : "Dictate message")
+              }
+              onClick={() => {
+                clearDictationError();
+                toggleDictation();
+              }}
+            >
+              <Mic className={cn(dictationListening && "animate-pulse")} />
+            </Button>
+          ) : null}
+          <Button
+            type="submit"
+            variant="default"
+            size="icon-sm"
+            className="rounded-none"
+            disabled={!input.trim() || chatDisabled}
+            aria-label="Send message"
+          >
+            {chatPending ? <Loader2 className="animate-spin" /> : <ArrowUp />}
+          </Button>
         </div>
       </div>
     </form>
@@ -924,7 +658,6 @@ export function EmployeeChatPrompt({
           messages={messages}
           pending={chatPending}
           pendingActivity={pendingActivity}
-          onMembersChange={handleMembersChange}
           slackChannels={slackChannels}
           rosterMembers={rosterMembers}
           interactiveDisabled={interactiveDisabled()}
@@ -938,12 +671,6 @@ export function EmployeeChatPrompt({
       {chatError ? (
         <Alert variant="destructive">
           <AlertDescription>{chatError}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {standupError ? (
-        <Alert variant="destructive">
-          <AlertDescription>{standupError}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -971,81 +698,6 @@ export function EmployeeChatPrompt({
         </div>
       ) : null}
 
-      {adhocError ? (
-        <Alert variant="destructive">
-          <AlertDescription className="space-y-3">
-            <p>{adhocError}</p>
-            {showAbandonActiveCheckinAction ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={adhocAbandonPending || adhocPending}
-                onClick={() => void handleAbandonActiveCheckinAndRetry()}
-              >
-                {adhocAbandonPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Ending check-in…
-                  </>
-                ) : (
-                  "End active check-in and retry"
-                )}
-              </Button>
-            ) : null}
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
-      {adhocProposal && !adhocSuccess && isAdhocAgent ? (
-        <div className="px-1">
-          <AdhocConversationProposalCard
-            proposal={adhocProposal}
-            onStart={() => void handleStartAdhocConversation()}
-            pending={adhocPending}
-            disabled={adhocStartDisabled}
-          />
-        </div>
-      ) : null}
-
-      {channelStandupProposal && !standupSuccess && isChannelStandupAgent ? (
-        <div className="px-1">
-          <ChannelStandupProposalCard
-            proposal={channelStandupProposal}
-            onSave={() => void handleSaveChannelStandup()}
-            pending={standupPending}
-            disabled={standupSaveDisabled}
-          />
-        </div>
-      ) : null}
-
-      {adhocSuccess ? (
-        <p className="text-center text-sm text-muted-foreground">
-          Conversation started in Slack. Replies will show up in Team insights
-          once your teammate responds.
-        </p>
-      ) : null}
-
-      {standupSuccess ? (
-        <p className="text-center text-sm text-muted-foreground">
-          Channel standup saved.{" "}
-          <Link
-            href="/settings/standups"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Manage standups
-          </Link>{" "}
-          or{" "}
-          <Link
-            href="/activity"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            view Activity
-          </Link>
-          .
-        </p>
-      ) : null}
-
       {deploySuccess ? (
         <p className="text-center text-sm text-muted-foreground">
           Agent deployed.{" "}
@@ -1053,22 +705,15 @@ export function EmployeeChatPrompt({
             href="/agents"
             className="font-medium text-foreground underline-offset-4 hover:underline"
           >
-            Manage agents
-          </Link>{" "}
-          or{" "}
-          <Link
-            href="/activity"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            view Activity
+            Manage your agents
           </Link>
           .
         </p>
       ) : null}
 
       {promptForm}
-      <div className={cn("flex justify-center", hasAgentForm && "xl:justify-between")}>
-        {hasAgentForm ? (
+      {hasAgentForm ? (
+        <div className="flex justify-end xl:justify-start">
           <Button
             type="button"
             variant="ghost"
@@ -1079,17 +724,8 @@ export function EmployeeChatPrompt({
             <PanelRight className="size-4" />
             {desktopFormOpen ? "Hide config" : "Show config"}
           </Button>
-        ) : null}
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          aria-label="Start new conversation"
-          onClick={handleNewChat}
-        >
-          <RefreshCw />
-        </Button>
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 
