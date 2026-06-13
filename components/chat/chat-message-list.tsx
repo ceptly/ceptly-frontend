@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { AgentActivityFeed } from "@/components/chat/agent-activity-feed";
-import { CeptlyAgentAvatar } from "@/components/ceptly-agent-avatar";
+import { AssistantMessageContent } from "@/components/chat/assistant-message-content";
 import { MentionMessageContent } from "@/components/chat/mention-message-content";
 import { Badge } from "@/components/ui/badge";
 import type { AgentActivityState } from "@/lib/api/workspace-chat-stream";
@@ -56,18 +56,12 @@ export function ChatMessageList({
               isUser ? "flex-row-reverse" : "flex-row",
             )}
           >
-            {!isUser ? <CeptlyAgentAvatar /> : null}
-
             <div
               className={cn(
                 "flex max-w-[min(85%,32rem)] flex-col gap-2",
                 isUser ? "items-end" : "items-start",
               )}
             >
-              <span className="px-1 text-xs font-medium text-muted-foreground">
-                {isUser ? "You" : "Ceptly"}
-              </span>
-
               {!isUser && message.activity ? (
                 <AgentActivityFeed activity={message.activity} />
               ) : null}
@@ -85,7 +79,7 @@ export function ChatMessageList({
                     slackChannels={slackChannels}
                   />
                 ) : (
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <AssistantMessageContent content={message.content} />
                 )}
               </div>
 
@@ -141,11 +135,7 @@ export function ChatMessageList({
 
       {pending && pendingActivity ? (
         <div className="flex gap-2.5">
-          <CeptlyAgentAvatar />
           <div className="flex max-w-[min(85%,32rem)] flex-col gap-1">
-            <span className="px-1 text-xs font-medium text-muted-foreground">
-              Ceptly
-            </span>
             <AgentActivityFeed activity={pendingActivity} isLive />
           </div>
         </div>

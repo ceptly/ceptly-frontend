@@ -191,6 +191,39 @@
     background: var(--brand-green);
     color: #ffffff;
   }
+
+  /* Custom scrollbars — thin, brand-accented, no border-radius */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  *:hover {
+    scrollbar-color: oklch(0.6 0.01 286 / 40%) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 0;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.55 0.18 285 / 55%);
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: oklch(1 0 0 / 15%);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.7 0.16 285 / 50%);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }
 
 @layer components {
@@ -1333,6 +1366,9 @@
 }
 
 /* ---- deploy: split layout (form + live-preview rail) ---- */
+.ag-split-outer {
+  container-type: inline-size;
+}
 .ag-split {
   display: grid;
   grid-template-columns: 1fr 372px;
@@ -1367,6 +1403,7 @@
 .ag-preview-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
@@ -1376,7 +1413,12 @@
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
-.ag-preview-head svg {
+.ag-preview-head-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ag-preview-head-title svg {
   color: var(--brand-green-soft);
 }
 .ag-slack {
@@ -1543,8 +1585,8 @@
   }
 }
 
-/* mobile: stack the form, then the preview + summary */
-@media (max-width: 860px) {
+/* stack when the container is too narrow to fit both columns */
+@container (max-width: 780px) {
   .ag-split {
     grid-template-columns: 1fr;
     gap: 22px;

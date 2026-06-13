@@ -17,7 +17,7 @@ export function agentFormValuesToInitialValues(
 ): AgentDeployInitialValues {
   const hasCustomPersona = Boolean(values.persona?.trim());
   return {
-    type: values.kind ?? "standup",
+    destinationType: values.kind === "standup" ? "channel" : "dm",
     personaMode: hasCustomPersona ? "custom" : "pretrained",
     presetId: values.persona_preset,
     persona: values.persona ?? "",
@@ -44,7 +44,7 @@ export function initialValuesToAgentFormValues(
   values: AgentDeployInitialValues,
 ): AgentFormValues {
   return {
-    kind: values.type,
+    kind: values.destinationType === "channel" ? "standup" : "checkin",
     ...(values.name.trim() ? { name: values.name.trim() } : {}),
     ...(values.notes.trim() ? { notes: values.notes.trim() } : {}),
     ...(values.personaMode === "custom"

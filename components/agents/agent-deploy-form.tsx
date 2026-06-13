@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { AgentDeployFields } from "@/components/agents/agent-deploy-fields";
-import type { DeployAgentType } from "@/lib/agents";
 import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
@@ -25,7 +24,6 @@ interface AgentDeployFormProps {
   chatChannels: ChatChannel[];
   communicationPlatform: CommunicationPlatform;
   chatChannelsError?: string | null;
-  initialType?: DeployAgentType;
 }
 
 export function AgentDeployForm(props: AgentDeployFormProps) {

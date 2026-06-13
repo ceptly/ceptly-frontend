@@ -383,11 +383,18 @@ export interface AgentFormUiComponent {
   values: AgentFormValues;
 }
 
+/** Persisted marker after the user deploys from chat; replaces agent_form in history. */
+export interface AgentDeployedUiComponent {
+  type: "agent_deployed";
+  name?: string;
+}
+
 export type SetupChatUiComponent =
   | DayPickerUiComponent
   | MemberPickerUiComponent
   | SetupRecapUiComponent
-  | AgentFormUiComponent;
+  | AgentFormUiComponent
+  | AgentDeployedUiComponent;
 
 export interface AdhocConversationMember {
   id: string;

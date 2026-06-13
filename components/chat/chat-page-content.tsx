@@ -73,8 +73,8 @@ export async function ChatPageContent({
     : FALLBACK_PERSONAS;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-4 py-7">
-      <div className="mx-auto flex w-full max-w-[1060px] min-h-0 flex-1 flex-col">
+    <div className="flex h-[calc(100dvh-3.5rem)] min-h-0 flex-col px-4 py-7 md:h-dvh">
+      <div className="mx-auto flex w-full max-w-[1400px] min-h-0 flex-1 flex-col">
         <EmployeeChatPrompt
           workspaceId={workspaceId}
           canEdit={canEdit}

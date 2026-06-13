@@ -6,13 +6,14 @@ import {
   FileText,
   Loader2,
   Mic,
+  PanelRight,
   Paperclip,
   RefreshCw,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { useStatsigClient } from "@statsig/react-bindings";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useSpeechDictation } from "@/hooks/use-speech-dictation";
@@ -24,7 +25,10 @@ import {
 } from "@/actions/adhoc-conversation";
 import { ACTIVE_CHECKIN_IN_PROGRESS_ERROR } from "@/lib/api/adhoc-conversation";
 import { commitChannelStandupProposalAction } from "@/actions/standups";
+import { deployAgentAction, testAgentAction } from "@/actions/agents";
+import { markChatFormDeployedAction } from "@/actions/workspace-chat";
 import { AdhocConversationProposalCard } from "@/components/chat/adhoc-conversation-proposal";
+import { AgentDeployProposalCard } from "@/components/chat/agent-deploy-proposal";
 import { AgentDeployFields } from "@/components/agents/agent-deploy-fields";
 import { ChannelStandupProposalCard } from "@/components/chat/channel-standup-proposal";
 import { ChatMessageList } from "@/components/chat/chat-message-list";
@@ -40,6 +44,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChatMentionTextarea } from "@/components/chat/chat-mention-textarea";
 import { formatMessageWithMentionContext } from "@/lib/chat-mentions";
+import {
+  agentDeployValuesComplete,
+  buildAgentDeployBody,
+} from "@/lib/agent-deploy-body";
 import type { AgentDeployInitialValues } from "@/lib/agents";
 import {
   agentFormValuesToInitialValues,
@@ -128,14 +136,33 @@ function findInitialAgentFormValues(
 ): AgentFormValues | null {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (
-      message?.role === "assistant" &&
-      message.ui_component?.type === "agent_form"
-    ) {
+    if (message?.role !== "assistant") {
+      continue;
+    }
+    if (message.ui_component?.type === "agent_deployed") {
+      return null;
+    }
+    if (message.ui_component?.type === "agent_form") {
       return message.ui_component.values;
     }
   }
   return null;
+}
+
+function findInitialDeploySuccess(messages: SetupChatMessage[]): boolean {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role !== "assistant") {
+      continue;
+    }
+    if (message.ui_component?.type === "agent_deployed") {
+      return true;
+    }
+    if (message.ui_component?.type === "agent_form") {
+      return false;
+    }
+  }
+  return false;
 }
 
 export function EmployeeChatPrompt({
@@ -175,11 +202,17 @@ export function EmployeeChatPrompt({
   const [adhocPending, setAdhocPending] = useState(false);
   const [adhocAbandonPending, setAdhocAbandonPending] = useState(false);
   const [standupPending, setStandupPending] = useState(false);
+  const [deployPending, setDeployPending] = useState(false);
+  const [testPending, setTestPending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [adhocError, setAdhocError] = useState<string | null>(null);
   const [standupError, setStandupError] = useState<string | null>(null);
+  const [deployError, setDeployError] = useState<string | null>(null);
   const [adhocSuccess, setAdhocSuccess] = useState(false);
   const [standupSuccess, setStandupSuccess] = useState(false);
+  const [deploySuccess, setDeploySuccess] = useState(() =>
+    findInitialDeploySuccess(initialMessages),
+  );
   const [activeAgent, setActiveAgent] = useState<ChatAgentId | null>(null);
   const [agentPreference, setAgentPreference] = useState<ChatAgentId | "auto">(
     "auto",
@@ -189,6 +222,11 @@ export function EmployeeChatPrompt({
   >([]);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // On narrow viewports the conversation and the inline form can't sit
+  // side-by-side, so a bottom selector toggles between them (Replit-style).
+  const [mobileView, setMobileView] = useState<"chat" | "form">("chat");
+  const [desktopFormOpen, setDesktopFormOpen] = useState(false);
+  const hadFormRef = useRef(false);
 
   const hasMessages = messages.length > 0 || chatPending;
   const isEmptyState = !hasMessages && !chatError;
@@ -200,6 +238,30 @@ export function EmployeeChatPrompt({
     !canEdit;
   const isAdhocAgent = activeAgent === "adhoc_conversation";
   const isChannelStandupAgent = activeAgent === "channel_standup";
+  const hasAgentForm = agentFormValues !== null;
+
+  // The latest agent-filled form state, in the deploy form's shape. Drives the
+  // inline deploy card so the user can deploy straight from the conversation.
+  const deployCardValues = useMemo(
+    () =>
+      agentFormValues
+        ? agentFormValuesToInitialValues(
+            agentFormValues,
+            workspaceTimezone,
+            appContextOptions,
+          )
+        : null,
+    [agentFormValues, workspaceTimezone, appContextOptions],
+  );
+
+  // When the form first appears, surface it on narrow viewports so the user
+  // notices it; once they've seen it, leave their tab choice alone.
+  useEffect(() => {
+    if (hasAgentForm && !hadFormRef.current) {
+      setMobileView("form");
+    }
+    hadFormRef.current = hasAgentForm;
+  }, [hasAgentForm]);
 
   const memberPickerSelection = useMemo(() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
@@ -311,10 +373,12 @@ export function EmployeeChatPrompt({
     setChatError(null);
     setAdhocSuccess(false);
     setStandupSuccess(false);
+    setDeploySuccess(false);
     setAdhocProposal(null);
     setChannelStandupProposal(null);
     setAdhocError(null);
     setStandupError(null);
+    setDeployError(null);
 
     const agentToSend =
       agentOverride ??
@@ -522,6 +586,111 @@ export function EmployeeChatPrompt({
   const showAbandonActiveCheckinAction =
     adhocError === ACTIVE_CHECKIN_IN_PROGRESS_ERROR && Boolean(adhocProposal);
 
+  /** Resolve the freshest form state: the user's live form edits, else the
+   * agent's latest fill. The form panel stays mounted whenever a form exists,
+   * so the draft ref reflects any direct edits. */
+  function resolveDeployValues(): AgentDeployInitialValues | null {
+    return agentFormDraftRef.current ?? deployCardValues;
+  }
+
+  async function handleDeployAgent() {
+    const values = resolveDeployValues();
+    if (
+      !values ||
+      !agentDeployValuesComplete(values) ||
+      deployPending ||
+      !canEdit
+    ) {
+      return;
+    }
+
+    setDeployPending(true);
+    setDeployError(null);
+
+    const result = await deployAgentAction({
+      workspaceId,
+      body: buildAgentDeployBody(values, { chatChannels, slackChannels }),
+    });
+
+    setDeployPending(false);
+
+    if (result.error) {
+      setDeployError(result.error);
+      return;
+    }
+
+    client.logEvent("employee_chat_agent_deployed");
+    // Collapse the inline form and surface a success note in its place.
+    setAgentFormValues(null);
+    agentFormDraftRef.current = null;
+    setAgentFormVersion(0);
+    setDeploySuccess(true);
+    setMessages((current) => {
+      for (let index = current.length - 1; index >= 0; index -= 1) {
+        const message = current[index];
+        if (
+          message?.role === "assistant" &&
+          message.ui_component?.type === "agent_form"
+        ) {
+          const next = [...current];
+          next[index] = {
+            ...message,
+            ui_component: {
+              type: "agent_deployed",
+              ...(values.name ? { name: values.name } : {}),
+            },
+          };
+          return next;
+        }
+      }
+      return current;
+    });
+    if (sessionId) {
+      void markChatFormDeployedAction({
+        workspaceId,
+        sessionId,
+        name: values.name,
+      });
+    }
+  }
+
+  async function handleTestAgent() {
+    const values = resolveDeployValues();
+    if (
+      !values ||
+      !agentDeployValuesComplete(values) ||
+      testPending ||
+      !canEdit
+    ) {
+      return;
+    }
+
+    setTestPending(true);
+    const result = await testAgentAction({
+      workspaceId,
+      body: buildAgentDeployBody(values, { chatChannels, slackChannels }),
+    });
+    setTestPending(false);
+
+    if (result.error) {
+      toast.error("Test failed", { description: result.error });
+      return;
+    }
+    if ((result.sessionsStarted ?? 0) === 0) {
+      toast.error("Test failed", {
+        description:
+          "The agent did not start. Check your channel and participants.",
+      });
+      return;
+    }
+    toast.success("Test started", {
+      description:
+        values.destinationType === "channel"
+          ? "Watch the meeting kick off in your channel."
+          : "Check Slack — the agent just sent its first message.",
+    });
+  }
+
   function handleNewChat() {
     setMessages([]);
     setSessionId(null);
@@ -537,8 +706,12 @@ export function EmployeeChatPrompt({
     setChatError(null);
     setAdhocError(null);
     setStandupError(null);
+    setDeployError(null);
     setAdhocSuccess(false);
     setStandupSuccess(false);
+    setDeploySuccess(false);
+    setDeployPending(false);
+    setTestPending(false);
     setActiveAgent(null);
     setAgentPreference("auto");
     client.logEvent("employee_chat_refresh_click");
@@ -715,20 +888,6 @@ export function EmployeeChatPrompt({
     </form>
   );
 
-  const newChatButton = (
-    <div className="flex justify-center">
-      <Button
-        type="button"
-        variant="outline"
-        size="icon-sm"
-        aria-label="Start new conversation"
-        onClick={handleNewChat}
-      >
-        <RefreshCw />
-      </Button>
-    </div>
-  );
-
   if (!canEdit) {
     return (
       <div className="flex w-full flex-1 flex-col items-center justify-center gap-4 text-center">
@@ -758,140 +917,272 @@ export function EmployeeChatPrompt({
     );
   }
 
-  return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
-      {hasMessages ? (
-        <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
-          <div className="mx-auto w-full max-w-[700px]">
-            <ChatMessageList
-              messages={messages}
-              pending={chatPending}
-              pendingActivity={pendingActivity}
-              onMembersChange={handleMembersChange}
-              slackChannels={slackChannels}
-              rosterMembers={rosterMembers}
-              interactiveDisabled={interactiveDisabled()}
-            />
-          </div>
+  const messagesScroll = hasMessages ? (
+    <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+      <div className="mx-auto w-full max-w-[700px]">
+        <ChatMessageList
+          messages={messages}
+          pending={chatPending}
+          pendingActivity={pendingActivity}
+          onMembersChange={handleMembersChange}
+          slackChannels={slackChannels}
+          rosterMembers={rosterMembers}
+          interactiveDisabled={interactiveDisabled()}
+        />
+      </div>
+    </div>
+  ) : null;
 
-          {agentFormValues ? (
-            <div className="mt-6 border-t border-border pt-6">
-              <AgentDeployFields
-                key={agentFormVersion}
-                workspaceId={workspaceId}
-                workspaceTimezone={workspaceTimezone}
-                personas={personas}
-                rosterMembers={rosterMembers}
-                appContextOptions={appContextOptions}
-                slackChannels={slackChannels}
-                slackChannelsError={slackChannelsError}
-                chatChannels={chatChannels}
-                communicationPlatform={communicationPlatform}
-                chatChannelsError={chatChannelsError}
-                initialValues={agentFormValuesToInitialValues(
-                  agentFormValues,
-                  workspaceTimezone,
-                  appContextOptions,
-                )}
-                onValuesChange={(values) => {
-                  agentFormDraftRef.current = values;
-                }}
-              />
-            </div>
-          ) : null}
+  const composerBlock = (
+    <div className="mx-auto flex w-full max-w-[700px] flex-col gap-4">
+      {chatError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{chatError}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {standupError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{standupError}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {deployError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{deployError}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {hasAgentForm && deployCardValues && !deploySuccess ? (
+        <div className="px-1">
+          <AgentDeployProposalCard
+            values={deployCardValues}
+            chatChannels={chatChannels}
+            pending={deployPending}
+            testing={testPending}
+            disabled={chatPending}
+            onDeploy={() => void handleDeployAgent()}
+            onTest={() => void handleTestAgent()}
+            onEdit={() => {
+              setDesktopFormOpen(true);
+              setMobileView("form");
+            }}
+          />
         </div>
       ) : null}
 
-      <div className="mx-auto flex w-full max-w-[700px] flex-col gap-4">
-        {chatError ? (
-          <Alert variant="destructive">
-            <AlertDescription>{chatError}</AlertDescription>
-          </Alert>
-        ) : null}
+      {adhocError ? (
+        <Alert variant="destructive">
+          <AlertDescription className="space-y-3">
+            <p>{adhocError}</p>
+            {showAbandonActiveCheckinAction ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={adhocAbandonPending || adhocPending}
+                onClick={() => void handleAbandonActiveCheckinAndRetry()}
+              >
+                {adhocAbandonPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Ending check-in…
+                  </>
+                ) : (
+                  "End active check-in and retry"
+                )}
+              </Button>
+            ) : null}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
-        {standupError ? (
-          <Alert variant="destructive">
-            <AlertDescription>{standupError}</AlertDescription>
-          </Alert>
-        ) : null}
+      {adhocProposal && !adhocSuccess && isAdhocAgent ? (
+        <div className="px-1">
+          <AdhocConversationProposalCard
+            proposal={adhocProposal}
+            onStart={() => void handleStartAdhocConversation()}
+            pending={adhocPending}
+            disabled={adhocStartDisabled}
+          />
+        </div>
+      ) : null}
 
-        {adhocError ? (
-          <Alert variant="destructive">
-            <AlertDescription className="space-y-3">
-              <p>{adhocError}</p>
-              {showAbandonActiveCheckinAction ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={adhocAbandonPending || adhocPending}
-                  onClick={() => void handleAbandonActiveCheckinAndRetry()}
-                >
-                  {adhocAbandonPending ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      Ending check-in…
-                    </>
-                  ) : (
-                    "End active check-in and retry"
-                  )}
-                </Button>
-              ) : null}
-            </AlertDescription>
-          </Alert>
-        ) : null}
+      {channelStandupProposal && !standupSuccess && isChannelStandupAgent ? (
+        <div className="px-1">
+          <ChannelStandupProposalCard
+            proposal={channelStandupProposal}
+            onSave={() => void handleSaveChannelStandup()}
+            pending={standupPending}
+            disabled={standupSaveDisabled}
+          />
+        </div>
+      ) : null}
 
-        {adhocProposal && !adhocSuccess && isAdhocAgent ? (
-          <div className="px-1">
-            <AdhocConversationProposalCard
-              proposal={adhocProposal}
-              onStart={() => void handleStartAdhocConversation()}
-              pending={adhocPending}
-              disabled={adhocStartDisabled}
-            />
-          </div>
-        ) : null}
+      {adhocSuccess ? (
+        <p className="text-center text-sm text-muted-foreground">
+          Conversation started in Slack. Replies will show up in Team insights
+          once your teammate responds.
+        </p>
+      ) : null}
 
-        {channelStandupProposal && !standupSuccess && isChannelStandupAgent ? (
-          <div className="px-1">
-            <ChannelStandupProposalCard
-              proposal={channelStandupProposal}
-              onSave={() => void handleSaveChannelStandup()}
-              pending={standupPending}
-              disabled={standupSaveDisabled}
-            />
-          </div>
-        ) : null}
+      {standupSuccess ? (
+        <p className="text-center text-sm text-muted-foreground">
+          Channel standup saved.{" "}
+          <Link
+            href="/settings/standups"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            Manage standups
+          </Link>{" "}
+          or{" "}
+          <Link
+            href="/activity"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            view Activity
+          </Link>
+          .
+        </p>
+      ) : null}
 
-        {adhocSuccess ? (
-          <p className="text-center text-sm text-muted-foreground">
-            Conversation started in Slack. Replies will show up in Team insights
-            once your teammate responds.
-          </p>
-        ) : null}
+      {deploySuccess ? (
+        <p className="text-center text-sm text-muted-foreground">
+          Agent deployed.{" "}
+          <Link
+            href="/agents"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            Manage agents
+          </Link>{" "}
+          or{" "}
+          <Link
+            href="/activity"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            view Activity
+          </Link>
+          .
+        </p>
+      ) : null}
 
-        {standupSuccess ? (
-          <p className="text-center text-sm text-muted-foreground">
-            Channel standup saved.{" "}
-            <Link
-              href="/settings/standups"
-              className="font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              Manage standups
-            </Link>{" "}
-            or{" "}
-            <Link
-              href="/activity"
-              className="font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              view Activity
-            </Link>
-            .
-          </p>
+      {promptForm}
+      <div className={cn("flex justify-center", hasAgentForm && "xl:justify-between")}>
+        {hasAgentForm ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="hidden xl:inline-flex gap-1.5 text-muted-foreground"
+            onClick={() => setDesktopFormOpen((v) => !v)}
+          >
+            <PanelRight className="size-4" />
+            {desktopFormOpen ? "Hide config" : "Show config"}
+          </Button>
         ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          aria-label="Start new conversation"
+          onClick={handleNewChat}
+        >
+          <RefreshCw />
+        </Button>
+      </div>
+    </div>
+  );
 
-        {promptForm}
-        {newChatButton}
+  const formPanel = hasAgentForm ? (
+    <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+      <AgentDeployFields
+        key={agentFormVersion}
+        workspaceId={workspaceId}
+        workspaceTimezone={workspaceTimezone}
+        personas={personas}
+        rosterMembers={rosterMembers}
+        appContextOptions={appContextOptions}
+        slackChannels={slackChannels}
+        slackChannelsError={slackChannelsError}
+        chatChannels={chatChannels}
+        communicationPlatform={communicationPlatform}
+        chatChannelsError={chatChannelsError}
+        initialValues={agentFormValuesToInitialValues(
+          agentFormValues!,
+          workspaceTimezone,
+          appContextOptions,
+        )}
+        onValuesChange={(values) => {
+          agentFormDraftRef.current = values;
+        }}
+      />
+    </div>
+  ) : null;
+
+  // No inline form yet → single-column conversation, unchanged.
+  if (!hasAgentForm) {
+    return (
+      <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
+        {messagesScroll}
+        {composerBlock}
+      </div>
+    );
+  }
+
+  // Form present → conversation (left) and form (right) sit side-by-side on
+  // wide viewports; below xl the bottom selector swaps between the two panes.
+  return (
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 xl:flex-row">
+        <div
+          className={cn(
+            "flex min-h-0 flex-1 flex-col gap-4",
+            desktopFormOpen && "xl:max-w-[460px]",
+            mobileView === "form" && "hidden xl:flex",
+          )}
+        >
+          {messagesScroll}
+          {composerBlock}
+        </div>
+
+        <div
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 flex-col xl:border-l xl:border-border xl:pl-6",
+            mobileView === "chat" && "hidden",
+            desktopFormOpen ? "xl:flex" : "xl:hidden",
+          )}
+        >
+          {formPanel}
+        </div>
+      </div>
+
+      <div className="mx-auto w-full max-w-[460px] xl:hidden">
+        <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1">
+          <button
+            type="button"
+            onClick={() => setMobileView("chat")}
+            className={cn(
+              "flex-1 rounded-md py-1.5 text-sm transition-colors",
+              mobileView === "chat"
+                ? "bg-background font-medium text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileView("form")}
+            className={cn(
+              "flex-1 rounded-md py-1.5 text-sm transition-colors",
+              mobileView === "form"
+                ? "bg-background font-medium text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Config
+          </button>
+        </div>
       </div>
     </div>
   );

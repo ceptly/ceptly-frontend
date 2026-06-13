@@ -11,20 +11,8 @@ import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
-import type { DeployAgentType } from "@/lib/agents";
 
-const VALID_TYPES: DeployAgentType[] = ["checkin", "reachout", "standup"];
-
-export default async function NewAgentPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ type?: string }>;
-}) {
-  const { type } = await searchParams;
-  const initialType = VALID_TYPES.includes(type as DeployAgentType)
-    ? (type as DeployAgentType)
-    : "checkin";
-
+export default async function NewAgentPage() {
   const user = await requireAuth();
   const workspace = user.workspaces?.[0];
 
@@ -85,7 +73,6 @@ export default async function NewAgentPage({
         chatChannels={chatChannels}
         communicationPlatform={communicationPlatform}
         chatChannelsError={chatChannelsError}
-        initialType={initialType}
       />
     </div>
   );

@@ -41,8 +41,8 @@ const TRIGGER_OPTIONS: {
   disabled?: boolean;
 }[] = [
   { id: "schedule", label: "On a schedule", icon: CalendarClock },
+  { id: "manual", label: "Once", icon: Hand },
   { id: "event", label: "On an event", icon: Zap, disabled: true },
-  { id: "manual", label: "Manually", icon: Hand },
 ];
 
 export function TriggerScheduleSection({
