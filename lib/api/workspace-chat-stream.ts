@@ -1,7 +1,5 @@
 import type {
-  AdhocConversationProposal,
   AgentFormValues,
-  ChannelStandupProposal,
   ChatAgentId,
   ChatAttachment,
   ConversationSetupPlan,
@@ -71,8 +69,6 @@ export type ChatStreamEvent =
       assistant_message: string;
       agent: ChatAgentId;
       proposal?: ConversationSetupPlan | null;
-      adhoc_proposal?: AdhocConversationProposal | null;
-      channel_standup_proposal?: ChannelStandupProposal | null;
       ui_component?: SetupChatUiComponent | null;
       session_id?: string | null;
     }
@@ -98,8 +94,6 @@ export interface ChatStreamDoneResult {
   assistant_message: string;
   agent: ChatAgentId;
   proposal?: ConversationSetupPlan | null;
-  adhoc_proposal?: AdhocConversationProposal | null;
-  channel_standup_proposal?: ChannelStandupProposal | null;
   ui_component?: SetupChatUiComponent | null;
   session_id?: string | null;
 }
@@ -163,9 +157,7 @@ export function formatToolLabel(
     query_checkins: "Searching check-ins",
     select_chat_agent: "Routing your request",
     match_roster_members: "Matching roster members",
-    submit_adhoc_conversation_proposal: "Building reach-out plan",
     submit_conversation_plan: "Building schedule plan",
-    submit_channel_standup_plan: "Building channel standup plan",
     update_agent_form: "Filling out the agent form",
     load_existing_schedules: "Loading existing schedules",
     load_roster: "Loading roster",
@@ -343,8 +335,6 @@ export async function streamChatWorkspace(
               assistant_message: event.assistant_message,
               agent: event.agent,
               proposal: event.proposal,
-              adhoc_proposal: event.adhoc_proposal,
-              channel_standup_proposal: event.channel_standup_proposal,
               ui_component: event.ui_component,
               session_id: event.session_id,
             },

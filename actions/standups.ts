@@ -4,18 +4,15 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import {
-  commitStandup,
   createStandup,
   deleteStandup,
   getStandupSessionDetail,
   listStandupSessions,
   listStandups,
-  proposalToCommitBody,
   updateStandup,
   type StandupCreateBody,
 } from "@/lib/api/standups";
 import type {
-  ChannelStandupProposal,
   Standup,
   StandupSessionDetail,
   StandupSessionSummary,
@@ -172,37 +169,6 @@ export async function deleteStandupAction(input: {
     return {
       error:
         error instanceof Error ? error.message : "Failed to delete standup.",
-    };
-  }
-}
-
-export async function commitChannelStandupProposalAction(
-  workspaceId: string,
-  proposal: ChannelStandupProposal,
-): Promise<{ error?: string }> {
-  const body = proposalToCommitBody(proposal);
-  const parsed = standupBodySchema
-    .extend({ standup_id: z.string().uuid().optional() })
-    .safeParse(body);
-
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid proposal." };
-  }
-
-  try {
-    const token = await requireToken();
-    const result = await commitStandup(token, workspaceId, parsed.data);
-
-    if (!result.success) {
-      return { error: result.error ?? "Failed to save standup." };
-    }
-
-    revalidateStandupPaths(parsed.data.standup_id);
-    revalidatePath("/chat");
-    return {};
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : "Failed to save standup.",
     };
   }
 }
