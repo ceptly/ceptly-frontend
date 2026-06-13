@@ -4,7 +4,6 @@ import { AgentDeployForm } from "@/components/agents/agent-deploy-form";
 import {
   getWorkspaceTimezone,
   listAppContextOptions,
-  listConversationTemplates,
 } from "@/lib/api/conversations";
 import { listChatChannels } from "@/lib/api/communication";
 import { FALLBACK_PERSONAS, listPersonas } from "@/lib/api/personas";
@@ -12,21 +11,8 @@ import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
-import { DEFAULT_CONVERSATION_TEMPLATES } from "@/lib/conversation-templates";
-import type { DeployAgentType } from "@/lib/agents";
 
-const VALID_TYPES: DeployAgentType[] = ["checkin", "reachout", "standup"];
-
-export default async function NewAgentPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ type?: string }>;
-}) {
-  const { type } = await searchParams;
-  const initialType = VALID_TYPES.includes(type as DeployAgentType)
-    ? (type as DeployAgentType)
-    : "checkin";
-
+export default async function NewAgentPage() {
   const user = await requireAuth();
   const workspace = user.workspaces?.[0];
 
@@ -43,7 +29,6 @@ export default async function NewAgentPage({
   }
 
   const [
-    templatesResult,
     rosterResult,
     timezoneResult,
     appContextsResult,
@@ -51,7 +36,6 @@ export default async function NewAgentPage({
     chatChannelsResult,
     personasResult,
   ] = await Promise.all([
-    listConversationTemplates(token, workspace.id),
     listRosterMembers(token, workspace.id),
     getWorkspaceTimezone(token, workspace.id),
     listAppContextOptions(token, workspace.id),
@@ -60,9 +44,6 @@ export default async function NewAgentPage({
     listPersonas(token),
   ]);
 
-  const apiTemplates = templatesResult.data?.templates ?? [];
-  const templates =
-    apiTemplates.length > 0 ? apiTemplates : DEFAULT_CONVERSATION_TEMPLATES;
   const rosterMembers = rosterResult.data?.members ?? [];
   const workspaceTimezone = timezoneResult.data?.timezone ?? "America/Chicago";
   const appContextOptions = appContextsResult.data?.app_contexts ?? [];
@@ -85,7 +66,6 @@ export default async function NewAgentPage({
         workspaceId={workspace.id}
         workspaceTimezone={workspaceTimezone}
         personas={personas}
-        templates={templates}
         rosterMembers={rosterMembers}
         appContextOptions={appContextOptions}
         slackChannels={slackChannels}
@@ -93,7 +73,6 @@ export default async function NewAgentPage({
         chatChannels={chatChannels}
         communicationPlatform={communicationPlatform}
         chatChannelsError={chatChannelsError}
-        initialType={initialType}
       />
     </div>
   );

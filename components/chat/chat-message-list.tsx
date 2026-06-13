@@ -3,19 +3,13 @@
 import { useEffect, useRef } from "react";
 
 import { AgentActivityFeed } from "@/components/chat/agent-activity-feed";
-import { CeptlyAgentAvatar } from "@/components/ceptly-agent-avatar";
+import { AssistantMessageContent } from "@/components/chat/assistant-message-content";
 import { MentionMessageContent } from "@/components/chat/mention-message-content";
-import { SetupRecapPickers } from "@/components/chat/setup-recap-pickers";
-import { ScheduleDaysPicker } from "@/components/settings/schedule-days-picker";
 import { Badge } from "@/components/ui/badge";
 import type { AgentActivityState } from "@/lib/api/workspace-chat-stream";
 import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
-import type {
-  AppContextOption,
-  SetupChatMessage,
-  SetupRecapUiComponent,
-} from "@/lib/api/types";
+import type { SetupChatMessage } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
 interface ChatMessageListProps {
@@ -23,15 +17,8 @@ interface ChatMessageListProps {
   pending?: boolean;
   pendingActivity?: AgentActivityState | null;
   className?: string;
-  onDaysChange?: (messageIndex: number, days: number[]) => void;
   onMembersChange?: (messageIndex: number, memberIds: string[]) => void;
-  onSetupRecapChange?: (
-    messageIndex: number,
-    recap: SetupRecapUiComponent,
-  ) => void;
-  appContextOptions?: AppContextOption[];
   slackChannels?: SlackChannel[];
-  slackChannelsError?: string | null;
   interactiveDisabled?: boolean;
   rosterMembers?: RosterMember[];
 }
@@ -41,12 +28,8 @@ export function ChatMessageList({
   pending = false,
   pendingActivity = null,
   className,
-  onDaysChange,
   onMembersChange,
-  onSetupRecapChange,
-  appContextOptions = [],
   slackChannels = [],
-  slackChannelsError,
   interactiveDisabled = false,
   rosterMembers = [],
 }: ChatMessageListProps) {
@@ -60,16 +43,8 @@ export function ChatMessageList({
     <div className={cn("flex flex-col gap-4", className)}>
       {messages.map((message, index) => {
         const isUser = message.role === "user";
-        const dayPicker =
-          !isUser && message.ui_component?.type === "day_picker"
-            ? message.ui_component
-            : null;
         const memberPicker =
           !isUser && message.ui_component?.type === "member_picker"
-            ? message.ui_component
-            : null;
-        const setupRecap =
-          !isUser && message.ui_component?.type === "setup_recap"
             ? message.ui_component
             : null;
 
@@ -81,26 +56,20 @@ export function ChatMessageList({
               isUser ? "flex-row-reverse" : "flex-row",
             )}
           >
-            {!isUser ? <CeptlyAgentAvatar /> : null}
-
             <div
               className={cn(
                 "flex max-w-[min(85%,32rem)] flex-col gap-2",
                 isUser ? "items-end" : "items-start",
               )}
             >
-              <span className="px-1 text-xs font-medium text-muted-foreground">
-                {isUser ? "You" : "Ceptly"}
-              </span>
-
               {!isUser && message.activity ? (
                 <AgentActivityFeed activity={message.activity} />
               ) : null}
 
               <div
                 className={cn(
-                  "px-[15px] py-[11px] text-sm leading-relaxed",
-                  isUser ? "ceptly-chat-bubble-user" : "ceptly-chat-bubble-ai",
+                  "text-sm leading-relaxed",
+                  isUser ? "px-[15px] py-[11px] ceptly-chat-bubble-user" : "py-1",
                 )}
               >
                 {isUser ? (
@@ -110,20 +79,9 @@ export function ChatMessageList({
                     slackChannels={slackChannels}
                   />
                 ) : (
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <AssistantMessageContent content={message.content} />
                 )}
               </div>
-
-              {dayPicker ? (
-                <div className="ceptly-glass-card w-full p-4">
-                  <ScheduleDaysPicker
-                    daysOfWeek={dayPicker.days_of_week}
-                    onChange={(days) => onDaysChange?.(index, days)}
-                    disabled={interactiveDisabled}
-                    showLabel={false}
-                  />
-                </div>
-              ) : null}
 
               {memberPicker ? (
                 <div className="ceptly-glass-card w-full space-y-3 p-4">
@@ -170,17 +128,6 @@ export function ChatMessageList({
                   </div>
                 </div>
               ) : null}
-
-              {setupRecap ? (
-                <SetupRecapPickers
-                  recap={setupRecap}
-                  appContextOptions={appContextOptions}
-                  slackChannels={slackChannels}
-                  slackChannelsError={slackChannelsError}
-                  disabled={interactiveDisabled}
-                  onChange={(recap) => onSetupRecapChange?.(index, recap)}
-                />
-              ) : null}
             </div>
           </div>
         );
@@ -188,11 +135,7 @@ export function ChatMessageList({
 
       {pending && pendingActivity ? (
         <div className="flex gap-2.5">
-          <CeptlyAgentAvatar />
           <div className="flex max-w-[min(85%,32rem)] flex-col gap-1">
-            <span className="px-1 text-xs font-medium text-muted-foreground">
-              Ceptly
-            </span>
             <AgentActivityFeed activity={pendingActivity} isLive />
           </div>
         </div>

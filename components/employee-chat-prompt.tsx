@@ -6,13 +6,14 @@ import {
   FileText,
   Loader2,
   Mic,
+  PanelRight,
   Paperclip,
   RefreshCw,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { useStatsigClient } from "@statsig/react-bindings";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useSpeechDictation } from "@/hooks/use-speech-dictation";
@@ -23,9 +24,12 @@ import {
   commitAdhocConversationAction,
 } from "@/actions/adhoc-conversation";
 import { ACTIVE_CHECKIN_IN_PROGRESS_ERROR } from "@/lib/api/adhoc-conversation";
-import { commitSetupPlan } from "@/actions/conversation-setup";
 import { commitChannelStandupProposalAction } from "@/actions/standups";
+import { deployAgentAction, testAgentAction } from "@/actions/agents";
+import { markChatFormDeployedAction } from "@/actions/workspace-chat";
 import { AdhocConversationProposalCard } from "@/components/chat/adhoc-conversation-proposal";
+import { AgentDeployProposalCard } from "@/components/chat/agent-deploy-proposal";
+import { AgentDeployFields } from "@/components/agents/agent-deploy-fields";
 import { ChannelStandupProposalCard } from "@/components/chat/channel-standup-proposal";
 import { ChatMessageList } from "@/components/chat/chat-message-list";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -40,19 +44,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChatMentionTextarea } from "@/components/chat/chat-mention-textarea";
 import { formatMessageWithMentionContext } from "@/lib/chat-mentions";
+import {
+  agentDeployValuesComplete,
+  buildAgentDeployBody,
+} from "@/lib/agent-deploy-body";
+import type { AgentDeployInitialValues } from "@/lib/agents";
+import {
+  agentFormValuesToInitialValues,
+  initialValuesToAgentFormValues,
+} from "@/lib/chat-agent-form";
+import type {
+  ChatChannel,
+  CommunicationPlatform,
+} from "@/lib/api/communication";
+import { FALLBACK_PERSONAS, type PersonaOption } from "@/lib/api/personas";
 import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
   AdhocConversationProposal,
+  AgentFormValues,
   AppContextOption,
   ChannelStandupProposal,
   ChatAgentId,
   ChatAttachment,
-  ConversationSetupPlan,
   SetupChatMessage,
-  SetupRecapUiComponent,
 } from "@/lib/api/types";
-import { buildResultDestinations } from "@/lib/result-destinations";
 import {
   createInitialActivity,
   streamChatWorkspace,
@@ -87,82 +103,11 @@ interface EmployeeChatPromptProps {
   rosterMembers?: RosterMember[];
   initialMessages?: SetupChatMessage[];
   initialSessionId?: string | null;
-}
-
-function getEditableConversationIndex(plan: ConversationSetupPlan): number {
-  const newIndex = plan.conversations.findIndex(
-    (conversation) => !conversation.unchanged_from_existing,
-  );
-  if (newIndex >= 0) {
-    return newIndex;
-  }
-  return Math.max(plan.conversations.length - 1, 0);
-}
-
-function updateProposalDays(
-  plan: ConversationSetupPlan,
-  days: number[],
-): ConversationSetupPlan {
-  const index = getEditableConversationIndex(plan);
-
-  return {
-    ...plan,
-    conversations: plan.conversations.map((conversation, conversationIndex) =>
-      conversationIndex === index
-        ? {
-            ...conversation,
-            schedule: {
-              ...conversation.schedule,
-              frequency: "specific_days",
-              days_of_week: days,
-            },
-          }
-        : conversation,
-    ),
-  };
-}
-
-function getProposalDays(
-  plan: ConversationSetupPlan,
-  pickerDays?: number[],
-): number[] {
-  if (pickerDays && pickerDays.length > 0) {
-    return pickerDays;
-  }
-
-  const conversation = plan.conversations[getEditableConversationIndex(plan)];
-  return conversation?.schedule.days_of_week ?? [];
-}
-
-function updateProposalFromSetupRecap(
-  plan: ConversationSetupPlan,
-  recap: SetupRecapUiComponent,
-  slackChannels: SlackChannel[],
-): ConversationSetupPlan {
-  const index = getEditableConversationIndex(plan);
-
-  return {
-    ...plan,
-    conversations: plan.conversations.map((conversation, conversationIndex) =>
-      conversationIndex === index
-        ? {
-            ...conversation,
-            schedule: {
-              ...conversation.schedule,
-              frequency: "specific_days",
-              days_of_week: recap.days_of_week,
-            },
-            roster_member_ids: recap.selected_member_ids,
-            context_integrations: recap.selected_context_integrations,
-            result_destinations: buildResultDestinations({
-              channelIds: recap.selected_channel_ids,
-              channels: slackChannels,
-              rosterDmIds: recap.selected_roster_dm_ids,
-            }),
-          }
-        : conversation,
-    ),
-  };
+  workspaceTimezone?: string;
+  chatChannels?: ChatChannel[];
+  communicationPlatform?: CommunicationPlatform;
+  chatChannelsError?: string | null;
+  personas?: PersonaOption[];
 }
 
 function updateAdhocProposalMembers(
@@ -186,6 +131,40 @@ function updateAdhocProposalMembers(
   };
 }
 
+function findInitialAgentFormValues(
+  messages: SetupChatMessage[],
+): AgentFormValues | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role !== "assistant") {
+      continue;
+    }
+    if (message.ui_component?.type === "agent_deployed") {
+      return null;
+    }
+    if (message.ui_component?.type === "agent_form") {
+      return message.ui_component.values;
+    }
+  }
+  return null;
+}
+
+function findInitialDeploySuccess(messages: SetupChatMessage[]): boolean {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role !== "assistant") {
+      continue;
+    }
+    if (message.ui_component?.type === "agent_deployed") {
+      return true;
+    }
+    if (message.ui_component?.type === "agent_form") {
+      return false;
+    }
+  }
+  return false;
+}
+
 export function EmployeeChatPrompt({
   workspaceId,
   canEdit = true,
@@ -195,12 +174,23 @@ export function EmployeeChatPrompt({
   rosterMembers = [],
   initialMessages = [],
   initialSessionId = null,
+  workspaceTimezone = "America/Chicago",
+  chatChannels = [],
+  communicationPlatform = "slack",
+  chatChannelsError = null,
+  personas = FALLBACK_PERSONAS,
 }: EmployeeChatPromptProps) {
   const { client } = useStatsigClient();
 
   const [messages, setMessages] = useState<SetupChatMessage[]>(initialMessages);
   const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
-  const [proposal, setProposal] = useState<ConversationSetupPlan | null>(null);
+  const [agentFormValues, setAgentFormValues] =
+    useState<AgentFormValues | null>(() =>
+      findInitialAgentFormValues(initialMessages),
+    );
+  const [agentFormVersion, setAgentFormVersion] = useState(0);
+  // Latest user-edited form state; echoed back to the agent on each message.
+  const agentFormDraftRef = useRef<AgentDeployInitialValues | null>(null);
   const [adhocProposal, setAdhocProposal] =
     useState<AdhocConversationProposal | null>(null);
   const [channelStandupProposal, setChannelStandupProposal] =
@@ -209,69 +199,69 @@ export function EmployeeChatPrompt({
   const [chatPending, setChatPending] = useState(false);
   const [pendingActivity, setPendingActivity] =
     useState<AgentActivityState | null>(null);
-  const [publishPending, setPublishPending] = useState(false);
   const [adhocPending, setAdhocPending] = useState(false);
   const [adhocAbandonPending, setAdhocAbandonPending] = useState(false);
   const [standupPending, setStandupPending] = useState(false);
+  const [deployPending, setDeployPending] = useState(false);
+  const [testPending, setTestPending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [publishError, setPublishError] = useState<string | null>(null);
   const [adhocError, setAdhocError] = useState<string | null>(null);
   const [standupError, setStandupError] = useState<string | null>(null);
-  const [publishSuccess, setPublishSuccess] = useState(false);
+  const [deployError, setDeployError] = useState<string | null>(null);
   const [adhocSuccess, setAdhocSuccess] = useState(false);
   const [standupSuccess, setStandupSuccess] = useState(false);
+  const [deploySuccess, setDeploySuccess] = useState(() =>
+    findInitialDeploySuccess(initialMessages),
+  );
   const [activeAgent, setActiveAgent] = useState<ChatAgentId | null>(null);
   const [agentPreference, setAgentPreference] = useState<ChatAgentId | "auto">(
     "auto",
   );
-  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>(
-    [],
-  );
+  const [pendingAttachments, setPendingAttachments] = useState<
+    ChatAttachment[]
+  >([]);
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // On narrow viewports the conversation and the inline form can't sit
+  // side-by-side, so a bottom selector toggles between them (Replit-style).
+  const [mobileView, setMobileView] = useState<"chat" | "form">("chat");
+  const [desktopFormOpen, setDesktopFormOpen] = useState(false);
+  const hadFormRef = useRef(false);
 
   const hasMessages = messages.length > 0 || chatPending;
   const isEmptyState = !hasMessages && !chatError;
   const chatDisabled =
     chatPending ||
-    publishPending ||
     adhocPending ||
     adhocAbandonPending ||
     standupPending ||
     !canEdit;
-  const isSetupAgent =
-    activeAgent === "conversation_setup" || activeAgent === null;
   const isAdhocAgent = activeAgent === "adhoc_conversation";
   const isChannelStandupAgent = activeAgent === "channel_standup";
+  const hasAgentForm = agentFormValues !== null;
 
-  const pickerDays = useMemo(() => {
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-      const message = messages[index];
-      if (message?.role !== "assistant" || !message.ui_component) {
-        continue;
-      }
-      if (message.ui_component.type === "setup_recap") {
-        return message.ui_component.days_of_week;
-      }
-      if (message.ui_component.type === "day_picker") {
-        return message.ui_component.days_of_week;
-      }
-    }
-    return undefined;
-  }, [messages]);
+  // The latest agent-filled form state, in the deploy form's shape. Drives the
+  // inline deploy card so the user can deploy straight from the conversation.
+  const deployCardValues = useMemo(
+    () =>
+      agentFormValues
+        ? agentFormValuesToInitialValues(
+            agentFormValues,
+            workspaceTimezone,
+            appContextOptions,
+          )
+        : null,
+    [agentFormValues, workspaceTimezone, appContextOptions],
+  );
 
-  const setupRecapSelection = useMemo(() => {
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-      const message = messages[index];
-      if (
-        message?.role === "assistant" &&
-        message.ui_component?.type === "setup_recap"
-      ) {
-        return message.ui_component;
-      }
+  // When the form first appears, surface it on narrow viewports so the user
+  // notices it; once they've seen it, leave their tab choice alone.
+  useEffect(() => {
+    if (hasAgentForm && !hadFormRef.current) {
+      setMobileView("form");
     }
-    return undefined;
-  }, [messages]);
+    hadFormRef.current = hasAgentForm;
+  }, [hasAgentForm]);
 
   const memberPickerSelection = useMemo(() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
@@ -285,38 +275,6 @@ export function EmployeeChatPrompt({
     }
     return undefined;
   }, [messages]);
-
-  const publishDisabled = useMemo(() => {
-    if (
-      !proposal ||
-      publishPending ||
-      chatPending ||
-      activeAgent !== "conversation_setup"
-    ) {
-      return true;
-    }
-
-    const days = getProposalDays(proposal, pickerDays);
-    if (days.length === 0) {
-      return true;
-    }
-
-    const index = getEditableConversationIndex(proposal);
-    const conversation = proposal.conversations[index];
-    const memberCount =
-      setupRecapSelection?.selected_member_ids.length ??
-      conversation?.roster_member_ids?.length ??
-      0;
-
-    return memberCount === 0;
-  }, [
-    proposal,
-    publishPending,
-    chatPending,
-    pickerDays,
-    activeAgent,
-    setupRecapSelection,
-  ]);
 
   const adhocStartDisabled = useMemo(() => {
     if (!adhocProposal || adhocPending || chatPending || !isAdhocAgent) {
@@ -403,9 +361,7 @@ export function EmployeeChatPrompt({
       {
         role: "user",
         content: trimmed,
-        ...(attachmentsToSend.length
-          ? { attachments: attachmentsToSend }
-          : {}),
+        ...(attachmentsToSend.length ? { attachments: attachmentsToSend } : {}),
       },
     ];
     setMessages(nextMessages);
@@ -415,19 +371,24 @@ export function EmployeeChatPrompt({
     const initialActivity = createInitialActivity();
     setPendingActivity(initialActivity);
     setChatError(null);
-    setPublishSuccess(false);
     setAdhocSuccess(false);
     setStandupSuccess(false);
-    setProposal(null);
+    setDeploySuccess(false);
     setAdhocProposal(null);
     setChannelStandupProposal(null);
-    setPublishError(null);
     setAdhocError(null);
     setStandupError(null);
+    setDeployError(null);
 
     const agentToSend =
       agentOverride ??
       (agentPreference !== "auto" ? agentPreference : undefined);
+
+    // Echo the inline form (including the user's direct edits) so the agent
+    // updates it instead of starting over.
+    const formStateToSend = agentFormDraftRef.current
+      ? initialValuesToAgentFormValues(agentFormDraftRef.current)
+      : agentFormValues;
 
     let completedActivity: AgentActivityState = initialActivity;
 
@@ -455,6 +416,7 @@ export function EmployeeChatPrompt({
         },
       },
       sessionId,
+      formStateToSend,
     );
 
     setChatPending(false);
@@ -497,29 +459,19 @@ export function EmployeeChatPrompt({
       ]);
     }
 
-    if (result.agent === "conversation_setup" && result.proposal) {
-      let nextProposal = result.proposal;
-      if (result.ui_component?.type === "setup_recap") {
-        nextProposal = updateProposalFromSetupRecap(
-          nextProposal,
-          result.ui_component,
-          slackChannels,
-        );
-      } else if (result.ui_component?.type === "day_picker") {
-        nextProposal = updateProposalDays(
-          nextProposal,
-          result.ui_component.days_of_week,
-        );
-      }
-      setProposal(nextProposal);
-    }
-
     if (result.agent === "adhoc_conversation" && result.adhoc_proposal) {
       setAdhocProposal(result.adhoc_proposal);
     }
 
     if (result.agent === "channel_standup" && result.channel_standup_proposal) {
       setChannelStandupProposal(result.channel_standup_proposal);
+    }
+
+    if (result.ui_component?.type === "agent_form") {
+      // Remount the deploy form with the agent's merged values; the draft ref
+      // is repopulated immediately by the form's onValuesChange.
+      setAgentFormValues(result.ui_component.values);
+      setAgentFormVersion((version) => version + 1);
     }
   }
 
@@ -550,72 +502,8 @@ export function EmployeeChatPrompt({
     );
   }
 
-  function handleDaysChange(messageIndex: number, days: number[]) {
-    if (!proposal || interactiveDisabled()) {
-      return;
-    }
-
-    setMessages((current) =>
-      current.map((message, index) => {
-        if (index !== messageIndex || !message.ui_component) {
-          return message;
-        }
-        if (message.ui_component.type === "day_picker") {
-          return {
-            ...message,
-            ui_component: { ...message.ui_component, days_of_week: days },
-          };
-        }
-        if (message.ui_component.type === "setup_recap") {
-          return {
-            ...message,
-            ui_component: { ...message.ui_component, days_of_week: days },
-          };
-        }
-        return message;
-      }),
-    );
-
-    const recap =
-      messages[messageIndex]?.ui_component?.type === "setup_recap"
-        ? { ...messages[messageIndex]!.ui_component!, days_of_week: days }
-        : setupRecapSelection
-          ? { ...setupRecapSelection, days_of_week: days }
-          : null;
-
-    if (recap) {
-      setProposal(updateProposalFromSetupRecap(proposal, recap, slackChannels));
-      return;
-    }
-
-    setProposal(updateProposalDays(proposal, days));
-  }
-
-  function handleSetupRecapChange(
-    messageIndex: number,
-    recap: SetupRecapUiComponent,
-  ) {
-    if (!proposal || interactiveDisabled()) {
-      return;
-    }
-
-    const updatedProposal = updateProposalFromSetupRecap(
-      proposal,
-      recap,
-      slackChannels,
-    );
-    setProposal(updatedProposal);
-    setMessages((current) =>
-      current.map((message, index) =>
-        index === messageIndex && message.ui_component?.type === "setup_recap"
-          ? { ...message, ui_component: recap }
-          : message,
-      ),
-    );
-  }
-
   function interactiveDisabled() {
-    return chatDisabled || publishSuccess || adhocSuccess || standupSuccess;
+    return chatDisabled || adhocSuccess || standupSuccess;
   }
 
   async function handleSaveChannelStandup() {
@@ -698,56 +586,132 @@ export function EmployeeChatPrompt({
   const showAbandonActiveCheckinAction =
     adhocError === ACTIVE_CHECKIN_IN_PROGRESS_ERROR && Boolean(adhocProposal);
 
-  async function handlePublish() {
-    if (!proposal || publishDisabled) {
+  /** Resolve the freshest form state: the user's live form edits, else the
+   * agent's latest fill. The form panel stays mounted whenever a form exists,
+   * so the draft ref reflects any direct edits. */
+  function resolveDeployValues(): AgentDeployInitialValues | null {
+    return agentFormDraftRef.current ?? deployCardValues;
+  }
+
+  async function handleDeployAgent() {
+    const values = resolveDeployValues();
+    if (
+      !values ||
+      !agentDeployValuesComplete(values) ||
+      deployPending ||
+      !canEdit
+    ) {
       return;
     }
 
-    let planToPublish = proposal;
-    if (setupRecapSelection) {
-      planToPublish = updateProposalFromSetupRecap(
-        planToPublish,
-        setupRecapSelection,
-        slackChannels,
-      );
-    } else if (pickerDays) {
-      planToPublish = updateProposalDays(planToPublish, pickerDays);
-    }
+    setDeployPending(true);
+    setDeployError(null);
 
-    setPublishPending(true);
-    setPublishError(null);
-    setPublishSuccess(false);
+    const result = await deployAgentAction({
+      workspaceId,
+      body: buildAgentDeployBody(values, { chatChannels, slackChannels }),
+    });
 
-    const result = await commitSetupPlan(workspaceId, planToPublish);
-
-    setPublishPending(false);
+    setDeployPending(false);
 
     if (result.error) {
-      setPublishError(result.error);
+      setDeployError(result.error);
       return;
     }
 
-    setProposal(null);
-    setPublishSuccess(true);
+    client.logEvent("employee_chat_agent_deployed");
+    // Collapse the inline form and surface a success note in its place.
+    setAgentFormValues(null);
+    agentFormDraftRef.current = null;
+    setAgentFormVersion(0);
+    setDeploySuccess(true);
+    setMessages((current) => {
+      for (let index = current.length - 1; index >= 0; index -= 1) {
+        const message = current[index];
+        if (
+          message?.role === "assistant" &&
+          message.ui_component?.type === "agent_form"
+        ) {
+          const next = [...current];
+          next[index] = {
+            ...message,
+            ui_component: {
+              type: "agent_deployed",
+              ...(values.name ? { name: values.name } : {}),
+            },
+          };
+          return next;
+        }
+      }
+      return current;
+    });
+    if (sessionId) {
+      void markChatFormDeployedAction({
+        workspaceId,
+        sessionId,
+        name: values.name,
+      });
+    }
+  }
+
+  async function handleTestAgent() {
+    const values = resolveDeployValues();
+    if (
+      !values ||
+      !agentDeployValuesComplete(values) ||
+      testPending ||
+      !canEdit
+    ) {
+      return;
+    }
+
+    setTestPending(true);
+    const result = await testAgentAction({
+      workspaceId,
+      body: buildAgentDeployBody(values, { chatChannels, slackChannels }),
+    });
+    setTestPending(false);
+
+    if (result.error) {
+      toast.error("Test failed", { description: result.error });
+      return;
+    }
+    if ((result.sessionsStarted ?? 0) === 0) {
+      toast.error("Test failed", {
+        description:
+          "The agent did not start. Check your channel and participants.",
+      });
+      return;
+    }
+    toast.success("Test started", {
+      description:
+        values.destinationType === "channel"
+          ? "Watch the meeting kick off in your channel."
+          : "Check Slack — the agent just sent its first message.",
+    });
   }
 
   function handleNewChat() {
     setMessages([]);
     setSessionId(null);
-    setProposal(null);
     setAdhocProposal(null);
     setChannelStandupProposal(null);
+    setAgentFormValues(null);
+    setAgentFormVersion(0);
+    agentFormDraftRef.current = null;
     setInput("");
     setPendingAttachments([]);
     setChatPending(false);
     setPendingActivity(null);
     setChatError(null);
-    setPublishError(null);
     setAdhocError(null);
     setStandupError(null);
-    setPublishSuccess(false);
+    setDeployError(null);
     setAdhocSuccess(false);
     setStandupSuccess(false);
+    setDeploySuccess(false);
+    setDeployPending(false);
+    setTestPending(false);
     setActiveAgent(null);
     setAgentPreference("auto");
     client.logEvent("employee_chat_refresh_click");
@@ -924,20 +888,6 @@ export function EmployeeChatPrompt({
     </form>
   );
 
-  const newChatButton = (
-    <div className="flex justify-center">
-      <Button
-        type="button"
-        variant="outline"
-        size="icon-sm"
-        aria-label="Start new conversation"
-        onClick={handleNewChat}
-      >
-        <RefreshCw />
-      </Button>
-    </div>
-  );
-
   if (!canEdit) {
     return (
       <div className="flex w-full flex-1 flex-col items-center justify-center gap-4 text-center">
@@ -958,7 +908,7 @@ export function EmployeeChatPrompt({
 
   if (isEmptyState) {
     return (
-      <div className="flex w-full flex-1 flex-col justify-center gap-4">
+      <div className="mx-auto flex w-full max-w-[700px] flex-1 flex-col justify-center gap-4">
         <h1 className="font-[family-name:var(--font-heading)] text-center text-[34px] leading-tight font-normal tracking-tight text-foreground">
           What can I do for you?
         </h1>
@@ -967,35 +917,27 @@ export function EmployeeChatPrompt({
     );
   }
 
-  return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
-      {hasMessages ? (
-        <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
-          <ChatMessageList
-            messages={messages}
-            pending={chatPending}
-            pendingActivity={pendingActivity}
-            onDaysChange={handleDaysChange}
-            onMembersChange={handleMembersChange}
-            onSetupRecapChange={handleSetupRecapChange}
-            appContextOptions={appContextOptions}
-            slackChannels={slackChannels}
-            slackChannelsError={slackChannelsError}
-            rosterMembers={rosterMembers}
-            interactiveDisabled={interactiveDisabled()}
-          />
-        </div>
-      ) : null}
+  const messagesScroll = hasMessages ? (
+    <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+      <div className="mx-auto w-full max-w-[700px]">
+        <ChatMessageList
+          messages={messages}
+          pending={chatPending}
+          pendingActivity={pendingActivity}
+          onMembersChange={handleMembersChange}
+          slackChannels={slackChannels}
+          rosterMembers={rosterMembers}
+          interactiveDisabled={interactiveDisabled()}
+        />
+      </div>
+    </div>
+  ) : null;
 
+  const composerBlock = (
+    <div className="mx-auto flex w-full max-w-[700px] flex-col gap-4">
       {chatError ? (
         <Alert variant="destructive">
           <AlertDescription>{chatError}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {publishError ? (
-        <Alert variant="destructive">
-          <AlertDescription>{publishError}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -1003,6 +945,30 @@ export function EmployeeChatPrompt({
         <Alert variant="destructive">
           <AlertDescription>{standupError}</AlertDescription>
         </Alert>
+      ) : null}
+
+      {deployError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{deployError}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {hasAgentForm && deployCardValues && !deploySuccess ? (
+        <div className="px-1">
+          <AgentDeployProposalCard
+            values={deployCardValues}
+            chatChannels={chatChannels}
+            pending={deployPending}
+            testing={testPending}
+            disabled={chatPending}
+            onDeploy={() => void handleDeployAgent()}
+            onTest={() => void handleTestAgent()}
+            onEdit={() => {
+              setDesktopFormOpen(true);
+              setMobileView("form");
+            }}
+          />
+        </div>
       ) : null}
 
       {adhocError ? (
@@ -1031,24 +997,6 @@ export function EmployeeChatPrompt({
         </Alert>
       ) : null}
 
-      {proposal && !publishSuccess && isSetupAgent ? (
-        <div className="flex flex-wrap items-center gap-3 px-1">
-          <Button onClick={handlePublish} disabled={publishDisabled}>
-            {publishPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Publishing…
-              </>
-            ) : (
-              "Publish schedule"
-            )}
-          </Button>
-          <p className="text-sm text-muted-foreground">
-            Or reply in chat if something needs to change.
-          </p>
-        </div>
-      ) : null}
-
       {adhocProposal && !adhocSuccess && isAdhocAgent ? (
         <div className="px-1">
           <AdhocConversationProposalCard
@@ -1069,18 +1017,6 @@ export function EmployeeChatPrompt({
             disabled={standupSaveDisabled}
           />
         </div>
-      ) : null}
-
-      {publishSuccess ? (
-        <p className="text-center text-sm text-muted-foreground">
-          Schedule published.{" "}
-          <Link
-            href="/activity"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            View in Activity
-          </Link>
-        </p>
       ) : null}
 
       {adhocSuccess ? (
@@ -1110,8 +1046,144 @@ export function EmployeeChatPrompt({
         </p>
       ) : null}
 
+      {deploySuccess ? (
+        <p className="text-center text-sm text-muted-foreground">
+          Agent deployed.{" "}
+          <Link
+            href="/agents"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            Manage agents
+          </Link>{" "}
+          or{" "}
+          <Link
+            href="/activity"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            view Activity
+          </Link>
+          .
+        </p>
+      ) : null}
+
       {promptForm}
-      {newChatButton}
+      <div className={cn("flex justify-center", hasAgentForm && "xl:justify-between")}>
+        {hasAgentForm ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="hidden xl:inline-flex gap-1.5 text-muted-foreground"
+            onClick={() => setDesktopFormOpen((v) => !v)}
+          >
+            <PanelRight className="size-4" />
+            {desktopFormOpen ? "Hide config" : "Show config"}
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          aria-label="Start new conversation"
+          onClick={handleNewChat}
+        >
+          <RefreshCw />
+        </Button>
+      </div>
+    </div>
+  );
+
+  const formPanel = hasAgentForm ? (
+    <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+      <AgentDeployFields
+        key={agentFormVersion}
+        workspaceId={workspaceId}
+        workspaceTimezone={workspaceTimezone}
+        personas={personas}
+        rosterMembers={rosterMembers}
+        appContextOptions={appContextOptions}
+        slackChannels={slackChannels}
+        slackChannelsError={slackChannelsError}
+        chatChannels={chatChannels}
+        communicationPlatform={communicationPlatform}
+        chatChannelsError={chatChannelsError}
+        initialValues={agentFormValuesToInitialValues(
+          agentFormValues!,
+          workspaceTimezone,
+          appContextOptions,
+        )}
+        onValuesChange={(values) => {
+          agentFormDraftRef.current = values;
+        }}
+      />
+    </div>
+  ) : null;
+
+  // No inline form yet → single-column conversation, unchanged.
+  if (!hasAgentForm) {
+    return (
+      <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
+        {messagesScroll}
+        {composerBlock}
+      </div>
+    );
+  }
+
+  // Form present → conversation (left) and form (right) sit side-by-side on
+  // wide viewports; below xl the bottom selector swaps between the two panes.
+  return (
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 xl:flex-row">
+        <div
+          className={cn(
+            "flex min-h-0 flex-1 flex-col gap-4",
+            desktopFormOpen && "xl:max-w-[460px]",
+            mobileView === "form" && "hidden xl:flex",
+          )}
+        >
+          {messagesScroll}
+          {composerBlock}
+        </div>
+
+        <div
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 flex-col xl:border-l xl:border-border xl:pl-6",
+            mobileView === "chat" && "hidden",
+            desktopFormOpen ? "xl:flex" : "xl:hidden",
+          )}
+        >
+          {formPanel}
+        </div>
+      </div>
+
+      <div className="mx-auto w-full max-w-[460px] xl:hidden">
+        <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1">
+          <button
+            type="button"
+            onClick={() => setMobileView("chat")}
+            className={cn(
+              "flex-1 rounded-md py-1.5 text-sm transition-colors",
+              mobileView === "chat"
+                ? "bg-background font-medium text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileView("form")}
+            className={cn(
+              "flex-1 rounded-md py-1.5 text-sm transition-colors",
+              mobileView === "form"
+                ? "bg-background font-medium text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Config
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

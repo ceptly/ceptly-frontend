@@ -1,4 +1,3 @@
-import { DEFAULT_CONVERSATION_TEMPLATES } from "@/lib/conversation-templates";
 import { formatSchedulePreview } from "@/lib/schedule/preview";
 import type {
   ConversationRunRespondedMember,
@@ -9,7 +8,6 @@ export function buildConversationActivitySubtitle(
   conversation: Pick<
     ScheduledConversation,
     | "result_destinations"
-    | "template_id"
     | "time_local"
     | "timezone"
     | "frequency"
@@ -25,15 +23,8 @@ export function buildConversationActivitySubtitle(
       ? `#${slackDestination.name}`
       : null;
 
-  const typeLabel =
-    conversation.template_id === "daily_standup"
-      ? "Sequential"
-      : (DEFAULT_CONVERSATION_TEMPLATES.find(
-          (template) => template.id === conversation.template_id,
-        )?.name ?? "Check-in");
-
   if (channelLabel) {
-    return `${channelLabel} · ${typeLabel}`;
+    return `${channelLabel} · Check-in`;
   }
 
   return formatSchedulePreview(

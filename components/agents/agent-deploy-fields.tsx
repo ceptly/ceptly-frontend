@@ -2,17 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  CalendarClock,
-  Check,
-  Clock,
-  FlaskConical,
-  Hash,
-  Loader2,
-  Rocket,
-  Save,
-  Send,
-} from "lucide-react";
+import { FlaskConical, Loader2, Rocket, Save } from "lucide-react";
 
 import {
   deployAgentAction,
@@ -34,24 +24,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  DEPLOY_AGENT_TYPES,
   SCHEDULE_PRESETS,
   type AgentDeployInitialValues,
   type AgentEditTarget,
   type AgentTriggerMode,
-  type DeployAgentType,
   type PersonaMode,
 } from "@/lib/agents";
 import {
   agentFieldHintClass,
   agentPillVariants,
-  agentTypeCardVariants,
-  agentTypeIconVariants,
 } from "@/lib/agents-ui";
-import type {
-  AgentContextIntegration,
-  AgentDeployBody,
-} from "@/lib/api/agents";
+import type { AgentDeployBody } from "@/lib/api/agents";
 import type {
   ChatChannel,
   CommunicationPlatform,
@@ -65,28 +48,19 @@ import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
   AppContextOption,
-  ConversationTemplate,
   ScheduleFrequency,
   StandupStyle,
 } from "@/lib/api/types";
-import { buildResultDestinations } from "@/lib/result-destinations";
-import { snapScheduleTimeToInterval } from "@/lib/schedule/cron-fire";
+import {
+  agentDeployValuesComplete,
+  buildAgentDeployBody,
+  buildAgentDeployDebugSnapshot,
+} from "@/lib/agent-deploy-body";
 import {
   formatScheduleDaysPreview,
   formatScheduleTimePreview,
 } from "@/lib/schedule/preview";
 import { cn } from "@/lib/utils";
-
-const TYPE_ICONS = {
-  checkin: CalendarClock,
-  reachout: Send,
-  standup: Hash,
-} as const;
-
-const STANDUP_CHANNEL_LABEL: Record<CommunicationPlatform, string> = {
-  slack: "Slack channel",
-  teams: "Teams channel",
-};
 
 function defaultContextIntegrations(options: AppContextOption[]): string[] {
   const linear = options.find((item) => item.id === "linear");
@@ -98,7 +72,6 @@ interface AgentDeployFieldsProps {
   workspaceTimezone: string;
   /** Persona presets from GET /api/personas. */
   personas?: PersonaOption[];
-  templates: ConversationTemplate[];
   rosterMembers: RosterMember[];
   appContextOptions: AppContextOption[];
   slackChannels: SlackChannel[];
@@ -106,21 +79,23 @@ interface AgentDeployFieldsProps {
   chatChannels: ChatChannel[];
   communicationPlatform: CommunicationPlatform;
   chatChannelsError?: string | null;
-  /** Preselect an agent type, e.g. from /agents/new?type=standup. */
-  initialType?: DeployAgentType;
   /** When set, the form edits an existing agent instead of deploying a new one. */
   editTarget?: AgentEditTarget;
   /** Prefill values for edit mode. */
   initialValues?: AgentDeployInitialValues;
   /** Where to go after a successful save / cancel in edit mode. */
   onCloseEdit?: () => void;
+  /**
+   * Reports the full form state on every change. Lets the chat keep the
+   * inline form in sync with the agent without making the form controlled.
+   */
+  onValuesChange?: (values: AgentDeployInitialValues) => void;
 }
 
 export function AgentDeployFields({
   workspaceId,
   workspaceTimezone,
   personas = FALLBACK_PERSONAS,
-  templates,
   rosterMembers,
   appContextOptions,
   slackChannels,
@@ -128,19 +103,16 @@ export function AgentDeployFields({
   chatChannels,
   communicationPlatform,
   chatChannelsError,
-  initialType = "checkin",
   editTarget,
   initialValues,
   onCloseEdit,
+  onValuesChange,
 }: AgentDeployFieldsProps) {
   const isEdit = Boolean(editTarget);
   const router = useRouter();
-  const dailyStandup =
-    templates.find((template) => template.id === "daily_standup") ??
-    templates[0];
 
-  const [type, setType] = useState<DeployAgentType>(
-    initialValues?.type ?? initialType,
+  const [destinationType, setDestinationType] = useState<"channel" | "dm">(
+    initialValues?.destinationType ?? "dm",
   );
   const [standupStyle, setStandupStyle] = useState<StandupStyle>(
     initialValues?.standupStyle ?? "broadcast",
@@ -152,7 +124,7 @@ export function AgentDeployFields({
     initialValues?.personaMode ?? "pretrained",
   );
   const [presetId, setPresetId] = useState(
-    personas[0]?.id ?? "scrum_master",
+    initialValues?.presetId ?? personas[0]?.id ?? "scrum_master",
   );
   const [persona, setPersona] = useState(initialValues?.persona ?? "");
   const [goal, setGoal] = useState(initialValues?.goal ?? "");
@@ -199,24 +171,20 @@ export function AgentDeployFields({
   const [toast, setToast] = useState<{ title: string; sub: string } | null>(
     null,
   );
+  const [configCopied, setConfigCopied] = useState(false);
 
   const [previewOpener, setPreviewOpener] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  const isChannelDest = destinationType === "channel";
   const isPretrained = personaMode === "pretrained";
-  const isReachout = type === "reachout";
-  const isStandup = type === "standup";
-  const isManual = isReachout || triggerMode === "manual";
-  const typeName =
-    DEPLOY_AGENT_TYPES.find((t) => t.id === type)?.name ?? "Agent";
+  const isManual = triggerMode === "manual";
 
   const rollupChannels = useMemo<SlackChannel[]>(
-    () => (isStandup ? chatChannels : slackChannels),
-    [isStandup, slackChannels, chatChannels],
+    () => (isChannelDest ? chatChannels : slackChannels),
+    [isChannelDest, slackChannels, chatChannels],
   );
-  const rollupChannelsError = isStandup
-    ? chatChannelsError
-    : slackChannelsError;
+  const rollupChannelsError = isChannelDest ? chatChannelsError : slackChannelsError;
 
   function selectPreset(id: string) {
     setPersonaMode("pretrained");
@@ -225,97 +193,66 @@ export function AgentDeployFields({
     setGoal("");
   }
 
-  // Personas declare which surfaces they support (e.g. the 1:1 coach is
-  // DM-only, the retro facilitator channel-only); only offer matching ones.
-  const personaSurface = isStandup ? "channel" : "dm";
+  const personaSurface = isChannelDest ? "channel" : "dm";
   const availablePersonas = useMemo(
-    () =>
-      personas.filter((p) => personaSurfaces(p).includes(personaSurface)),
+    () => personas.filter((p) => personaSurfaces(p).includes(personaSurface)),
     [personas, personaSurface],
   );
 
-  function selectType(id: DeployAgentType) {
-    setType(id);
-    const surface = id === "standup" ? "channel" : "dm";
-    const stillAvailable = personas.some(
-      (p) => p.id === presetId && personaSurfaces(p).includes(surface),
-    );
-    if (!stillAvailable) {
-      const first = personas.find((p) => personaSurfaces(p).includes(surface));
-      if (first) {
-        setPresetId(first.id);
-      }
-    }
-  }
-
   const selectedPersona = personas.find((p) => p.id === presetId);
 
-  function buildDeploySchedule() {
-    if (isManual) {
-      return {
-        timezone,
-        frequency: "specific_days" as const,
-        days_of_week: SCHEDULE_PRESETS[0]?.days_of_week ?? [1, 2, 3, 4, 5],
-        time_local: "09:00",
-        enabled: false,
-      };
-    }
-    return {
+  // The form's full state as the shared AgentDeployInitialValues shape; both the
+  // deploy-body builder and the chat-side card consume this exact structure.
+  const currentValues = useMemo<AgentDeployInitialValues>(
+    () => ({
+      destinationType,
+      personaMode,
+      presetId,
+      persona,
+      goal,
+      notes,
+      name,
+      standupStyle,
+      standupChannelId,
       timezone,
       frequency,
-      days_of_week: frequency === "daily" ? [0, 1, 2, 3, 4, 5, 6] : daysOfWeek,
-      time_local: snapScheduleTimeToInterval(timeLocal),
-      enabled: true,
-    };
-  }
+      daysOfWeek,
+      timeLocal,
+      triggerMode,
+      selectedMemberIds,
+      selectedChannelIds,
+      selectedRosterDmIds,
+      contextIntegrations,
+    }),
+    [
+      destinationType,
+      personaMode,
+      presetId,
+      persona,
+      goal,
+      notes,
+      name,
+      standupStyle,
+      standupChannelId,
+      timezone,
+      frequency,
+      daysOfWeek,
+      timeLocal,
+      triggerMode,
+      selectedMemberIds,
+      selectedChannelIds,
+      selectedRosterDmIds,
+      contextIntegrations,
+    ],
+  );
 
-  const isComplete = useMemo(() => {
-    if (!name.trim()) return false;
-    if (isStandup && !standupChannelId) return false;
-    if (selectedMemberIds.length === 0) return false;
-    if (!isManual && frequency === "specific_days" && daysOfWeek.length === 0) {
-      return false;
-    }
-    return true;
-  }, [
-    name,
-    isStandup,
-    standupChannelId,
-    selectedMemberIds,
-    isManual,
-    frequency,
-    daysOfWeek,
-  ]);
+  const isComplete = useMemo(
+    () => agentDeployValuesComplete(currentValues),
+    [currentValues],
+  );
 
   function buildBody(): AgentDeployBody {
-    const trimmedName = name.trim();
-    return {
-      kind: type,
-      trigger_mode: isReachout ? "manual" : triggerMode,
-      name: trimmedName,
-      ...(isPretrained
-        ? { persona_preset: presetId }
-        : {
-            agent_persona: persona.trim(),
-            conversation_goal: goal.trim(),
-          }),
-      agent_notes: notes.trim() || undefined,
-      intent: "gather",
-      roster_member_ids: selectedMemberIds,
-      context_integrations: contextIntegrations as AgentContextIntegration[],
-      result_destinations: buildResultDestinations({
-        channelIds: selectedChannelIds,
-        channels: rollupChannels,
-        rosterDmIds: selectedRosterDmIds,
-      }),
-      schedule: buildDeploySchedule(),
-      ...(isStandup
-        ? { channel_id: standupChannelId, style: standupStyle }
-        : { template_id: dailyStandup?.id }),
-      ...(isReachout
-        ? { topic: (goal.trim() || trimmedName).slice(0, 200) }
-        : {}),
-    };
+    return buildAgentDeployBody(currentValues, { chatChannels, slackChannels });
   }
 
   // ---- live preview: generate once all required fields are complete ----
@@ -337,7 +274,7 @@ export function AgentDeployFields({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isComplete,
-    type,
+    destinationType,
     personaMode,
     presetId,
     persona,
@@ -351,15 +288,21 @@ export function AgentDeployFields({
     triggerMode,
   ]);
 
+  const onValuesChangeRef = useRef(onValuesChange);
+  useEffect(() => {
+    onValuesChangeRef.current = onValuesChange;
+  }, [onValuesChange]);
+  useEffect(() => {
+    onValuesChangeRef.current?.(currentValues);
+  }, [currentValues]);
+
   function validate(): string | null {
     if (!name.trim()) return "Enter a name for this agent.";
-    if (isStandup && !standupChannelId) {
-      return "Select a channel for the standup.";
+    if (isChannelDest && !standupChannelId) {
+      return "Select a channel for the meeting.";
     }
     if (selectedMemberIds.length === 0) {
-      return isStandup
-        ? "Select at least one participant."
-        : "Select at least one recipient.";
+      return "Select at least one participant.";
     }
     if (!isManual && frequency === "specific_days" && daysOfWeek.length === 0) {
       return "Select at least one day.";
@@ -381,10 +324,6 @@ export function AgentDeployFields({
       });
       if (result.error) {
         setError(result.error);
-        return;
-      }
-      if (isReachout) {
-        router.push("/agents?deployed=reachout");
         return;
       }
       setDeployed({
@@ -417,6 +356,41 @@ export function AgentDeployFields({
     });
   }
 
+  async function handleCopyConfig() {
+    const payload = {
+      ...buildAgentDeployDebugSnapshot(currentValues, {
+        chatChannels,
+        slackChannels,
+      }),
+      resolved: {
+        personaPreset:
+          isPretrained && selectedPersona
+            ? { id: presetId, name: selectedPersona.name }
+            : undefined,
+        participants: selectedMemberIds.map((id) => ({
+          id,
+          displayName:
+            rosterMembers.find((member) => member.id === id)?.display_name ??
+            id,
+        })),
+        meetingChannel: isChannelDest ? destinationSummary : undefined,
+        rollupTo: channelSummary,
+        trigger: triggerSummary(),
+      },
+    };
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      setConfigCopied(true);
+      setTimeout(() => setConfigCopied(false), 2000);
+    } catch {
+      setToast({
+        title: "Copy failed",
+        sub: "Could not access the clipboard.",
+      });
+    }
+  }
+
   function handleTest() {
     const message = validate();
     if (message) {
@@ -434,13 +408,13 @@ export function AgentDeployFields({
       } else if ((result.sessionsStarted ?? 0) === 0) {
         setToast({
           title: "Test failed",
-          sub: "The standup did not start. Check your channel and participants.",
+          sub: "The agent did not start. Check your channel and participants.",
         });
       } else {
         setToast({
           title: "Test started",
-          sub: isStandup
-            ? "Watch the standup kick off in your channel."
+          sub: isChannelDest
+            ? "Watch the meeting kick off in your channel."
             : "Check Slack — the agent just sent its first message.",
         });
       }
@@ -456,17 +430,19 @@ export function AgentDeployFields({
   const headerTime = formatScheduleTimePreview(timeLocal, timezone);
 
   function triggerSummary(): string {
-    if (isReachout) return "Sends once when deployed";
-    if (triggerMode === "manual") return "Manual · runs on demand";
+    if (triggerMode === "manual") return "Runs once when deployed";
     if (triggerMode === "event") return "On an event";
     return `${formatScheduleDaysPreview(frequency, daysOfWeek)} · ${headerTime}`;
   }
 
-  const audienceSummary = isStandup
-    ? rollupChannels.find((c) => c.id === standupChannelId)?.name
-      ? `#${rollupChannels.find((c) => c.id === standupChannelId)!.name.replace(/^#/, "")}`
-      : "channel"
-    : `${selectedMemberIds.length} ${selectedMemberIds.length === 1 ? "person" : "people"}`;
+  const audienceSummary = `${selectedMemberIds.length} ${selectedMemberIds.length === 1 ? "person" : "people"}`;
+
+  const meetingChannelName = chatChannels.find((c) => c.id === standupChannelId)?.name;
+  const destinationSummary = isChannelDest
+    ? meetingChannelName
+      ? `#${meetingChannelName.replace(/^#/, "")}`
+      : "Channel not set"
+    : "Direct messages";
 
   const channelSummary =
     selectedChannelIds.length > 0
@@ -479,227 +455,201 @@ export function AgentDeployFields({
         ? `${selectedRosterDmIds.length} DM rollup${selectedRosterDmIds.length === 1 ? "" : "s"}`
         : "Not set";
 
-  if (!isStandup && !dailyStandup) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No templates available. Contact support if this persists.
-      </p>
-    );
-  }
-
   return (
-    <div className="ag-split">
-      {/* ---------------- config form ---------------- */}
-      <div className="ag-form">
-        <AgentSection title="Agent type">
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {DEPLOY_AGENT_TYPES.map((t) => {
-              const Icon = TYPE_ICONS[t.id];
-              const active = type === t.id;
-              return (
+    <div className="ag-split-outer">
+      <div className="ag-split">
+        {/* ---------------- config form ---------------- */}
+        <div className="ag-form">
+          <AgentSection title="Persona">
+            <div className="flex flex-wrap gap-2">
+              {availablePersonas.map((p) => (
                 <button
-                  key={t.id}
+                  key={p.id}
                   type="button"
-                  disabled={isPending || isEdit}
-                  className={cn(agentTypeCardVariants({ active }))}
-                  onClick={() => selectType(t.id)}
+                  disabled={isPending}
+                  className={cn(
+                    agentPillVariants({
+                      selected: isPretrained && presetId === p.id,
+                    }),
+                  )}
+                  onClick={() => selectPreset(p.id)}
+                  title={p.tagline}
                 >
-                  <span className={cn(agentTypeIconVariants({ active }))}>
-                    <Icon className="size-[18px]" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[13.5px] font-semibold">
-                      {t.name}
-                    </span>
-                    <span className="mt-0.5 block text-[11.5px] leading-snug text-muted-foreground">
-                      {t.desc}
-                    </span>
-                  </span>
-                  <span
-                    className={cn(
-                      "absolute top-2.5 right-2.5 text-[color:var(--brand-green-soft)] transition-opacity",
-                      active ? "opacity-100" : "opacity-0",
-                    )}
-                  >
-                    <Check className="size-[15px]" />
-                  </span>
+                  {p.name}
                 </button>
-              );
-            })}
-          </div>
-        </AgentSection>
-
-        <AgentDivider />
-
-        <AgentSection title="Persona">
-          <div className="flex flex-wrap gap-2">
-            {availablePersonas.map((p) => (
+              ))}
               <button
-                key={p.id}
                 type="button"
                 disabled={isPending}
                 className={cn(
-                  agentPillVariants({
-                    selected: isPretrained && presetId === p.id,
-                  }),
+                  agentPillVariants({ selected: personaMode === "custom" }),
                 )}
-                onClick={() => selectPreset(p.id)}
-                title={p.tagline}
+                onClick={() => setPersonaMode("custom")}
               >
-                {p.name}
+                Custom persona
               </button>
-            ))}
-            <button
-              type="button"
-              disabled={isPending}
-              className={cn(
-                agentPillVariants({ selected: personaMode === "custom" }),
-              )}
-              onClick={() => setPersonaMode("custom")}
-            >
-              Custom persona
-            </button>
-          </div>
-          {isPretrained && selectedPersona?.tagline ? (
-            <p className={agentFieldHintClass}>{selectedPersona.tagline}</p>
-          ) : null}
-          {isPretrained && selectedPersona?.interaction_mode === "report" ? (
-            <p className={agentFieldHintClass}>
-              This persona posts a compiled report on schedule — it doesn&apos;t
-              run a conversation, so questions and standup style don&apos;t
-              apply.
-            </p>
-          ) : null}
-          {!isPretrained ? (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="agent-persona">Role / persona</Label>
-                <Textarea
-                  id="agent-persona"
-                  rows={4}
-                  value={persona}
-                  onChange={(event) => setPersona(event.target.value)}
-                  disabled={isPending}
-                />
-                <p className={agentFieldHintClass}>
-                  The system prompt that shapes how the agent speaks and
-                  behaves.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="agent-goal">Goal / intent</Label>
-                <Input
-                  id="agent-goal"
-                  value={goal}
-                  onChange={(event) => setGoal(event.target.value)}
-                  disabled={isPending}
-                  placeholder="Capture daily progress and surface blockers…"
-                />
-              </div>
-            </>
-          ) : null}
-          <div className="space-y-2">
-            <Label htmlFor="agent-notes">Note</Label>
-            <Textarea
-              id="agent-notes"
-              rows={3}
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              disabled={isPending}
-              placeholder="Optional context, commands, or constraints for this agent…"
-            />
-            <p className={agentFieldHintClass}>
-              Standing instructions the agent should keep in mind (not shown to
-              teammates verbatim).
-            </p>
-          </div>
-        </AgentSection>
+            </div>
+            {isPretrained && selectedPersona?.tagline ? (
+              <p className={agentFieldHintClass}>{selectedPersona.tagline}</p>
+            ) : null}
+            {isPretrained && selectedPersona?.interaction_mode === "report" ? (
+              <p className={agentFieldHintClass}>
+                This persona posts a compiled report on schedule — it doesn&apos;t
+                run a conversation, so questions and standup style don&apos;t
+                apply.
+              </p>
+            ) : null}
+            {!isPretrained ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="agent-persona">Role / persona</Label>
+                  <Textarea
+                    id="agent-persona"
+                    rows={4}
+                    value={persona}
+                    onChange={(event) => setPersona(event.target.value)}
+                    disabled={isPending}
+                  />
+                  <p className={agentFieldHintClass}>
+                    The system prompt that shapes how the agent speaks and
+                    behaves.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="agent-goal">Goal / intent</Label>
+                  <Input
+                    id="agent-goal"
+                    value={goal}
+                    onChange={(event) => setGoal(event.target.value)}
+                    disabled={isPending}
+                    placeholder="Capture daily progress and surface blockers…"
+                  />
+                </div>
+              </>
+            ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="agent-notes">Note</Label>
+              <Textarea
+                id="agent-notes"
+                rows={3}
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                disabled={isPending}
+                placeholder="Optional context, commands, or constraints for this agent…"
+              />
+              <p className={agentFieldHintClass}>
+                Standing instructions the agent should keep in mind (not shown to
+                teammates verbatim).
+              </p>
+            </div>
+          </AgentSection>
 
-        {isStandup ? (
-          <>
-            <AgentDivider />
-            <AgentSection title="Standup style">
+          <AgentDivider />
+
+          <AgentSection title="Audience">
+            <RecipientChipsPicker
+              members={rosterMembers}
+              selectedIds={selectedMemberIds}
+              onChange={setSelectedMemberIds}
+              disabled={isPending}
+              label="Participants"
+            />
+
+            <div className="space-y-2">
+              <Label>Meeting destination</Label>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={isPending}
-                  className={cn(
-                    agentPillVariants({
-                      selected: standupStyle === "broadcast",
-                    }),
-                  )}
-                  onClick={() => setStandupStyle("broadcast")}
+                  disabled={isPending || isEdit}
+                  className={cn(agentPillVariants({ selected: destinationType === "dm" }))}
+                  onClick={() => setDestinationType("dm")}
                 >
-                  Broadcast
+                  Direct messages
                 </button>
                 <button
                   type="button"
-                  disabled={isPending}
-                  className={cn(
-                    agentPillVariants({
-                      selected: standupStyle === "sequential",
-                    }),
-                  )}
-                  onClick={() => setStandupStyle("sequential")}
+                  disabled={isPending || isEdit}
+                  className={cn(agentPillVariants({ selected: isChannelDest }))}
+                  onClick={() => setDestinationType("channel")}
                 >
-                  Sequential
+                  Channel
                 </button>
               </div>
               <p className={agentFieldHintClass}>
-                {standupStyle === "broadcast"
-                  ? "Posts one thread in the channel; teammates reply in the thread."
-                  : "Asks each participant one at a time in the channel."}
+                {isChannelDest
+                  ? "The agent will run the meeting in the selected channel."
+                  : "The agent will message each participant directly."}
               </p>
-            </AgentSection>
-          </>
-        ) : null}
+            </div>
 
-        <AgentDivider />
+            {isChannelDest ? (
+              <ChannelChipsPicker
+                channels={chatChannels}
+                selectedIds={standupChannelId ? [standupChannelId] : []}
+                onChange={(ids) => setStandupChannelId(ids[0] ?? "")}
+                disabled={isPending}
+                error={chatChannelsError}
+                label={
+                  communicationPlatform === "teams"
+                    ? "Teams channel"
+                    : "Slack channel"
+                }
+                selectionMode="single"
+              />
+            ) : null}
 
-        <AgentSection title="Audience">
-          {isStandup ? (
+            {isChannelDest ? (
+              <div className="space-y-2">
+                <Label>Conversation style</Label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    className={cn(
+                      agentPillVariants({ selected: standupStyle === "broadcast" }),
+                    )}
+                    onClick={() => setStandupStyle("broadcast")}
+                  >
+                    Broadcast
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    className={cn(
+                      agentPillVariants({ selected: standupStyle === "sequential" }),
+                    )}
+                    onClick={() => setStandupStyle("sequential")}
+                  >
+                    Sequential
+                  </button>
+                </div>
+                <p className={agentFieldHintClass}>
+                  {standupStyle === "broadcast"
+                    ? "Posts one thread; teammates all respond in the thread."
+                    : "Asks each participant one at a time."}
+                </p>
+              </div>
+            ) : null}
+
             <ChannelChipsPicker
-              channels={chatChannels}
-              selectedIds={standupChannelId ? [standupChannelId] : []}
-              onChange={(ids) => setStandupChannelId(ids[0] ?? "")}
+              channels={rollupChannels}
+              selectedIds={selectedChannelIds}
+              onChange={setSelectedChannelIds}
               disabled={isPending}
-              error={chatChannelsError}
-              label={STANDUP_CHANNEL_LABEL[communicationPlatform]}
-              selectionMode="single"
+              error={rollupChannelsError}
             />
-          ) : null}
-          <RecipientChipsPicker
-            members={rosterMembers}
-            selectedIds={selectedMemberIds}
-            onChange={setSelectedMemberIds}
-            disabled={isPending}
-            label={isStandup ? "Participants" : "Recipients"}
-          />
-          <ChannelChipsPicker
-            channels={rollupChannels}
-            selectedIds={selectedChannelIds}
-            onChange={setSelectedChannelIds}
-            disabled={isPending}
-            error={rollupChannelsError}
-          />
-          <RecipientChipsPicker
-            members={rosterMembers}
-            selectedIds={selectedRosterDmIds}
-            onChange={setSelectedRosterDmIds}
-            disabled={isPending}
-            label="Direct messages (rollups)"
-          />
-        </AgentSection>
+            <RecipientChipsPicker
+              members={rosterMembers}
+              selectedIds={selectedRosterDmIds}
+              onChange={setSelectedRosterDmIds}
+              disabled={isPending}
+              label="Direct messages (rollups)"
+            />
+          </AgentSection>
 
-        <AgentDivider />
+          <AgentDivider />
 
-        <AgentSection title="Trigger">
-          {isReachout ? (
-            <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-              <Clock className="size-[14px]" /> Sends once when you deploy it.
-              No recurring schedule.
-            </p>
-          ) : (
+          <AgentSection title="Trigger">
             <TriggerScheduleSection
               triggerMode={triggerMode}
               onTriggerModeChange={setTriggerMode}
@@ -713,153 +663,153 @@ export function AgentDeployFields({
               onTimeLocalChange={setTimeLocal}
               disabled={isPending}
             />
-          )}
-        </AgentSection>
+          </AgentSection>
 
-        <AgentDivider />
+          <AgentDivider />
 
-        <AgentSection title="Details">
-          <div className="space-y-2">
-            <Label htmlFor="agent-name">Name</Label>
-            <Input
-              id="agent-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
+          <AgentSection title="Details">
+            <div className="space-y-2">
+              <Label htmlFor="agent-name">Agent name</Label>
+              <Input
+                id="agent-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                disabled={isPending}
+                maxLength={100}
+                placeholder="Engineering standup"
+              />
+            </div>
+            <AppContextPicker
+              options={appContextOptions}
+              selectedIds={contextIntegrations}
+              onChange={setContextIntegrations}
               disabled={isPending}
-              maxLength={100}
-              placeholder={
-                isStandup
-                  ? "Engineering standup"
-                  : isReachout
-                    ? "Quick check on the release"
-                    : "Friday eng standup"
-              }
+              connectedOnly
             />
-          </div>
-          <AppContextPicker
-            options={appContextOptions}
-            selectedIds={contextIntegrations}
-            onChange={setContextIntegrations}
-            disabled={isPending}
-            connectedOnly
-          />
-        </AgentSection>
+          </AgentSection>
 
-        {error ? (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          {error ? (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
+        </div>
+
+        {/* ---------------- live-preview rail ---------------- */}
+        <div className="ag-rail">
+          <SlackPreview
+            opener={isComplete ? previewOpener : null}
+            loading={isComplete && (previewLoading || previewOpener === null)}
+            time={headerTime}
+          />
+          <ConfigSummary
+            destinationType={destinationType}
+            destination={destinationSummary}
+            goal={
+              isPretrained
+                ? selectedPersona?.dm.goal || "Capture progress & blockers"
+                : goal
+            }
+            audience={audienceSummary}
+            channel={channelSummary}
+            trigger={triggerSummary()}
+            isEvent={triggerMode === "event"}
+            onCopyConfig={() => void handleCopyConfig()}
+            configCopied={configCopied}
+          />
+          {isEdit ? (
+            <div className="ag-deploy-bar">
+              <Button
+                type="button"
+                className="flex-1"
+                onClick={handleSave}
+                disabled={isPending || !isComplete}
+                title={
+                  isComplete ? undefined : "Complete the required fields to save"
+                }
+              >
+                {isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-[15px]" />
+                )}
+                Save changes
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onCloseEdit?.()}
+                disabled={isPending}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <div className="ag-deploy-bar">
+              <Button
+                type="button"
+                className="flex-1"
+                onClick={handleDeploy}
+                disabled={isPending || isTesting || !isComplete}
+                title={
+                  isComplete
+                    ? undefined
+                    : "Complete the required fields to deploy"
+                }
+              >
+                {isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Rocket className="size-[15px]" />
+                )}
+                Deploy agent
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleTest}
+                disabled={isPending || isTesting || !isComplete}
+                title={
+                  isComplete
+                    ? "Run this agent once, right now"
+                    : "Complete the form to test"
+                }
+              >
+                {isTesting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <FlaskConical className="size-[15px]" />
+                )}
+                Test
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {toast ? (
+          <div className="ag-toast" role="status" aria-live="polite">
+            <span className="ag-toast-ico">
+              <FlaskConical className="size-4" />
+            </span>
+            <div className="min-w-0">
+              <div className="ag-toast-title">{toast.title}</div>
+              <div className="ag-toast-sub">{toast.sub}</div>
+            </div>
+          </div>
+        ) : null}
+
+        {deployed ? (
+          <AgentDeployedDialog
+            name={deployed.name}
+            detail={deployed.detail}
+            onClose={() =>
+              router.push(
+                `/agents?deployed=${isChannelDest ? "standup" : "checkin"}`,
+              )
+            }
+          />
         ) : null}
       </div>
-
-      {/* ---------------- live-preview rail ---------------- */}
-      <div className="ag-rail">
-        <SlackPreview
-          opener={isComplete ? previewOpener : null}
-          loading={isComplete && (previewLoading || previewOpener === null)}
-          time={headerTime}
-        />
-        <ConfigSummary
-          kind={type}
-          typeName={typeName}
-          goal={
-            isPretrained
-              ? selectedPersona?.dm.goal || "Capture progress & blockers"
-              : goal
-          }
-          audience={audienceSummary}
-          channel={channelSummary}
-          trigger={triggerSummary()}
-          isEvent={!isReachout && triggerMode === "event"}
-        />
-        {isEdit ? (
-          <div className="ag-deploy-bar">
-            <Button
-              type="button"
-              className="flex-1"
-              onClick={handleSave}
-              disabled={isPending || !isComplete}
-              title={
-                isComplete ? undefined : "Complete the required fields to save"
-              }
-            >
-              {isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Save className="size-[15px]" />
-              )}
-              Save changes
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onCloseEdit?.()}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-          </div>
-        ) : (
-          <div className="ag-deploy-bar">
-            <Button
-              type="button"
-              className="flex-1"
-              onClick={handleDeploy}
-              disabled={isPending || isTesting || !isComplete}
-              title={
-                isComplete
-                  ? undefined
-                  : "Complete the required fields to deploy"
-              }
-            >
-              {isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Rocket className="size-[15px]" />
-              )}
-              {isReachout ? "Send reach-out" : "Deploy agent"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleTest}
-              disabled={isPending || isTesting || !isComplete}
-              title={
-                isComplete
-                  ? "Run this agent once, right now"
-                  : "Complete the form to test"
-              }
-            >
-              {isTesting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <FlaskConical className="size-[15px]" />
-              )}
-              Test
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {toast ? (
-        <div className="ag-toast" role="status" aria-live="polite">
-          <span className="ag-toast-ico">
-            <FlaskConical className="size-4" />
-          </span>
-          <div className="min-w-0">
-            <div className="ag-toast-title">{toast.title}</div>
-            <div className="ag-toast-sub">{toast.sub}</div>
-          </div>
-        </div>
-      ) : null}
-
-      {deployed ? (
-        <AgentDeployedDialog
-          name={deployed.name}
-          detail={deployed.detail}
-          onClose={() => router.push(`/agents?deployed=${type}`)}
-        />
-      ) : null}
     </div>
   );
 }

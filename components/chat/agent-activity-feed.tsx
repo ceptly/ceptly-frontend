@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 
@@ -25,6 +25,8 @@ export function AgentActivityFeed({
 }: AgentActivityFeedProps) {
   const { resolvedTheme } = useTheme();
   const logoTheme = resolvedTheme === "dark" ? "dark" : "light";
+  const ceptlyMarkSrc =
+    resolvedTheme === "dark" ? "/ceptly-mark-light.png" : "/ceptly-mark.png";
   const [frozenNow] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
   const isActive = isLive && activity.completedAt === undefined;
@@ -80,7 +82,12 @@ export function AgentActivityFeed({
                       className="size-4 shrink-0 rounded-sm object-contain"
                     />
                   ) : tool.integration === "ceptly" ? (
-                    <Sparkles className="size-4 shrink-0 text-primary" />
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={ceptlyMarkSrc}
+                      alt=""
+                      className="size-4 shrink-0 object-contain"
+                    />
                   ) : (
                     <span className="size-4 shrink-0 rounded-sm bg-muted" />
                   )}

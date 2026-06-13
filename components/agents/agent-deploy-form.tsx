@@ -4,21 +4,19 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { AgentDeployFields } from "@/components/agents/agent-deploy-fields";
-import type { DeployAgentType } from "@/lib/agents";
 import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
   ChatChannel,
   CommunicationPlatform,
 } from "@/lib/api/communication";
-import type { AppContextOption, ConversationTemplate } from "@/lib/api/types";
+import type { AppContextOption } from "@/lib/api/types";
 import type { PersonaOption } from "@/lib/api/personas";
 
 interface AgentDeployFormProps {
   workspaceId: string;
   workspaceTimezone: string;
   personas?: PersonaOption[];
-  templates: ConversationTemplate[];
   rosterMembers: RosterMember[];
   appContextOptions: AppContextOption[];
   slackChannels: SlackChannel[];
@@ -26,7 +24,6 @@ interface AgentDeployFormProps {
   chatChannels: ChatChannel[];
   communicationPlatform: CommunicationPlatform;
   chatChannelsError?: string | null;
-  initialType?: DeployAgentType;
 }
 
 export function AgentDeployForm(props: AgentDeployFormProps) {

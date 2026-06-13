@@ -1,5 +1,6 @@
 import type {
   AdhocConversationProposal,
+  AgentFormValues,
   ChannelStandupProposal,
   ChatAgentId,
   ChatAttachment,
@@ -22,14 +23,20 @@ export async function uploadChatAttachment(
       { method: "POST", body: formData },
     );
     const text = await response.text();
-    let parsed: { success?: boolean; error?: string; data?: { attachment?: ChatAttachment } } = {};
+    let parsed: {
+      success?: boolean;
+      error?: string;
+      data?: { attachment?: ChatAttachment };
+    } = {};
     try {
       parsed = JSON.parse(text) as typeof parsed;
     } catch {
       // Non-JSON body; fall through to a generic error.
     }
     if (!response.ok || !parsed.data?.attachment) {
-      return { error: parsed.error ?? `Upload failed (HTTP ${response.status}).` };
+      return {
+        error: parsed.error ?? `Upload failed (HTTP ${response.status}).`,
+      };
     }
     return { attachment: parsed.data.attachment };
   } catch {
@@ -159,7 +166,10 @@ export function formatToolLabel(
     submit_adhoc_conversation_proposal: "Building reach-out plan",
     submit_conversation_plan: "Building schedule plan",
     submit_channel_standup_plan: "Building channel standup plan",
+    update_agent_form: "Filling out the agent form",
     load_existing_schedules: "Loading existing schedules",
+    load_roster: "Loading roster",
+    load_app_context: "Loading app context",
     load_slack_channels: "Loading Slack channels",
   };
 
@@ -232,6 +242,7 @@ export async function streamChatWorkspace(
   agent: ChatAgentId | undefined,
   callbacks: ChatStreamCallbacks,
   sessionId?: string | null,
+  formState?: AgentFormValues | null,
 ): Promise<{
   error?: string;
   /** Set when the API rate-limited the request (HTTP 429). */
@@ -249,6 +260,7 @@ export async function streamChatWorkspace(
         messages: normalizeChatMessagesForApi(messages),
         agent,
         ...(sessionId ? { session_id: sessionId } : {}),
+        ...(formState ? { form_state: formState } : {}),
       }),
     });
 

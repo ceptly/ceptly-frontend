@@ -207,8 +207,11 @@ export function conversationToAgentRow(c: ScheduledConversation): AgentRow {
 
 /** Mirrors the deploy form's internal state for prefilling edit mode. */
 export interface AgentDeployInitialValues {
-  type: DeployAgentType;
+  /** "channel" = runs in a Slack/Teams channel (standup); "dm" = DMs each participant (checkin). */
+  destinationType: "channel" | "dm";
   personaMode: PersonaMode;
+  /** Pretrained persona preset id (e.g. "scrum_master"); defaults to the first available. */
+  presetId?: string;
   persona: string;
   goal: string;
   notes: string;
@@ -238,7 +241,7 @@ export function conversationToInitialValues(
   const destinations = parseResultDestinations(c.result_destinations);
   const persona = c.agent_persona ?? "";
   return {
-    type: "checkin",
+    destinationType: "dm",
     // Default to "custom" so the stored persona/goal are shown and editable; a
     // save only switches to the preset if the user picks it explicitly.
     personaMode: persona ? "custom" : "pretrained",
@@ -264,7 +267,7 @@ export function standupToInitialValues(s: Standup): AgentDeployInitialValues {
   const destinations = parseResultDestinations(s.result_destinations);
   const customInstructions = s.custom_instructions?.trim() ?? "";
   return {
-    type: "standup",
+    destinationType: "channel",
     personaMode: customInstructions ? "custom" : "pretrained",
     // custom_instructions bundles persona + goal; surface it as the persona.
     persona: customInstructions,

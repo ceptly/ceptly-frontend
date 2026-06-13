@@ -76,3 +76,43 @@ export async function loadChatHistory(
     return { sessionId: null, messages: [] };
   }
 }
+
+/** Mark the session's deploy form as deployed so reload shows confirmation. */
+export async function markChatFormDeployed(
+  accessToken: string,
+  workspaceId: string,
+  sessionId: string,
+  name?: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/chat/sessions/${sessionId}/deployed`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(name ? { name } : {}),
+      },
+    );
+    const contentType = response.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      return { success: false, error: "Unexpected response from server." };
+    }
+    const parsed = (await response.json()) as {
+      success?: boolean;
+      error?: string;
+    };
+    if (!response.ok || !parsed.success) {
+      return {
+        success: false,
+        error: parsed.error ?? "Could not save deployment status.",
+      };
+    }
+    return { success: true };
+  } catch {
+    return { success: false, error: "Could not save deployment status." };
+  }
+}
