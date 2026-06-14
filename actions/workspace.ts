@@ -149,7 +149,7 @@ export async function updateWorkspaceSchedule(
   if (!result.success) {
     return {
       errors: {
-        _form: [result.error ?? "Failed to update check-in schedule."],
+        _form: [result.error ?? "Failed to update conversation schedule."],
       },
     };
   }

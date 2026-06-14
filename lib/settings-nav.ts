@@ -1,6 +1,5 @@
 import {
   CreditCard,
-  Hash,
   Plug,
   Settings2,
   User,
@@ -26,12 +25,6 @@ export const settingsNavItems: SettingsNavItem[] = [
     label: "Account",
     href: "/settings/account",
     icon: User,
-    exact: false,
-  },
-  {
-    label: "Channel standups",
-    href: "/settings/standups",
-    icon: Hash,
     exact: false,
   },
   {

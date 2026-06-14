@@ -10,7 +10,7 @@ export type ContextFactGroup =
 export type ContextFactStatus = "live" | "pending" | "dismissed";
 
 export interface ContextFactSource {
-  kind: "slack" | "doc" | "note" | "user" | "checkin";
+  kind: "slack" | "doc" | "note" | "user" | "conversation";
   label: string;
   date: string;
 }

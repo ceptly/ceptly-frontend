@@ -66,7 +66,7 @@ function KnowledgeHero({
         </span>
         <div className="kn-hero-title">Ceptly builds this page for you</div>
         <p className="kn-hero-sub">
-          As check-ins run and projects sync, Ceptly turns what your team
+          As conversations run and projects sync, Ceptly turns what your team
           actually says into facts — each with a receipt you can check. Give it
           a head start with a doc, a note, or a Slack scan.
         </p>
@@ -95,7 +95,7 @@ function KnowledgeHero({
             <MessageSquare size={14} /> Ceptly reads
           </div>
           <div className="kn-step-desc">
-            Run a Slack scan — check-ins, threads, and your documents become
+            Run a Slack scan — conversations, threads, and your documents become
             facts grounded in what people actually said.
           </div>
         </div>
@@ -307,7 +307,7 @@ export function KnowledgePage({
           <div>
             <h1 className="ceptly-page-title">Company context</h1>
             <p className="ceptly-page-sub" style={{ maxWidth: "64ch" }}>
-              What Ceptly has learned about {companyName} — from check-ins,
+              What Ceptly has learned about {companyName} — from conversations,
               Slack, and the sources you give it. Every fact keeps its receipt;
               correct anything and agents use it immediately.
             </p>

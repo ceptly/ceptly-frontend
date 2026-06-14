@@ -23,7 +23,7 @@ export function SlackConnectionCard({
       workspaceId={workspaceId}
       canEdit={canEdit}
       status={status}
-      description="Connect Ceptly to Slack so check-ins run in DMs for your team."
+      description="Connect Ceptly to Slack so conversations run in DMs for your team."
       showConnectedAlert={showConnectedAlert}
       showErrorAlert={showErrorAlert}
     />

@@ -82,7 +82,7 @@ function getStepDescription(step: number, slackSelected: boolean): string {
       return "This is how your workspace will appear in Ceptly.";
     case 6:
       return slackSelected
-        ? "Check-ins run in Slack DMs. Connect your workspace now or skip and set this up later in Settings."
+        ? "Conversations run in Slack DMs. Connect your workspace now or skip and set this up later in Settings."
         : "";
     default:
       return "";
@@ -486,7 +486,7 @@ export function OnboardingWizard({
                   <MessageSquare className="h-8 w-8 shrink-0" />
                   <p className="text-sm text-muted-foreground">
                     Install Ceptly in your Slack workspace so scheduled
-                    check-ins reach your team in DMs.
+                    conversations reach your team in DMs.
                   </p>
                 </div>
 

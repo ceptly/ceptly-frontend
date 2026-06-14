@@ -7,7 +7,7 @@ import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { MemberMomentumTable } from "@/components/dashboard/member-momentum-table";
 import { ParticipationChart } from "@/components/dashboard/participation-chart";
 import { RangeSelector } from "@/components/dashboard/range-selector";
-import { StandupParticipationList } from "@/components/dashboard/standup-participation-list";
+import { ParticipationList } from "@/components/dashboard/participation-list";
 import {
   Card,
   CardContent,
@@ -55,7 +55,7 @@ export async function DashboardContent({
           <div>
             <h1 className="ceptly-page-title">Dashboard</h1>
             <p className="ceptly-page-sub">
-              How your team is moving — pulled from every standup, no meetings
+              How your team is moving — pulled from every meeting, no meetings
               required.
             </p>
           </div>
@@ -73,17 +73,15 @@ export async function DashboardContent({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="size-4 text-muted-foreground" aria-hidden />
-                Standup participation
+                Meeting participation
               </CardTitle>
               <CardDescription>
-                Responses vs. expected check-ins per day.
+                Responses vs. expected conversations per day.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <ParticipationChart data={dashboard.participation.by_day} />
-              <StandupParticipationList
-                standups={dashboard.participation.by_standup}
-              />
+              <ParticipationList agents={dashboard.participation.by_agent} />
             </CardContent>
           </Card>
 
@@ -112,7 +110,7 @@ export async function DashboardContent({
                 Carry-over heatmap
               </CardTitle>
               <CardDescription>
-                Work and blockers repeated across standups — darker cells mean
+                Work and blockers repeated across meetings — darker cells mean
                 more carried-over items that day.
               </CardDescription>
             </CardHeader>

@@ -25,7 +25,7 @@ export const FALLBACK_PERSONAS: PersonaOption[] = [
   {
     id: "scrum_master",
     name: "Scrum Master",
-    tagline: "Runs async standups — progress, blockers, and task updates.",
+    tagline: "Runs async meetings — progress, blockers, and task updates.",
     persona: "",
     goal: "",
     default_questions: [],

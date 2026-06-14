@@ -18,15 +18,15 @@ export function DashboardEmptyState({ days }: DashboardEmptyStateProps) {
           <BarChart3 className="size-6 text-muted-foreground" aria-hidden />
         </div>
         <div className="space-y-1">
-          <h2 className="text-lg font-medium">No standup data yet</h2>
+          <h2 className="text-lg font-medium">No meeting data yet</h2>
           <p className="mx-auto max-w-md text-sm text-muted-foreground">
-            No standups completed in the last {days} days. Your dashboard fills
+            No meetings completed in the last {days} days. Your dashboard fills
             in automatically once your agents start running — participation,
             blockers, and momentum, with zero meetings.
           </p>
         </div>
         <Link href="/agents" className={cn(buttonVariants())}>
-          Set up a standup
+          Set up a meeting
         </Link>
       </CardContent>
     </Card>

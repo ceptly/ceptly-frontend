@@ -216,7 +216,7 @@ export function TeamRoster({
                         onClick={() => handleTogglePaused(member)}
                       >
                         {member.paused ? <Play /> : <Pause />}
-                        {member.paused ? "Resume check-ins" : "Pause check-ins"}
+                        {member.paused ? "Resume conversations" : "Pause conversations"}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         variant="destructive"
@@ -249,7 +249,7 @@ export function TeamRoster({
       ) : primaryConnected && members.length === 0 ? (
         <Alert>
           <AlertDescription>
-            Add team members to receive check-ins.
+            Add team members to receive conversations.
           </AlertDescription>
         </Alert>
       ) : null}

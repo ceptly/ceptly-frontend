@@ -79,7 +79,7 @@ export function KpiCards({ kpis, days }: KpiCardsProps) {
         }
       />
       <KpiCard
-        label="Standups completed"
+        label="Meetings completed"
         value={kpis.sessions_completed}
         detail={`Last ${days} days`}
       />

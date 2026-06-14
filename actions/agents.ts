@@ -5,14 +5,16 @@ import { z } from "zod";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { getCurrentUser } from "@/lib/auth/server";
 
-import { updateConversation } from "@/lib/api/conversations";
-import { updateStandup } from "@/lib/api/standups";
-import { buildStandupCustomInstructions } from "@/lib/agents";
 import {
   deployAgent,
   previewAgent,
   testAgent,
+  updateAgent,
+  setAgentEnabled,
+  deleteAgent,
+  getAgentSessionDetail,
   type AgentDeployBody,
+  type AgentSessionDetail,
   type DeployedAgent,
 } from "@/lib/api/agents";
 import { getAccessToken } from "@/lib/auth/server";
@@ -24,77 +26,6 @@ const scheduleSchema = z.object({
   time_local: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   enabled: z.boolean(),
 });
-
-const conversationToggleSchema = z.object({
-  workspaceId: z.string().uuid(),
-  conversationId: z.string().uuid(),
-  schedule: scheduleSchema,
-});
-
-const standupToggleSchema = z.object({
-  workspaceId: z.string().uuid(),
-  standupId: z.string().uuid(),
-  schedule: scheduleSchema,
-});
-
-export async function setConversationAgentEnabled(
-  input: z.infer<typeof conversationToggleSchema>,
-): Promise<{ error?: string }> {
-  const parsed = conversationToggleSchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: "Invalid request." };
-  }
-
-  const token = await getAccessToken();
-  if (!token) {
-    return { error: "You must be signed in." };
-  }
-
-  const result = await updateConversation(
-    token,
-    parsed.data.workspaceId,
-    parsed.data.conversationId,
-    { schedule: parsed.data.schedule },
-  );
-
-  if (!result.success) {
-    return { error: result.error ?? "Failed to update the agent." };
-  }
-
-  revalidatePath("/agents");
-  revalidatePath("/activity");
-  return {};
-}
-
-export async function setStandupAgentEnabled(
-  input: z.infer<typeof standupToggleSchema>,
-): Promise<{ error?: string }> {
-  const parsed = standupToggleSchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: "Invalid request." };
-  }
-
-  const token = await getAccessToken();
-  if (!token) {
-    return { error: "You must be signed in." };
-  }
-
-  const result = await updateStandup(
-    token,
-    parsed.data.workspaceId,
-    parsed.data.standupId,
-    { schedule: parsed.data.schedule },
-  );
-
-  if (!result.success) {
-    return { error: result.error ?? "Failed to update the agent." };
-  }
-
-  revalidatePath("/agents");
-  revalidatePath(`/agents/${parsed.data.standupId}`);
-  revalidatePath("/settings/standups");
-  return {};
-}
 
 const resultDestinationSchema = z.discriminatedUnion("type", [
   z.object({
@@ -110,8 +41,8 @@ const resultDestinationSchema = z.discriminatedUnion("type", [
 ]);
 
 const agentDeploySchema = z.object({
-  kind: z.enum(["checkin", "reachout", "standup"]),
-  trigger_mode: z.enum(["schedule", "manual", "event"]).optional(),
+  destination: z.enum(["dm", "channel"]),
+  trigger: z.enum(["scheduled", "one_off"]).optional(),
   name: z.string().trim().min(1).max(100),
   persona_preset: z.string().trim().min(1).max(50).optional(),
   agent_persona: z.string().trim().max(4000).optional().nullable(),
@@ -165,7 +96,7 @@ export async function deployAgentAction(input: {
     }
     revalidatePath("/agents");
     revalidatePath("/activity");
-    revalidatePath("/settings/standups");
+    revalidatePath("/settings/meetings");
     try {
       const user = await getCurrentUser();
       if (user) {
@@ -175,7 +106,7 @@ export async function deployAgentAction(input: {
           event: "agent_deployed",
           properties: {
             workspace_id: parsed.data.workspaceId,
-            agent_kind: parsed.data.body.kind,
+            agent_destination: parsed.data.body.destination,
             agent_name: parsed.data.body.name,
           },
         });
@@ -191,7 +122,6 @@ export async function deployAgentAction(input: {
 const updateAgentArgsSchema = z.object({
   workspaceId: z.string().uuid(),
   agentId: z.string().uuid(),
-  kind: z.enum(["conversation", "standup"]),
   body: agentDeploySchema,
 });
 
@@ -208,57 +138,15 @@ export async function updateAgentAction(
     return { error: "You must be signed in." };
   }
 
-  const { workspaceId, agentId, kind, body } = parsed.data;
-  const presetId = body.persona_preset;
-
-  if (kind === "conversation") {
-    const result = await updateConversation(token, workspaceId, agentId, {
-      name: body.name,
-      schedule: body.schedule,
-      roster_member_ids: body.roster_member_ids,
-      context_integrations: body.context_integrations,
-      result_destinations: body.result_destinations,
-      agent_notes: body.agent_notes ?? null,
-      ...(presetId
-        ? { persona_preset: presetId }
-        : {
-            agent_persona: body.agent_persona ?? null,
-            conversation_goal: body.conversation_goal ?? null,
-          }),
-    });
-    if (!result.success) {
-      return { error: result.error ?? "Failed to save the agent." };
-    }
-  } else {
-    const result = await updateStandup(token, workspaceId, agentId, {
-      name: body.name,
-      slack_channel_id: body.channel_id,
-      style: body.style,
-      schedule: body.schedule,
-      roster_member_ids: body.roster_member_ids,
-      context_integrations: body.context_integrations,
-      result_destinations: body.result_destinations,
-      agent_notes: body.agent_notes ?? null,
-      ...(presetId
-        ? { persona_preset: presetId }
-        : {
-            custom_instructions: buildStandupCustomInstructions(
-              body.agent_persona ?? "",
-              body.conversation_goal ?? "",
-            ),
-          }),
-    });
-    if (!result.success) {
-      return { error: result.error ?? "Failed to save the agent." };
-    }
+  const { workspaceId, agentId, body } = parsed.data;
+  const result = await updateAgent(token, workspaceId, agentId, body as AgentDeployBody);
+  if (!result.success) {
+    return { error: result.error ?? "Failed to save the agent." };
   }
 
   revalidatePath("/agents");
+  revalidatePath(`/agents/${agentId}`);
   revalidatePath("/activity");
-  if (kind === "standup") {
-    revalidatePath(`/agents/${agentId}`);
-  }
-  revalidatePath("/settings/standups");
   try {
     const user = await getCurrentUser();
     if (user) {
@@ -267,9 +155,9 @@ export async function updateAgentAction(
         distinctId: user.id,
         event: "agent_updated",
         properties: {
-          workspace_id: parsed.data.workspaceId,
-          agent_kind: parsed.data.kind,
-          agent_name: parsed.data.body.name,
+          workspace_id: workspaceId,
+          agent_destination: body.destination,
+          agent_name: body.name,
         },
       });
       await posthog.shutdown();
@@ -277,6 +165,67 @@ export async function updateAgentAction(
   } catch {
     // Analytics must never block save.
   }
+  return {};
+}
+
+const agentEnabledSchema = z.object({
+  workspaceId: z.string().uuid(),
+  agentId: z.string().uuid(),
+  enabled: z.boolean(),
+});
+
+export async function setAgentEnabledAction(
+  input: z.infer<typeof agentEnabledSchema>,
+): Promise<{ error?: string }> {
+  const parsed = agentEnabledSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Invalid request." };
+  }
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: "You must be signed in." };
+  }
+  const result = await setAgentEnabled(
+    token,
+    parsed.data.workspaceId,
+    parsed.data.agentId,
+    parsed.data.enabled,
+  );
+  if (!result.success) {
+    return { error: result.error ?? "Failed to update the agent." };
+  }
+  revalidatePath("/agents");
+  revalidatePath(`/agents/${parsed.data.agentId}`);
+  revalidatePath("/activity");
+  return {};
+}
+
+const deleteAgentArgsSchema = z.object({
+  workspaceId: z.string().uuid(),
+  agentId: z.string().uuid(),
+});
+
+export async function deleteAgentAction(
+  input: z.infer<typeof deleteAgentArgsSchema>,
+): Promise<{ error?: string }> {
+  const parsed = deleteAgentArgsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Invalid request." };
+  }
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: "You must be signed in." };
+  }
+  const result = await deleteAgent(
+    token,
+    parsed.data.workspaceId,
+    parsed.data.agentId,
+  );
+  if (!result.success) {
+    return { error: result.error ?? "Failed to delete the agent." };
+  }
+  revalidatePath("/agents");
+  revalidatePath("/activity");
   return {};
 }
 
@@ -299,6 +248,25 @@ export async function previewAgentAction(input: {
     }
     return { opener: result.data.opener };
   });
+}
+
+export async function fetchAgentSessionDetail(input: {
+  workspaceId: string;
+  agentId: string;
+  sessionId: string;
+}): Promise<{ detail: AgentSessionDetail | null; error?: string }> {
+  const token = await getAccessToken();
+  if (!token) return { detail: null, error: "Not signed in." };
+  const result = await getAgentSessionDetail(
+    token,
+    input.workspaceId,
+    input.agentId,
+    input.sessionId,
+  );
+  if (!result.success) {
+    return { detail: null, error: result.error ?? "Failed to load session." };
+  }
+  return { detail: result.data ?? null };
 }
 
 export async function testAgentAction(input: {

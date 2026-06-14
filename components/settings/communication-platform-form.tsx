@@ -35,13 +35,13 @@ const PLATFORM_OPTIONS: {
   {
     value: "slack",
     label: "Slack",
-    description: "Standups and @mentions run in Slack channels.",
+    description: "Meetings and @mentions run in Slack channels.",
   },
   // MS Teams integration temporarily disabled — uncomment to re-enable.
   // {
   //   value: "teams",
   //   label: "Microsoft Teams",
-  //   description: "Standups and @mentions run in Microsoft Teams channels.",
+  //   description: "Meetings and @mentions run in Microsoft Teams channels.",
   // },
 ];
 
@@ -110,7 +110,7 @@ export function CommunicationPlatformForm({
       <CardHeader>
         <CardTitle>Communication platform</CardTitle>
         <CardDescription>
-          Where Ceptly posts standups, replies to @mentions, and delivers
+          Where Ceptly posts meetings, replies to @mentions, and delivers
           rollups. Each workspace uses exactly one platform.
         </CardDescription>
       </CardHeader>

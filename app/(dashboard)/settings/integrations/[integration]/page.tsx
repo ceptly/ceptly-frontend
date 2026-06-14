@@ -116,7 +116,7 @@ export default async function IntegrationDetailPage({
                   Leadership digest channel
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Daily standup rollups, weekly digests, and blocker alerts post
+                  Daily meeting rollups, weekly digests, and blocker alerts post
                   here.
                 </p>
               </div>

@@ -9,7 +9,7 @@ import { getCommunicationSettings } from "@/lib/api/communication";
 import {
   getWorkspaceLanguage,
   getWorkspaceTimezone,
-} from "@/lib/api/conversations";
+} from "@/lib/api/workspace-settings";
 import { listInvites } from "@/lib/api/invites";
 import { listWorkspaceMembers } from "@/lib/api/members";
 import type { WorkspaceMembership } from "@/lib/api/types";

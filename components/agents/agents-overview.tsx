@@ -4,36 +4,68 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Bot, PauseCircle, Play, Plus } from "lucide-react";
 
-import { ActivityConversationCard } from "@/components/activity/activity-conversation-card";
-import { ActivityStandupCard } from "@/components/activity/activity-standup-card";
+import { ActivityRollupCard } from "@/components/activity/activity-rollup-card";
 import { AgentDeployedDialog } from "@/components/agents/agent-deployed-dialog";
 import { Button } from "@/components/ui/button";
-import type {
-  ActivityChannelStandup,
-  ActivityScheduledConversation,
-} from "@/lib/api/types";
+import { rollupStatusFromCounts } from "@/lib/activity/rollup-card";
+import { formatSchedulePreview } from "@/lib/schedule/preview";
+import type { ActivityAgent } from "@/lib/api/types";
 
 interface AgentsOverviewProps {
-  channelStandups: ActivityChannelStandup[];
-  scheduledConversations: ActivityScheduledConversation[];
+  agents: ActivityAgent[];
 }
 
-type AgentListItem =
-  | { kind: "standup"; standup: ActivityChannelStandup }
-  | { kind: "checkin"; conversation: ActivityScheduledConversation };
-
-function isAgentActive(item: AgentListItem): boolean {
-  if (item.kind === "standup") {
-    return item.standup.enabled !== false;
+function agentSubtitle(agent: ActivityAgent): string {
+  if (!agent.enabled) return "Paused";
+  if (agent.destination === "channel" && agent.channel_id) {
+    const styleLabel = agent.style === "broadcast" ? "Broadcast" : "Sequential";
+    return `#${agent.channel_id} · ${styleLabel}`;
   }
-  return item.conversation.enabled;
+  return formatSchedulePreview(
+    agent.time_local,
+    agent.timezone,
+    agent.frequency,
+    agent.days_of_week,
+    agent.enabled,
+  );
 }
 
-function AgentListCard({ item }: { item: AgentListItem }) {
-  if (item.kind === "standup") {
-    return <ActivityStandupCard standup={item.standup} />;
-  }
-  return <ActivityConversationCard conversation={item.conversation} />;
+function AgentCard({ agent }: { agent: ActivityAgent }) {
+  const session = agent.latest_session;
+  const responded = session?.responded_count ?? 0;
+  const expected = session?.expected_count ?? 0;
+  const progress = expected > 0 ? Math.round((responded / expected) * 100) : 0;
+  const status = rollupStatusFromCounts(
+    responded,
+    expected,
+    session !== null,
+    agent.missing_members.length,
+  );
+  const summaryText =
+    session?.summary_text?.trim() ||
+    (agent.missing_members.length > 0
+      ? `Waiting on ${agent.missing_members.map((m) => m.display_name).join(", ")}.`
+      : null);
+  const emptyMessage =
+    agent.destination === "channel"
+      ? "No sessions yet. Results appear after the schedule fires."
+      : "No conversation runs yet. Results appear after the schedule fires.";
+
+  return (
+    <ActivityRollupCard
+      href={`/agents/${agent.id}`}
+      title={agent.name}
+      subtitle={agentSubtitle(agent)}
+      status={status}
+      latestAt={session?.started_at ?? null}
+      responded={responded}
+      expected={expected}
+      progressPercent={progress}
+      summary={summaryText}
+      emptyMessage={emptyMessage}
+      pastSessionsCount={agent.session_count}
+    />
+  );
 }
 
 function AgentSection({
@@ -44,7 +76,7 @@ function AgentSection({
 }: {
   title: string;
   icon: typeof Play;
-  items: AgentListItem[];
+  items: ActivityAgent[];
   emptyMessage: string;
 }) {
   return (
@@ -59,15 +91,8 @@ function AgentSection({
         <p className="ceptly-card-empty not-italic">{emptyMessage}</p>
       ) : (
         <div className="ceptly-rollup-card-grid">
-          {items.map((item) => (
-            <AgentListCard
-              key={
-                item.kind === "standup"
-                  ? item.standup.standup_id
-                  : item.conversation.id
-              }
-              item={item}
-            />
+          {items.map((agent) => (
+            <AgentCard key={agent.id} agent={agent} />
           ))}
         </div>
       )}
@@ -75,10 +100,7 @@ function AgentSection({
   );
 }
 
-export function AgentsOverview({
-  channelStandups,
-  scheduledConversations,
-}: AgentsOverviewProps) {
+export function AgentsOverview({ agents }: AgentsOverviewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -94,24 +116,13 @@ export function AgentsOverview({
   }, [deployed, router]);
 
   const { activeAgents, pausedAgents } = useMemo(() => {
-    const all: AgentListItem[] = [
-      ...channelStandups.map((standup) => ({
-        kind: "standup" as const,
-        standup,
-      })),
-      ...scheduledConversations.map((conversation) => ({
-        kind: "checkin" as const,
-        conversation,
-      })),
-    ];
-
     return {
-      activeAgents: all.filter(isAgentActive),
-      pausedAgents: all.filter((item) => !isAgentActive(item)),
+      activeAgents: agents.filter((a) => a.enabled),
+      pausedAgents: agents.filter((a) => !a.enabled),
     };
-  }, [channelStandups, scheduledConversations]);
+  }, [agents]);
 
-  const hasAgents = activeAgents.length > 0 || pausedAgents.length > 0;
+  const hasAgents = agents.length > 0;
 
   return (
     <div className="ceptly-page">
@@ -119,8 +130,8 @@ export function AgentsOverview({
         <div>
           <h1>Agents</h1>
           <p>
-            Autonomous agents Ceptly runs on your behalf — scheduled check-in
-            DMs and channel standups.
+            Autonomous agents Ceptly runs on your behalf — scheduled conversation
+            DMs and channel meetings.
           </p>
         </div>
         <Button onClick={() => router.push("/agents/new")}>
@@ -135,7 +146,7 @@ export function AgentsOverview({
           </span>
           <div className="ag-agent-name">No agents yet</div>
           <p className="max-w-sm text-[13px] text-muted-foreground">
-            Deploy a scheduled check-in or a channel standup and it will show up
+            Deploy a scheduled conversation or a channel meeting and it will show up
             here, running on your behalf.
           </p>
           <Button className="mt-1" onClick={() => router.push("/agents/new")}>

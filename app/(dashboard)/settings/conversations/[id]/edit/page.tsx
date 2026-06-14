@@ -8,5 +8,5 @@ export default async function ConversationEditSettingsRedirect({
   params,
 }: ConversationEditRedirectProps) {
   const { id } = await params;
-  redirect(`/activity/${id}?edit=1`);
+  redirect(`/agents/${id}?edit=1`);
 }

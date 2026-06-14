@@ -49,7 +49,7 @@ import type { SlackChannel } from "@/lib/api/slack-channels";
 import type {
   AppContextOption,
   ScheduleFrequency,
-  StandupStyle,
+  ChannelStyle,
 } from "@/lib/api/types";
 import {
   agentDeployValuesComplete,
@@ -114,11 +114,11 @@ export function AgentDeployFields({
   const [destinationType, setDestinationType] = useState<"channel" | "dm">(
     initialValues?.destinationType ?? "dm",
   );
-  const [standupStyle, setStandupStyle] = useState<StandupStyle>(
-    initialValues?.standupStyle ?? "broadcast",
+  const [channelStyle, setChannelStyle] = useState<ChannelStyle>(
+    initialValues?.channelStyle ?? "broadcast",
   );
-  const [standupChannelId, setStandupChannelId] = useState(
-    initialValues?.standupChannelId ?? "",
+  const [channelId, setChannelId] = useState(
+    initialValues?.channelId ?? "",
   );
   const [personaMode, setPersonaMode] = useState<PersonaMode>(
     initialValues?.personaMode ?? "pretrained",
@@ -212,8 +212,8 @@ export function AgentDeployFields({
       goal,
       notes,
       name,
-      standupStyle,
-      standupChannelId,
+      channelStyle,
+      channelId,
       timezone,
       frequency,
       daysOfWeek,
@@ -232,8 +232,8 @@ export function AgentDeployFields({
       goal,
       notes,
       name,
-      standupStyle,
-      standupChannelId,
+      channelStyle,
+      channelId,
       timezone,
       frequency,
       daysOfWeek,
@@ -281,8 +281,8 @@ export function AgentDeployFields({
     goal,
     notes,
     name,
-    standupStyle,
-    standupChannelId,
+    channelStyle,
+    channelId,
     selectedMemberIds,
     contextIntegrations,
     triggerMode,
@@ -298,7 +298,7 @@ export function AgentDeployFields({
 
   function validate(): string | null {
     if (!name.trim()) return "Enter a name for this agent.";
-    if (isChannelDest && !standupChannelId) {
+    if (isChannelDest && !channelId) {
       return "Select a channel for the meeting.";
     }
     if (selectedMemberIds.length === 0) {
@@ -345,7 +345,6 @@ export function AgentDeployFields({
       const result = await updateAgentAction({
         workspaceId,
         agentId: editTarget.id,
-        kind: editTarget.kind,
         body: buildBody(),
       });
       if (result.error) {
@@ -437,7 +436,7 @@ export function AgentDeployFields({
 
   const audienceSummary = `${selectedMemberIds.length} ${selectedMemberIds.length === 1 ? "person" : "people"}`;
 
-  const meetingChannelName = chatChannels.find((c) => c.id === standupChannelId)?.name;
+  const meetingChannelName = chatChannels.find((c) => c.id === channelId)?.name;
   const destinationSummary = isChannelDest
     ? meetingChannelName
       ? `#${meetingChannelName.replace(/^#/, "")}`
@@ -495,7 +494,7 @@ export function AgentDeployFields({
             {isPretrained && selectedPersona?.interaction_mode === "report" ? (
               <p className={agentFieldHintClass}>
                 This persona posts a compiled report on schedule — it doesn&apos;t
-                run a conversation, so questions and standup style don&apos;t
+                run a conversation, so questions and meeting style don&apos;t
                 apply.
               </p>
             ) : null}
@@ -585,8 +584,8 @@ export function AgentDeployFields({
             {isChannelDest ? (
               <ChannelChipsPicker
                 channels={chatChannels}
-                selectedIds={standupChannelId ? [standupChannelId] : []}
-                onChange={(ids) => setStandupChannelId(ids[0] ?? "")}
+                selectedIds={channelId ? [channelId] : []}
+                onChange={(ids) => setChannelId(ids[0] ?? "")}
                 disabled={isPending}
                 error={chatChannelsError}
                 label={
@@ -606,9 +605,9 @@ export function AgentDeployFields({
                     type="button"
                     disabled={isPending}
                     className={cn(
-                      agentPillVariants({ selected: standupStyle === "broadcast" }),
+                      agentPillVariants({ selected: channelStyle === "broadcast" }),
                     )}
-                    onClick={() => setStandupStyle("broadcast")}
+                    onClick={() => setChannelStyle("broadcast")}
                   >
                     Broadcast
                   </button>
@@ -616,15 +615,15 @@ export function AgentDeployFields({
                     type="button"
                     disabled={isPending}
                     className={cn(
-                      agentPillVariants({ selected: standupStyle === "sequential" }),
+                      agentPillVariants({ selected: channelStyle === "sequential" }),
                     )}
-                    onClick={() => setStandupStyle("sequential")}
+                    onClick={() => setChannelStyle("sequential")}
                   >
                     Sequential
                   </button>
                 </div>
                 <p className={agentFieldHintClass}>
-                  {standupStyle === "broadcast"
+                  {channelStyle === "broadcast"
                     ? "Posts one thread; teammates all respond in the thread."
                     : "Asks each participant one at a time."}
                 </p>
@@ -676,7 +675,7 @@ export function AgentDeployFields({
                 onChange={(event) => setName(event.target.value)}
                 disabled={isPending}
                 maxLength={100}
-                placeholder="Engineering standup"
+                placeholder="Engineering meeting"
               />
             </div>
             <AppContextPicker
@@ -804,7 +803,7 @@ export function AgentDeployFields({
             detail={deployed.detail}
             onClose={() =>
               router.push(
-                `/agents?deployed=${isChannelDest ? "standup" : "checkin"}`,
+                `/agents?deployed=${isChannelDest ? "meeting" : "conversation"}`,
               )
             }
           />
