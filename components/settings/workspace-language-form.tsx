@@ -41,7 +41,7 @@ export function WorkspaceLanguageForm({
         <CardHeader>
           <CardTitle>Team language</CardTitle>
           <CardDescription>
-            Default language for conversation conversations with roster members.
+            Default language for conversations with roster members.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -62,7 +62,7 @@ export function WorkspaceLanguageForm({
       <CardHeader>
         <CardTitle>Team language</CardTitle>
         <CardDescription>
-          Default language for conversation conversations with roster members.
+          Default language for conversations with roster members.
         </CardDescription>
       </CardHeader>
       <CardContent>
