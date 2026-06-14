@@ -43,7 +43,8 @@ function authHeaders(accessToken: string): HeadersInit {
   };
 }
 
-async function postAgents<T>(
+async function writeAgents<T>(
+  method: "POST" | "PUT",
   accessToken: string,
   workspaceId: string,
   path: string,
@@ -54,7 +55,7 @@ async function postAgents<T>(
     const response = await fetch(
       `${base}/api/workspaces/${workspaceId}/agents${path}`,
       {
-        method: "POST",
+        method,
         headers: authHeaders(accessToken),
         body: JSON.stringify(body),
       },
@@ -66,6 +67,15 @@ async function postAgents<T>(
       error: "Could not reach the API. Is the backend running?",
     } as T & { success: boolean; error?: string };
   }
+}
+
+function postAgents<T>(
+  accessToken: string,
+  workspaceId: string,
+  path: string,
+  body: unknown,
+): Promise<T & { success: boolean; error?: string }> {
+  return writeAgents<T>("POST", accessToken, workspaceId, path, body);
 }
 
 export function deployAgent(
@@ -190,7 +200,8 @@ export function updateAgent(
   agentId: string,
   body: AgentDeployBody,
 ): Promise<{ success: boolean; error?: string; data?: { agent: AgentFull } }> {
-  return postAgents<{ data?: { agent: AgentFull } }>(
+  return writeAgents<{ data?: { agent: AgentFull } }>(
+    "PUT",
     accessToken,
     workspaceId,
     `/${agentId}`,
