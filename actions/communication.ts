@@ -40,6 +40,6 @@ export async function updateCommunicationPlatformAction(input: {
   }
 
   revalidatePath("/settings");
-  revalidatePath("/settings/standups");
+  revalidatePath("/settings/meetings");
   return { settings: result.data };
 }

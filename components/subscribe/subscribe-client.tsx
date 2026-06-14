@@ -10,7 +10,7 @@ import {
 } from "@/actions/billing";
 
 const included = [
-  "Slack conversational check-ins",
+  "Conversational Slack meetings",
   "AI scheduling and team insights chat",
   "One-off Slack reach-out",
   "Linear integration",

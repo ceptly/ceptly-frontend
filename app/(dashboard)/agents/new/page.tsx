@@ -4,7 +4,7 @@ import { AgentDeployForm } from "@/components/agents/agent-deploy-form";
 import {
   getWorkspaceTimezone,
   listAppContextOptions,
-} from "@/lib/api/conversations";
+} from "@/lib/api/workspace-settings";
 import { listChatChannels } from "@/lib/api/communication";
 import { FALLBACK_PERSONAS, listPersonas } from "@/lib/api/personas";
 import { listRosterMembers } from "@/lib/api/roster";

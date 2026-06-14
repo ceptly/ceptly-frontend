@@ -8,13 +8,6 @@ export interface WorkspaceSchedule {
   enabled: boolean;
 }
 
-export interface ConversationQuestion {
-  id: string;
-  sort_order: number;
-  prompt_text: string;
-  enabled: boolean;
-}
-
 export type ConversationResultDestination =
   | {
       type: "slack_channel";
@@ -29,27 +22,6 @@ export type ConversationResultDestination =
       type: "workspace_digest";
     };
 
-export interface ScheduledConversation {
-  id: string;
-  name: string;
-  summary?: string | null;
-  template_id?: string | null;
-  agent_persona?: string | null;
-  conversation_goal?: string | null;
-  agent_notes?: string | null;
-  kind?: "scheduled" | "adhoc";
-  timezone: string;
-  frequency: ScheduleFrequency;
-  days_of_week: number[];
-  time_local: string;
-  enabled: boolean;
-  sort_order: number;
-  questions?: ConversationQuestion[];
-  roster_member_ids?: string[];
-  context_integrations?: string[];
-  result_destinations?: ConversationResultDestination[];
-}
-
 export interface AppContextOption {
   id: string;
   label: string;
@@ -57,20 +29,6 @@ export interface AppContextOption {
   coming_soon?: boolean;
   connected: boolean;
   selectable: boolean;
-}
-
-export interface ConversationRunSummary {
-  run_id: string;
-  fired_at: string;
-  expected_count: number;
-  responded_count: number;
-  not_responded_count: number;
-}
-
-export interface ConversationRunMemberRef {
-  roster_member_id: string;
-  display_name: string;
-  email: string;
 }
 
 export interface ConversationRunTranscriptMessage {
@@ -86,45 +44,27 @@ export interface ConversationRunLegacyResponse {
   answered_at: string;
 }
 
-export interface ConversationRunRespondedMember {
-  roster_member_id: string;
-  display_name: string;
-  email: string;
-  session_id: string;
-  status: "completed" | "in_progress" | "abandoned";
-  transcript?: ConversationRunTranscriptMessage[];
-  legacy_responses?: ConversationRunLegacyResponse[];
-}
-
-export interface ConversationRunDetail {
-  run_id: string;
-  fired_at: string;
-  expected_members: ConversationRunMemberRef[];
-  responded: ConversationRunRespondedMember[];
-  not_responded: ConversationRunMemberRef[];
-}
-
 export type ActivityAttentionItem =
   | {
       type: "missing_responses";
-      conversation_id: string;
-      conversation_name: string;
-      run_id: string;
+      agent_id: string;
+      agent_name: string;
+      session_id: string;
       missing_count: number;
       missing_names: string[];
     }
   | {
       type: "blocker";
-      conversation_id: string;
+      agent_id: string;
       session_id: string;
       member_name: string;
-      conversation_name: string;
+      agent_name: string;
       excerpt: string;
       occurred_at: string;
     }
   | {
       type: "awaiting_reply";
-      conversation_id: string;
+      agent_id: string;
       session_id: string;
       member_name: string;
       topic: string;
@@ -138,19 +78,32 @@ export type ActivityAttentionItem =
       missing_trackers: ("linear" | "jira" | "monday")[];
     };
 
-export interface ActivityScheduledConversation {
+export interface ActivitySessionSummary {
+  session_id: string;
+  status: "active" | "completed" | "cancelled";
+  started_at: string;
+  completed_at: string | null;
+  expected_count: number;
+  responded_count: number;
+  not_responded_count: number;
+  summary_text: string | null;
+}
+
+export interface ActivityAgent {
   id: string;
   name: string;
-  summary: string | null;
-  template_id: string | null;
+  destination: "dm" | "channel";
+  trigger: "scheduled" | "one_off";
+  enabled: boolean;
   timezone: string;
   frequency: ScheduleFrequency;
   days_of_week: number[];
   time_local: string;
-  enabled: boolean;
-  latest_run: ConversationRunSummary | null;
-  missing_members: ConversationRunMemberRef[];
-  run_count: number;
+  channel_id: string | null;
+  style: "broadcast" | "sequential" | null;
+  latest_session: ActivitySessionSummary | null;
+  session_count: number;
+  missing_members: { roster_member_id: string; display_name: string }[];
 }
 
 export interface ActivityAdhocSession {
@@ -168,120 +121,13 @@ export interface ActivityAdhocSession {
   agent_prompt: string | null;
 }
 
-export type StandupStyle = "broadcast" | "sequential";
-
-export interface StandupSchedule {
-  timezone: string;
-  frequency: ScheduleFrequency;
-  days_of_week: number[];
-  time_local: string;
-  enabled: boolean;
-}
-
-export interface StandupMember {
-  roster_member_id: string;
-  display_name: string;
-  email: string;
-  sort_order: number;
-}
-
-export interface Standup {
-  id: string;
-  name: string;
-  slack_channel_id: string;
-  slack_channel_name?: string;
-  style: StandupStyle;
-  custom_instructions: string;
-  agent_notes?: string | null;
-  timezone: string;
-  frequency: ScheduleFrequency;
-  days_of_week: number[];
-  time_local: string;
-  enabled: boolean;
-  context_integrations?: string[];
-  result_destinations?: ConversationResultDestination[];
-  members: StandupMember[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface StandupSessionSummary {
-  session_id: string;
-  scheduled_fire_at: string;
-  status: "active" | "completed" | "cancelled";
-  participant_count: number;
-  responded_count: number;
-  summary_preview?: string;
-}
-
-export interface StandupSessionMessage {
-  role: "agent" | "ic";
-  display_name?: string;
-  content: string;
-  created_at: string;
-}
-
-export interface StandupSessionMemberResponse {
-  roster_member_id: string;
-  display_name: string;
-  responded: boolean;
-  note?: string;
-}
-
-export interface StandupSessionDetail {
-  session_id: string;
-  standup_id: string;
-  standup_name: string;
-  slack_channel_id: string;
-  slack_channel_name?: string;
-  style: StandupStyle;
-  status: "active" | "completed" | "cancelled";
-  scheduled_fire_at: string;
-  completed_at?: string;
-  summary_text?: string;
-  summary_generated_at?: string;
-  participants: { roster_member_id: string; display_name: string }[];
-  member_responses: StandupSessionMemberResponse[];
-  messages: StandupSessionMessage[];
-}
-
-export interface ActivityChannelStandup {
-  standup_id: string;
-  name: string;
-  slack_channel_id: string;
-  slack_channel_name?: string;
-  style: StandupStyle;
-  enabled: boolean;
-  latest_session: StandupSessionSummary | null;
-  session_count: number;
-}
+export type ChannelStyle = "broadcast" | "sequential";
 
 export interface WorkspaceActivity {
   attention_count: number;
   attention_items: ActivityAttentionItem[];
-  scheduled_conversations: ActivityScheduledConversation[];
+  agents: ActivityAgent[];
   adhoc_sessions: ActivityAdhocSession[];
-  channel_standups: ActivityChannelStandup[];
-}
-
-export interface ConversationSessionSummary {
-  session_id: string;
-  roster_member_id: string | null;
-  display_name: string;
-  email: string;
-  status: "completed" | "in_progress" | "abandoned";
-  started_at: string;
-  completed_at: string | null;
-  intent: "gather" | "inform";
-  intent_label: string;
-  topic: string | null;
-  delivery_facts: string | null;
-  agent_prompt: string | null;
-}
-
-export interface ConversationPreview {
-  opener: string;
-  bullets: string[];
 }
 
 export interface ProposedSchedule {
@@ -346,19 +192,19 @@ export interface SetupRecapUiComponent {
  * edits back as `form_state` on every turn so both stay in sync.
  */
 export interface AgentFormValues {
-  kind?: "checkin" | "reachout" | "standup";
+  destination?: "dm" | "channel";
+  trigger?: "scheduled" | "one_off";
   name?: string;
   notes?: string;
   persona_preset?: string;
   persona?: string;
   goal?: string;
-  standup_style?: StandupStyle;
-  standup_channel_id?: string;
+  channel_style?: ChannelStyle;
+  channel_id?: string;
   timezone?: string;
   frequency?: ScheduleFrequency;
   days_of_week?: number[];
   time_local?: string;
-  trigger_mode?: "schedule" | "event" | "manual";
   roster_member_ids?: string[];
   result_channel_ids?: string[];
   result_roster_dm_ids?: string[];
@@ -496,9 +342,9 @@ export interface DashboardParticipationPoint {
   response_rate_pct: number | null;
 }
 
-export interface DashboardStandupParticipation {
-  standup_id: string;
-  standup_name: string;
+export interface DashboardAgentParticipation {
+  agent_id: string;
+  agent_name: string;
   sessions: number;
   expected: number;
   responded: number;
@@ -561,7 +407,7 @@ export interface DashboardData {
   kpis: DashboardKpis;
   participation: {
     by_day: DashboardParticipationPoint[];
-    by_standup: DashboardStandupParticipation[];
+    by_agent: DashboardAgentParticipation[];
   };
   blockers: DashboardBlockerStats;
   carry_over: DashboardCarryOverGrid;

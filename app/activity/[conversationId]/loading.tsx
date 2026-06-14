@@ -1,5 +1,0 @@
-import { ConversationDetailSkeleton } from "@/components/page-skeletons";
-
-export default function ActivityConversationLoading() {
-  return <ConversationDetailSkeleton />;
-}

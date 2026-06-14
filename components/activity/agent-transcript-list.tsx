@@ -1,23 +1,23 @@
 "use client";
 
 import { CeptlyAgentAvatar } from "@/components/ceptly-agent-avatar";
+import type { AgentSessionMessage } from "@/lib/api/agents";
 import type {
   ConversationRunLegacyResponse,
   ConversationRunTranscriptMessage,
-  StandupSessionMessage,
 } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
-interface CheckinTranscriptMessageListProps {
+interface AgentTranscriptListProps {
   transcript?: ConversationRunTranscriptMessage[];
-  standupMessages?: StandupSessionMessage[];
+  agentMessages?: AgentSessionMessage[];
   legacyResponses?: ConversationRunLegacyResponse[];
   icDisplayName: string;
   className?: string;
 }
 
 type BubbleMessage = {
-  role: ConversationRunTranscriptMessage["role"] | StandupSessionMessage["role"];
+  role: ConversationRunTranscriptMessage["role"] | AgentSessionMessage["role"];
   content: string;
   created_at: string;
   display_name?: string;
@@ -75,15 +75,15 @@ function MessageMeta({
   );
 }
 
-export function CheckinTranscriptMessageList({
+export function AgentTranscriptList({
   transcript = [],
-  standupMessages,
+  agentMessages,
   legacyResponses = [],
   icDisplayName,
   className,
-}: CheckinTranscriptMessageListProps) {
+}: AgentTranscriptListProps) {
   const icLabel = icFirstName(icDisplayName);
-  const bubbleMessages: BubbleMessage[] = standupMessages ?? transcript;
+  const bubbleMessages: BubbleMessage[] = agentMessages ?? transcript;
 
   if (bubbleMessages.length === 0 && legacyResponses.length === 0) {
     return (

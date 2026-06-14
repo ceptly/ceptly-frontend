@@ -154,7 +154,7 @@ export function formatToolLabel(
   name: string,
 ): string {
   const ceptlyLabels: Record<string, string> = {
-    query_checkins: "Searching check-ins",
+    query_conversations: "Searching conversations",
     select_chat_agent: "Routing your request",
     match_roster_members: "Matching roster members",
     submit_conversation_plan: "Building schedule plan",

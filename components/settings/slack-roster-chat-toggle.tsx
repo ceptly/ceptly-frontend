@@ -60,7 +60,7 @@ export function SlackRosterChatToggle({
           <p className="text-sm text-muted-foreground">
             When enabled, anyone on the active team roster can @mention Ceptly
             in Slack channels and continue the conversation in the thread. They
-            can ask about their own check-ins and assigned work. Workspace
+            can ask about their own conversations and assigned work. Workspace
             admins and leads always have access.
           </p>
         </div>

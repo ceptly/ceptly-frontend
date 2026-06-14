@@ -93,7 +93,7 @@ export function SlackIntegrationPanel({
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
             Slack connected successfully. Add team members to the roster to
-            start check-ins.
+            start conversations.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -182,7 +182,7 @@ export function SlackIntegrationPanel({
       ) : canEdit ? (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Install the Ceptly app in Slack to send check-in DMs and enable Team
+            Install the Ceptly app in Slack to send conversation DMs and enable Team
             insights search across your workspace history.
           </p>
           <Button type="button" onClick={handleConnect} disabled={isPending}>

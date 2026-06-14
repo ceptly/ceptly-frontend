@@ -54,7 +54,7 @@ export function JiraIntegrationPanel({
   const siteName = status.siteName ?? status.siteUrl ?? "Jira";
 
   const connectedHint = status.connected
-    ? "Standup agents can link tickets and update status when your team says they finished or started work."
+    ? "Meeting agents can link tickets and update status when your team says they finished or started work."
     : null;
 
   const handleConnect = () => {
@@ -93,7 +93,7 @@ export function JiraIntegrationPanel({
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
             Jira connected successfully. Team insights chat can now reference
-            assigned issues alongside check-in responses.
+            assigned issues alongside conversation responses.
           </AlertDescription>
         </Alert>
       ) : null}

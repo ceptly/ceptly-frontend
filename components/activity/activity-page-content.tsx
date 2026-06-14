@@ -38,7 +38,7 @@ export async function ActivityPageContent({
       <div className="ceptly-page-head">
         <h1 className="ceptly-page-title">Activity</h1>
         <p className="ceptly-page-sub">
-          Rollups from your check-ins, standups, and one-off reach-outs.
+          Rollups from your conversations, meetings, and one-off reach-outs.
           {attentionCount > 0 ? (
             <Badge variant="attention">{attentionCount} need attention</Badge>
           ) : null}

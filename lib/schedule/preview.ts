@@ -69,11 +69,11 @@ export function formatSchedulePreview(
   enabled: boolean,
 ): string {
   if (!enabled) {
-    return "Check-ins are paused";
+    return "Conversations are paused";
   }
 
   const timePreview = formatScheduleTimePreview(timeLocal, timezone);
   const daysPreview = formatScheduleDaysPreview(frequency, daysOfWeek);
 
-  return `Check-ins will run at ${timePreview} on ${daysPreview}`;
+  return `Conversations will run at ${timePreview} on ${daysPreview}`;
 }

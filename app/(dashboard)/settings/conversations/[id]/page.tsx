@@ -8,5 +8,5 @@ export default async function ConversationDetailPage({
   params,
 }: ConversationDetailPageProps) {
   const { id } = await params;
-  redirect(`/activity/${id}`);
+  redirect(`/agents/${id}`);
 }

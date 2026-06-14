@@ -9,14 +9,14 @@ export const SITE_NAME = "Ceptly";
 export const DEFAULT_TITLE = "Ceptly — AI Chief of Staff";
 
 export const DEFAULT_DESCRIPTION =
-  "Sign in to Ceptly — your team's AI chief of staff for async Slack check-ins, team roster management, and on-demand org intelligence.";
+  "Sign in to Ceptly — your team's AI chief of staff for async Slack conversations, team roster management, and on-demand org intelligence.";
 
 export const KEYWORDS = [
   "Ceptly",
   "AI chief of staff",
-  "Slack check-ins",
+  "Slack conversations",
   "team roster",
-  "async standups",
+  "async meetings",
   "team management",
 ];
 

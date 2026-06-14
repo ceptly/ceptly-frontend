@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import {
   updateWorkspaceTimezone,
   type WorkspaceTimezoneFormState,
-} from "@/actions/conversations";
+} from "@/actions/workspace-settings";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {

@@ -3,37 +3,37 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { AgentEditFields } from "@/components/agents/agent-edit-fields";
-import { StandupDetailActions } from "@/components/activity/standup-detail-actions";
-import { StandupSessionDetailView } from "@/components/activity/standup-session-detail";
+import { AgentDetailActions } from "@/components/agents/agent-detail-actions";
+import { AgentSessionDetailView } from "@/components/agents/agent-session-detail";
 import { buttonVariants } from "@/components/ui/button";
-import { standupAgentHref, standupToInitialValues } from "@/lib/agents";
+import { agentToInitialValues, agentHref } from "@/lib/agents";
 import { listChatChannels } from "@/lib/api/communication";
 import {
   getWorkspaceTimezone,
   listAppContextOptions,
-} from "@/lib/api/conversations";
+} from "@/lib/api/workspace-settings";
 import { FALLBACK_PERSONAS, listPersonas } from "@/lib/api/personas";
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import {
-  getStandupSessionDetail,
-  listStandupSessions,
-  listStandups,
-} from "@/lib/api/standups";
+  getAgent,
+  getAgentSessions,
+  getAgentSessionDetail,
+} from "@/lib/api/agents";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
-interface StandupAgentPageProps {
+interface AgentPageProps {
   params: Promise<{ agentId: string }>;
   searchParams: Promise<{ edit?: string }>;
 }
 
-export default async function StandupAgentPage({
+export default async function AgentPage({
   params,
   searchParams,
-}: StandupAgentPageProps) {
-  const { agentId: standupId } = await params;
+}: AgentPageProps) {
+  const { agentId } = await params;
   const { edit } = await searchParams;
   const user = await requireAuth();
   const workspace = user.workspaces?.[0];
@@ -46,31 +46,25 @@ export default async function StandupAgentPage({
   if (!workspace?.id || !token) {
     return (
       <p className="px-6 py-8 text-sm text-muted-foreground">
-        Could not load standup.
+        Could not load agent.
       </p>
     );
   }
 
-  const standupsResult = await listStandups(token, workspace.id);
-  const standup = standupsResult.data?.standups.find(
-    (item) => item.id === standupId,
-  );
+  const agentResult = await getAgent(token, workspace.id, agentId);
+  const agent = agentResult.data?.agent;
 
-  if (!standupsResult.success || !standup) {
+  if (!agentResult.success || !agent) {
     return (
       <p className="px-6 py-8 text-sm text-muted-foreground">
-        {standupsResult.error ?? "Standup not found."}
+        {agentResult.error ?? "Agent not found."}
       </p>
     );
   }
 
   const canEdit = canManageWorkspace(workspace.role);
   const isEditing = edit === "1" && canEdit;
-  const standupHref = standupAgentHref(standupId);
-
-  const channelLabel = standup.slack_channel_name
-    ? `#${standup.slack_channel_name}`
-    : standup.slack_channel_id;
+  const detailHref = agentHref(agentId);
 
   if (isEditing) {
     const [
@@ -109,17 +103,17 @@ export default async function StandupAgentPage({
     return (
       <div className="ceptly-page ceptly-page-wide">
         <Link
-          href={standupHref}
+          href={detailHref}
           className={cn(
             buttonVariants({ variant: "ghost", size: "sm" }),
             "-ml-3 mb-4 w-fit px-3 text-muted-foreground hover:text-foreground",
           )}
         >
-          &lt; {standup.name}
+          &lt; {agent.name}
         </Link>
         <div className="mb-6">
           <h1 className="font-[family-name:var(--font-heading)] text-[26px] font-normal tracking-tight">
-            Edit {standup.name}
+            Edit {agent.name}
           </h1>
         </div>
 
@@ -134,31 +128,27 @@ export default async function StandupAgentPage({
           chatChannels={chatChannels}
           communicationPlatform={communicationPlatform}
           chatChannelsError={chatChannelsError}
-          editTarget={{ id: standupId, kind: "standup" }}
-          initialValues={standupToInitialValues(standup)}
-          closeHref={standupHref}
+          editTarget={{ id: agentId }}
+          initialValues={agentToInitialValues(agent)}
+          closeHref={detailHref}
         />
       </div>
     );
   }
 
-  const sessionsResult = await listStandupSessions(
-    token,
-    workspace.id,
-    standupId,
-  );
+  const sessionsResult = await getAgentSessions(token, workspace.id, agentId);
   const sessions = sessionsResult.data?.sessions ?? [];
   const firstSessionId = sessions[0]?.session_id;
 
   const initialDetailResult = firstSessionId
-    ? await getStandupSessionDetail(
-        token,
-        workspace.id,
-        standupId,
-        firstSessionId,
-      )
+    ? await getAgentSessionDetail(token, workspace.id, agentId, firstSessionId)
     : null;
-  const initialSession = initialDetailResult?.data?.session ?? null;
+  const initialSession = initialDetailResult?.data ?? null;
+
+  const subtitle =
+    agent.destination === "channel" && agent.channel_id
+      ? `#${agent.channel_id}`
+      : `${agent.roster_member_ids.length} participant${agent.roster_member_ids.length !== 1 ? "s" : ""}`;
 
   return (
     <div className="ceptly-page ceptly-page-narrow">
@@ -169,25 +159,16 @@ export default async function StandupAgentPage({
       {!sessionsResult.success ? (
         <>
           <div className="ceptly-page-head">
-            <h1 className="ceptly-page-title">{standup.name}</h1>
-            <p className="ceptly-page-sub">
-              {channelLabel} · {standup.members.length} participants
-            </p>
+            <h1 className="ceptly-page-title">{agent.name}</h1>
+            <p className="ceptly-page-sub">{subtitle}</p>
           </div>
           {canEdit ? (
             <div className="mb-6">
-              <StandupDetailActions
+              <AgentDetailActions
                 workspaceId={workspace.id}
-                standupId={standupId}
-                standupName={standup.name}
-                enabled={standup.enabled}
-                schedule={{
-                  timezone: standup.timezone,
-                  frequency: standup.frequency,
-                  days_of_week: standup.days_of_week,
-                  time_local: standup.time_local,
-                  enabled: standup.enabled,
-                }}
+                agentId={agentId}
+                agentName={agent.name}
+                enabled={agent.enabled}
               />
             </div>
           ) : null}
@@ -196,27 +177,20 @@ export default async function StandupAgentPage({
           </p>
         </>
       ) : (
-        <StandupSessionDetailView
+        <AgentSessionDetailView
           workspaceId={workspace.id}
-          standupId={standupId}
+          agentId={agentId}
           sessions={sessions}
           initialSession={initialSession}
-          standupName={standup.name}
-          subtitle={`${channelLabel} · ${standup.members.length} participants`}
+          agentName={agent.name}
+          subtitle={subtitle}
           actions={
             canEdit ? (
-              <StandupDetailActions
+              <AgentDetailActions
                 workspaceId={workspace.id}
-                standupId={standupId}
-                standupName={standup.name}
-                enabled={standup.enabled}
-                schedule={{
-                  timezone: standup.timezone,
-                  frequency: standup.frequency,
-                  days_of_week: standup.days_of_week,
-                  time_local: standup.time_local,
-                  enabled: standup.enabled,
-                }}
+                agentId={agentId}
+                agentName={agent.name}
+                enabled={agent.enabled}
               />
             ) : null
           }

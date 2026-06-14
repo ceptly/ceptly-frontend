@@ -41,10 +41,7 @@ export default async function AgentsPage() {
           </div>
         </div>
       ) : (
-        <AgentsOverview
-          channelStandups={activity.channel_standups ?? []}
-          scheduledConversations={activity.scheduled_conversations ?? []}
-        />
+        <AgentsOverview agents={activity.agents ?? []} />
       )}
     </Suspense>
   );

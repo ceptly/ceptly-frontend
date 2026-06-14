@@ -57,7 +57,7 @@ export function TeamsIntegrationPanel({
   const orgName = status.organizationName ?? "Microsoft Teams";
 
   const connectedHint = status.connected
-    ? "Standup agents post check-ins and @mention teammates in Teams channels."
+    ? "Meeting agents post conversations and @mention teammates in Teams channels."
     : null;
 
   const handleConnect = () => {
@@ -95,8 +95,8 @@ export function TeamsIntegrationPanel({
         <Alert>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            Microsoft Teams connected successfully. Standup agents can now post
-            check-ins and @mention teammates in Teams channels.
+            Microsoft Teams connected successfully. Meeting agents can now post
+            conversations and @mention teammates in Teams channels.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -181,7 +181,7 @@ export function TeamsIntegrationPanel({
       ) : canEdit ? (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Authorize Ceptly to post standups and @mention teammates in Microsoft
+            Authorize Ceptly to post meetings and @mention teammates in Microsoft
             Teams channels. An Azure AD admin may need to grant consent for your
             organization.
           </p>

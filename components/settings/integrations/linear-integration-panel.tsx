@@ -57,7 +57,7 @@ export function LinearIntegrationPanel({
   const organizationName = status.organizationName ?? "Linear";
 
   const connectedHint = status.connected
-    ? "Standup agents can link tickets and update status when your team says they finished or started work. If status updates fail, disconnect and reconnect Linear to grant write access."
+    ? "Meeting agents can link tickets and update status when your team says they finished or started work. If status updates fail, disconnect and reconnect Linear to grant write access."
     : null;
 
   const handleConnect = () => {
@@ -96,7 +96,7 @@ export function LinearIntegrationPanel({
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
             Linear connected successfully. Team insights chat can now reference
-            assigned issues alongside check-in responses.
+            assigned issues alongside conversation responses.
           </AlertDescription>
         </Alert>
       ) : null}

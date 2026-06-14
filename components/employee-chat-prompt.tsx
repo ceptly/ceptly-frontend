@@ -626,7 +626,7 @@ export function EmployeeChatPrompt({
     return (
       <div className="flex w-full flex-1 flex-col items-center justify-center gap-4 text-center">
         <p className="max-w-md text-sm text-muted-foreground">
-          Check-in schedules are managed by your workspace admin. View the
+          Conversation schedules are managed by your workspace admin. View the
           current schedule in{" "}
           <Link
             href="/activity"

@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Calendar,
   Check,
   ChevronDown,
   Loader2,
+  MessageSquare,
   Sparkles,
   Users,
 } from "lucide-react";
 
-import { fetchStandupSessionDetail } from "@/actions/standups";
-import { CheckinTranscriptMessageList } from "@/components/activity/checkin-transcript-message-list";
+import { fetchAgentSessionDetail } from "@/actions/agents";
+import { AgentTranscriptList } from "@/components/activity/agent-transcript-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,39 +23,31 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { memberInitials } from "@/lib/activity/conversation-detail";
-import { buildStandupResponseRows } from "@/lib/activity/standup-detail";
 import { formatActivityLatestLabel } from "@/lib/activity/rollup-card";
-import type {
-  StandupSessionDetail,
-  StandupSessionSummary,
-} from "@/lib/api/types";
+import type { AgentSessionDetail, AgentSessionMessage, AgentSessionRow } from "@/lib/api/agents";
 
-interface StandupSessionDetailViewProps {
+interface AgentSessionDetailViewProps {
   workspaceId: string;
-  standupId: string;
-  sessions: StandupSessionSummary[];
-  initialSession: StandupSessionDetail | null;
-  standupName: string;
+  agentId: string;
+  sessions: AgentSessionRow[];
+  initialSession: AgentSessionDetail | null;
+  agentName: string;
   subtitle: string;
   actions?: ReactNode;
 }
 
-function StandupSessionPicker({
+function AgentSessionPicker({
   sessions,
   selectedSessionId,
   loading,
   onSelect,
 }: {
-  sessions: StandupSessionSummary[];
+  sessions: AgentSessionRow[];
   selectedSessionId: string;
   loading: boolean;
   onSelect: (sessionId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const selectedSession = sessions.find(
-    (session) => session.session_id === selectedSessionId,
-  );
 
   const handleSelect = (sessionId: string) => {
     setOpen(false);
@@ -66,7 +59,7 @@ function StandupSessionPicker({
       <DropdownMenuTrigger
         render={
           <Button
-            id="standup-session-select"
+            id="agent-session-select"
             type="button"
             variant="outline"
             size="sm"
@@ -77,8 +70,11 @@ function StandupSessionPicker({
       >
         <Calendar className="size-3.5 shrink-0 opacity-70" />
         <span className="max-w-[240px] truncate">
-          {selectedSession
-            ? formatActivityLatestLabel(selectedSession.scheduled_fire_at)
+          {sessions.find((s) => s.session_id === selectedSessionId)
+            ? formatActivityLatestLabel(
+                sessions.find((s) => s.session_id === selectedSessionId)!
+                  .scheduled_fire_at ?? sessions.find((s) => s.session_id === selectedSessionId)!.started_at,
+              )
             : "Select session"}
         </span>
         <ChevronDown className="size-3.5 shrink-0 opacity-50" />
@@ -104,11 +100,12 @@ function StandupSessionPicker({
             >
               <span className="min-w-0">
                 <span className="block font-medium">
-                  {formatActivityLatestLabel(session.scheduled_fire_at)}
+                  {formatActivityLatestLabel(
+                    session.scheduled_fire_at ?? session.started_at,
+                  )}
                 </span>
                 <span className="mt-0.5 block text-[11.5px] text-muted-foreground">
-                  {session.responded_count}/{session.participant_count}{" "}
-                  responded · {session.status}
+                  {session.status}
                 </span>
               </span>
             </DropdownMenuRadioItem>
@@ -119,65 +116,41 @@ function StandupSessionPicker({
   );
 }
 
-function ResponseRow({
-  name,
-  note,
-  responded,
-}: {
-  name: string;
-  note: string | null;
-  responded: boolean;
-}) {
-  return (
-    <div className="ceptly-list-row items-start">
-      <span className="ceptly-avatar ceptly-avatar-sm">{memberInitials(name)}</span>
-      <div className="ceptly-list-main">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="ceptly-list-name">{name}</span>
-          {responded ? (
-            <Badge variant="complete" className="gap-1">
-              <Check className="size-3" />
-              Responded
-            </Badge>
-          ) : (
-            <Badge variant="secondary">Waiting</Badge>
-          )}
-        </div>
-        {note ? (
-          <p className="ceptly-list-desc mt-1.5">{note}</p>
-        ) : (
-          <p className="ceptly-list-desc mt-1.5 italic">No reply yet.</p>
-        )}
-      </div>
-    </div>
-  );
+function participantStatusBadge(status: "in_progress" | "completed" | "abandoned") {
+  if (status === "completed") {
+    return (
+      <Badge variant="complete" className="gap-1">
+        <Check className="size-3" />
+        Responded
+      </Badge>
+    );
+  }
+  if (status === "abandoned") {
+    return <Badge variant="destructive">No response</Badge>;
+  }
+  return <Badge variant="secondary">In progress</Badge>;
 }
 
-export function StandupSessionDetailView({
+export function AgentSessionDetailView({
   workspaceId,
-  standupId,
+  agentId,
   sessions,
   initialSession,
-  standupName,
+  agentName,
   subtitle,
   actions,
-}: StandupSessionDetailViewProps) {
+}: AgentSessionDetailViewProps) {
   const [selectedSessionId, setSelectedSessionId] = useState(
-    initialSession?.session_id ?? sessions[0]?.session_id ?? "",
+    initialSession?.session.session_id ?? sessions[0]?.session_id ?? "",
   );
-  const [detail, setDetail] = useState<StandupSessionDetail | null>(
+  const [detail, setDetail] = useState<AgentSessionDetail | null>(
     initialSession,
   );
   const [loadedSessionId, setLoadedSessionId] = useState<string | null>(
-    initialSession?.session_id ?? null,
+    initialSession?.session.session_id ?? null,
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const responseRows = useMemo(
-    () => (detail ? buildStandupResponseRows(detail) : []),
-    [detail],
-  );
 
   const preserveScrollPosition = () => {
     const scrollY = window.scrollY;
@@ -195,9 +168,9 @@ export function StandupSessionDetailView({
     }
     const scrollY = window.scrollY;
     setLoading(true);
-    const result = await fetchStandupSessionDetail({
+    const result = await fetchAgentSessionDetail({
       workspaceId,
-      standupId,
+      agentId,
       sessionId,
     });
     setLoading(false);
@@ -206,44 +179,36 @@ export function StandupSessionDetailView({
       window.scrollTo({ top: scrollY, left: 0, behavior: "instant" });
       return;
     }
-    setDetail(result.session);
+    setDetail(result.detail);
     setLoadedSessionId(sessionId);
     requestAnimationFrame(() => {
       window.scrollTo({ top: scrollY, left: 0, behavior: "instant" });
     });
   };
 
-  useEffect(() => {
-    const initialId = initialSession?.session_id ?? sessions[0]?.session_id;
-    if (initialId && !loadedSessionId) {
-      void handleSelect(initialId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load first session once
-  }, []);
-
   if (sessions.length === 0) {
     return (
       <>
         <div className="ceptly-page-head">
-          <h1 className="ceptly-page-title">{standupName}</h1>
+          <h1 className="ceptly-page-title">{agentName}</h1>
           <p className="ceptly-page-sub">{subtitle}</p>
         </div>
         {actions ? <div className="mb-6">{actions}</div> : null}
-        <p className="text-sm text-muted-foreground">
-          No standup sessions yet.
-        </p>
+        <p className="text-sm text-muted-foreground">No sessions yet.</p>
       </>
     );
   }
+
+  const messages: AgentSessionMessage[] | undefined = detail?.messages;
 
   return (
     <>
       <div className="ceptly-page-head ceptly-page-head-split">
         <div>
-          <h1 className="ceptly-page-title">{standupName}</h1>
+          <h1 className="ceptly-page-title">{agentName}</h1>
           <p className="ceptly-page-sub">{subtitle}</p>
         </div>
-        <StandupSessionPicker
+        <AgentSessionPicker
           sessions={sessions}
           selectedSessionId={selectedSessionId}
           loading={loading}
@@ -265,10 +230,10 @@ export function StandupSessionDetailView({
       ) : detail ? (
         <div className="ceptly-section-stack">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">{detail.status}</Badge>
+            <Badge variant="outline">{detail.session.status}</Badge>
           </div>
 
-          {detail.summary_text ? (
+          {detail.session.summary_text ? (
             <section className="ceptly-section">
               <h2 className="ceptly-section-title">
                 <Sparkles className="text-brand" aria-hidden />
@@ -276,44 +241,48 @@ export function StandupSessionDetailView({
               </h2>
               <div className="ceptly-glass-card p-[18px]">
                 <p className="text-sm leading-[1.6] whitespace-pre-wrap">
-                  {detail.summary_text}
+                  {detail.session.summary_text}
                 </p>
+              </div>
+            </section>
+          ) : null}
+
+          {detail.participants.length > 0 ? (
+            <section className="ceptly-section">
+              <h2 className="ceptly-section-title">
+                <Users aria-hidden />
+                Participants
+              </h2>
+              <div className="ceptly-list-card">
+                {detail.participants.map((p, i) => (
+                  <div key={p.id} className="ceptly-list-row items-center">
+                    <span className="ceptly-avatar ceptly-avatar-sm">
+                      {i + 1}
+                    </span>
+                    <div className="ceptly-list-main">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="ceptly-list-name font-mono text-xs">
+                          {p.roster_member_id
+                            ? p.roster_member_id.slice(0, 8)
+                            : "—"}
+                        </span>
+                        {participantStatusBadge(p.status)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
           ) : null}
 
           <section className="ceptly-section">
             <h2 className="ceptly-section-title">
-              <Users aria-hidden />
-              Responses
+              <MessageSquare aria-hidden />
+              Thread
             </h2>
-            {responseRows.length > 0 ? (
-              <div className="ceptly-list-card">
-                {responseRows.map((row) => (
-                  <ResponseRow
-                    key={row.key}
-                    name={row.name}
-                    note={row.note}
-                    responded={row.responded}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="ceptly-glass-card p-5">
-                <p className="ceptly-card-empty mt-0">
-                  No individual responses to show for this session yet.
-                </p>
-              </div>
-            )}
-          </section>
-
-          <section className="ceptly-section">
-            <h2 className="ceptly-section-title">Thread</h2>
-            <CheckinTranscriptMessageList
-              standupMessages={detail.messages}
-              icDisplayName={
-                detail.participants[0]?.display_name ?? "Participant"
-              }
+            <AgentTranscriptList
+              agentMessages={messages}
+              icDisplayName="Participant"
             />
           </section>
         </div>

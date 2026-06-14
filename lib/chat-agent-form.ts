@@ -17,20 +17,20 @@ export function agentFormValuesToInitialValues(
 ): AgentDeployInitialValues {
   const hasCustomPersona = Boolean(values.persona?.trim());
   return {
-    destinationType: values.kind === "standup" ? "channel" : "dm",
+    destinationType: values.destination === "channel" ? "channel" : "dm",
     personaMode: hasCustomPersona ? "custom" : "pretrained",
     presetId: values.persona_preset,
     persona: values.persona ?? "",
     goal: values.goal ?? "",
     notes: values.notes ?? "",
     name: values.name ?? "",
-    standupStyle: values.standup_style ?? "broadcast",
-    standupChannelId: values.standup_channel_id ?? "",
+    channelStyle: values.channel_style ?? "broadcast",
+    channelId: values.channel_id ?? "",
     timezone: values.timezone ?? workspaceTimezone,
     frequency: values.frequency ?? "specific_days",
     daysOfWeek: values.days_of_week ?? [1, 2, 3, 4, 5],
     timeLocal: values.time_local ?? "09:00",
-    triggerMode: values.trigger_mode ?? "schedule",
+    triggerMode: values.trigger === "one_off" ? "manual" : "schedule",
     selectedMemberIds: values.roster_member_ids ?? [],
     selectedChannelIds: values.result_channel_ids ?? [],
     selectedRosterDmIds: values.result_roster_dm_ids ?? [],
@@ -44,7 +44,7 @@ export function initialValuesToAgentFormValues(
   values: AgentDeployInitialValues,
 ): AgentFormValues {
   return {
-    kind: values.destinationType === "channel" ? "standup" : "checkin",
+    destination: values.destinationType === "channel" ? "channel" : "dm",
     ...(values.name.trim() ? { name: values.name.trim() } : {}),
     ...(values.notes.trim() ? { notes: values.notes.trim() } : {}),
     ...(values.personaMode === "custom"
@@ -55,15 +55,15 @@ export function initialValuesToAgentFormValues(
       : values.presetId
         ? { persona_preset: values.presetId }
         : {}),
-    standup_style: values.standupStyle,
-    ...(values.standupChannelId
-      ? { standup_channel_id: values.standupChannelId }
+    channel_style: values.channelStyle,
+    ...(values.channelId
+      ? { channel_id: values.channelId }
       : {}),
     timezone: values.timezone,
     frequency: values.frequency,
     days_of_week: values.daysOfWeek,
     time_local: values.timeLocal,
-    trigger_mode: values.triggerMode,
+    trigger: values.triggerMode === "manual" ? "one_off" : "scheduled",
     roster_member_ids: values.selectedMemberIds,
     result_channel_ids: values.selectedChannelIds,
     result_roster_dm_ids: values.selectedRosterDmIds,

@@ -57,7 +57,7 @@ export function MondayIntegrationPanel({
   const accountName = status.accountName ?? status.accountSlug ?? "Monday.com";
 
   const connectedHint = status.connected
-    ? "Standup agents can link items and update status when your team says they finished or started work."
+    ? "Meeting agents can link items and update status when your team says they finished or started work."
     : null;
 
   const handleConnect = () => {
@@ -96,7 +96,7 @@ export function MondayIntegrationPanel({
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
             Monday.com connected successfully. Team insights chat can now
-            reference assigned items alongside check-in responses.
+            reference assigned items alongside conversation responses.
           </AlertDescription>
         </Alert>
       ) : null}

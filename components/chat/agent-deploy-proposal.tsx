@@ -27,9 +27,9 @@ interface AgentDeployProposalCardProps {
 }
 
 function kindLabel(values: AgentDeployInitialValues): string {
-  if (values.destinationType === "channel") return "Channel standup";
+  if (values.destinationType === "channel") return "Channel meeting";
   if (values.triggerMode === "manual") return "One-off reach-out";
-  return "Direct check-in";
+  return "Direct conversation";
 }
 
 function destinationLabel(
@@ -37,7 +37,7 @@ function destinationLabel(
   chatChannels: ChatChannel[],
 ): string {
   if (values.destinationType !== "channel") return "Direct messages";
-  const channel = chatChannels.find((c) => c.id === values.standupChannelId);
+  const channel = chatChannels.find((c) => c.id === values.channelId);
   if (!channel) return "Channel not set";
   return `#${channel.name.replace(/^#/, "")}`;
 }
@@ -53,7 +53,7 @@ function scheduleLabel(values: AgentDeployInitialValues): string {
 
 /** Short phrase for the single most important missing required field. */
 function missingLabel(values: AgentDeployInitialValues): string | null {
-  if (values.destinationType === "channel" && !values.standupChannelId) {
+  if (values.destinationType === "channel" && !values.channelId) {
     return "the channel";
   }
   if (values.selectedMemberIds.length === 0) {

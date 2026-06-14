@@ -55,7 +55,7 @@ export function ResultDestinationsPicker({
   onChannelIdsChange,
   onRosterDmIdsChange,
   disabled = false,
-  description = "After each check-in window, Ceptly posts a rollup for this conversation only. Pick one or more Slack channels, and optionally DM team members.",
+  description = "After each conversation window, Ceptly posts a rollup for this conversation only. Pick one or more Slack channels, and optionally DM team members.",
   channelsMenuLabel = "Channels for this conversation",
 }: ResultDestinationsPickerProps) {
   const activeMembers = rosterMembers.filter((member) => !member.paused);
@@ -63,7 +63,7 @@ export function ResultDestinationsPicker({
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <Label>Send standup results to</Label>
+        <Label>Send meeting results to</Label>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
 
@@ -136,7 +136,7 @@ export function ResultDestinationsPicker({
         </Label>
         {activeMembers.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Add team members to your roster to DM them standup rollups.
+            Add team members to your roster to DM them meeting rollups.
           </p>
         ) : (
           <ul className="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-border p-3 dark:border-white/10">

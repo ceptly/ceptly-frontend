@@ -24,7 +24,7 @@ function attentionHref(item: ActivityAttentionItem): string {
   if (item.type === "roster_tracker_mismatch") {
     return "/team";
   }
-  return `/activity/${item.conversation_id}`;
+  return `/agents/${item.agent_id}`;
 }
 
 function formatMissingTrackers(
@@ -62,10 +62,10 @@ function attentionTitle(item: ActivityAttentionItem): string {
       item.missing_names.length > 0
         ? item.missing_names.join(", ")
         : `${item.missing_count} people`;
-    return `${item.conversation_name} · ${item.missing_count} haven't responded (${names})`;
+    return `${item.agent_name} · ${item.missing_count} haven't responded (${names})`;
   }
   if (item.type === "blocker") {
-    return `${item.member_name} reported a blocker in ${item.conversation_name}`;
+    return `${item.member_name} reported a blocker in ${item.agent_name}`;
   }
   if (item.type === "roster_tracker_mismatch") {
     return `${item.member_name} · no ${formatMissingTrackers(item.missing_trackers)} account matches ${item.member_email}`;
@@ -138,7 +138,7 @@ export function ActivityAttentionList({
                 ? `awaiting-${item.session_id}`
                 : item.type === "roster_tracker_mismatch"
                   ? `tracker-mismatch-${item.roster_member_id}`
-                  : `missing-${item.conversation_id}-${item.run_id}`;
+                  : `missing-${item.agent_id}-${item.session_id}`;
 
           return (
             <div className="ceptly-warn-row" key={`${key}-${index}`}>

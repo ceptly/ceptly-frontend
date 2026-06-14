@@ -34,8 +34,8 @@ export const KN_GROUPS: KnowledgeGroupMeta[] = [
     id: "people_ownership",
     label: "People & ownership",
     icon: Users,
-    desc: "Who owns what — learned mostly from check-ins.",
-    ghost: "As check-ins run, Ceptly notices who owns what and lists it here.",
+    desc: "Who owns what — learned mostly from conversations.",
+    ghost: "As conversations run, Ceptly notices who owns what and lists it here.",
     example: "“Dana handles all escalations.”",
   },
   {
@@ -83,7 +83,7 @@ export function sourceVisual(src: {
       return { icon: Clipboard };
     case "user":
       return { icon: User };
-    case "checkin":
+    case "conversation":
     case "note":
       return { icon: Sparkles };
     default:

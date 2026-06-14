@@ -46,7 +46,7 @@ export function AppContextPicker({
     <div className="space-y-2">
       <Label>App context</Label>
       <p className="text-sm text-muted-foreground">
-        Connect external tools so the check-in agent knows what each person is
+        Connect external tools so the conversation agent knows what each person is
         working on before messaging them in Slack.
       </p>
       {connectedOnly && visibleOptions.length === 0 ? (

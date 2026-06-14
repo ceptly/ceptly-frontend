@@ -13,7 +13,7 @@ import { buildResultDestinations } from "@/lib/result-destinations";
 import { snapScheduleTimeToInterval } from "@/lib/schedule/cron-fire";
 
 export interface DeployBodyContext {
-  /** Channels used as the standup venue and for channel rollups. */
+  /** Channels used as the meeting venue and for channel rollups. */
   chatChannels: SlackChannel[];
   /** Channels available for DM-agent rollups. */
   slackChannels: SlackChannel[];
@@ -26,7 +26,7 @@ export function agentDeployValuesComplete(
   const isChannelDest = values.destinationType === "channel";
   const isManual = values.triggerMode === "manual";
   if (!values.name.trim()) return false;
-  if (isChannelDest && !values.standupChannelId) return false;
+  if (isChannelDest && !values.channelId) return false;
   if (values.selectedMemberIds.length === 0) return false;
   if (
     !isManual &&
@@ -85,8 +85,8 @@ export function buildAgentDeployBody(
   const rollupChannels = isChannelDest ? ctx.chatChannels : ctx.slackChannels;
 
   return {
-    kind: isChannelDest ? "standup" : "checkin",
-    trigger_mode: values.triggerMode,
+    destination: isChannelDest ? "channel" : "dm",
+    trigger: values.triggerMode === "manual" ? "one_off" : "scheduled",
     name: values.name.trim(),
     ...(isPretrained
       ? { persona_preset: values.presetId }
@@ -106,7 +106,7 @@ export function buildAgentDeployBody(
     }),
     schedule: buildDeploySchedule(values),
     ...(isChannelDest
-      ? { channel_id: values.standupChannelId, style: values.standupStyle }
+      ? { channel_id: values.channelId, style: values.channelStyle }
       : {}),
   };
 }

@@ -280,7 +280,7 @@ export function RosterImportButtons({
         <p className="text-xs text-muted-foreground">
           {teamsPrimary
             ? "Connect Microsoft Teams to import your team."
-            : "Connect Slack to import your team and send check-in DMs."}
+            : "Connect Slack to import your team and send conversation DMs."}
         </p>
       ) : linearConnected || jiraConnected || mondayConnected ? (
         <p className="text-xs text-muted-foreground">
