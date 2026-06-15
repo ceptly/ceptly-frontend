@@ -35,13 +35,6 @@ export function roleCountsTowardSeats(
   return role === "owner" || role === "admin";
 }
 
-/** @deprecated Use canManageWorkspace */
-export function isLeadershipRole(
-  role: WorkspaceMembership["role"] | undefined,
-): boolean {
-  return canManageWorkspace(role);
-}
-
 export function formatWorkspaceRole(role: WorkspaceMembership["role"]): string {
   return ROLE_LABELS[role];
 }

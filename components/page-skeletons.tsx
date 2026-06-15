@@ -1,4 +1,3 @@
-import { ActivityPageShell } from "@/components/activity/activity-page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -67,10 +66,6 @@ function ReachOutCardSkeleton() {
       <Skeleton className="mt-3.5 h-3.5 w-52" />
     </div>
   );
-}
-
-function ConversationCardSkeleton() {
-  return <RollupCardSkeleton />;
 }
 
 function TableSkeleton({ rows = 5 }: { rows?: number }) {
@@ -178,14 +173,6 @@ export function DashboardPageContentSkeleton() {
         <Skeleton className="h-72 w-full rounded-xl" />
       </div>
     </>
-  );
-}
-
-export function ActivityPageSkeleton() {
-  return (
-    <ActivityPageShell>
-      <ActivityPageContentSkeleton />
-    </ActivityPageShell>
   );
 }
 
@@ -319,36 +306,3 @@ export function SettingsPageSkeleton({ className }: PageSkeletonProps) {
   );
 }
 
-export function ConversationFormSkeleton() {
-  return (
-    <div className="space-y-6" aria-busy="true" aria-label="Loading form">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Skeleton className="h-24 w-full rounded-lg" />
-        <Skeleton className="h-24 w-full rounded-lg" />
-      </div>
-      <FormSectionSkeleton />
-      <FormSectionSkeleton />
-      <Skeleton className="h-9 w-32 rounded-md" />
-    </div>
-  );
-}
-
-export function DefaultPageSkeleton({ className }: PageSkeletonProps) {
-  return (
-    <div
-      className={cn(
-        "mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-8",
-        className,
-      )}
-      aria-busy="true"
-      aria-label="Loading"
-    >
-      <PageHeaderSkeleton />
-      <div className="space-y-3">
-        <ConversationCardSkeleton />
-        <ConversationCardSkeleton />
-        <ConversationCardSkeleton />
-      </div>
-    </div>
-  );
-}

@@ -3,9 +3,6 @@ import { parseResultDestinations } from "@/lib/result-destinations";
 
 export type PersonaMode = "custom" | "pretrained";
 
-/** Persona preset ids come from the backend registry (GET /api/personas). */
-export type PersonaPresetId = string;
-
 export type AgentTriggerMode = "schedule" | "event" | "manual";
 
 export const SCHEDULE_PRESET_IDS = [

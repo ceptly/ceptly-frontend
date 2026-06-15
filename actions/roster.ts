@@ -26,13 +26,6 @@ const updateSchema = z.object({
   paused: z.boolean().optional(),
 });
 
-const localeUpdateSchema = z.object({
-  workspaceId: z.string().uuid(),
-  memberId: z.string().uuid(),
-  timezone: z.string().trim().min(1).nullable().optional(),
-  language: z.string().trim().min(1).nullable().optional(),
-});
-
 const memberDetailsUpdateSchema = z.object({
   workspaceId: z.string().uuid(),
   memberId: z.string().uuid(),
@@ -182,55 +175,6 @@ export async function updateRosterMemberDetails(
   return { success: true };
 }
 
-export async function updateRosterMemberLocale(
-  workspaceId: string,
-  memberId: string,
-  payload: { timezone?: string | null; language?: string | null },
-): Promise<{ error?: string; success?: boolean }> {
-  const parsed = localeUpdateSchema.safeParse({
-    workspaceId,
-    memberId,
-    ...payload,
-  });
-  if (!parsed.success) {
-    return { error: "Invalid roster member." };
-  }
-
-  if (
-    parsed.data.timezone === undefined &&
-    parsed.data.language === undefined
-  ) {
-    return { error: "No locale fields to update." };
-  }
-
-  const token = await getAccessToken();
-  if (!token) {
-    return { error: "You must be signed in to manage the roster." };
-  }
-
-  const updatePayload: { timezone?: string | null; language?: string | null } =
-    {};
-  if (parsed.data.timezone !== undefined) {
-    updatePayload.timezone = parsed.data.timezone;
-  }
-  if (parsed.data.language !== undefined) {
-    updatePayload.language = parsed.data.language;
-  }
-
-  const result = await updateRosterMember(
-    token,
-    parsed.data.workspaceId,
-    parsed.data.memberId,
-    updatePayload,
-  );
-
-  if (!result.success) {
-    return { error: result.error ?? "Failed to update team member." };
-  }
-
-  revalidatePath("/team");
-  return { success: true };
-}
 
 function formatImportResult(data: {
   added: number;

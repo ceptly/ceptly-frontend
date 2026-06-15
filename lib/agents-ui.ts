@@ -46,34 +46,3 @@ export const agentSegmentButtonVariants = cva(
 export const agentSectionTitleClass = "text-sm font-bold";
 
 export const agentFieldHintClass = "mt-1.5 text-xs text-muted-foreground";
-
-export const agentTypeCardVariants = cva(
-  "relative flex gap-3 border p-3.5 text-left transition-colors",
-  {
-    variants: {
-      active: {
-        true: "border-[color:var(--brand-green-soft)] bg-[color-mix(in_oklab,var(--brand-green)_7%,var(--card-glass))]",
-        false:
-          "border-[color:var(--border-strong)] bg-[color:var(--card-glass)] hover:bg-[color:var(--card-hover)]",
-      },
-    },
-    defaultVariants: {
-      active: false,
-    },
-  },
-);
-
-export const agentTypeIconVariants = cva(
-  "flex size-[34px] shrink-0 items-center justify-center border",
-  {
-    variants: {
-      active: {
-        true: "border-[color:var(--green-line)] bg-[color:var(--green-wash)] text-[color:var(--brand-green-soft)]",
-        false: "border-border bg-muted",
-      },
-    },
-    defaultVariants: {
-      active: false,
-    },
-  },
-);

@@ -1,10 +1,6 @@
 import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 
-/** Bright mention text on dark backgrounds (dark mode composer, user bubbles). */
-export const MENTION_TEXT_COLOR = "#b5a5ff";
-/** Darker mention text for readability on light backgrounds. */
-export const MENTION_TEXT_COLOR_LIGHT = "#745ae6";
 /** 50% opacity highlight for mention picker selection */
 export const MENTION_HIGHLIGHT_COLOR = "rgba(116, 90, 230, 0.4)";
 

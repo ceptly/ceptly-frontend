@@ -59,13 +59,6 @@ export async function setOnboardingCompleteCookie(completed: boolean) {
   });
 }
 
-export async function clearOnboardingCompleteCookie() {
-  const cookieStore = await cookies();
-  const options = cookieOptions();
-
-  cookieStore.set("onboarding_complete", "", { ...options, maxAge: 0 });
-}
-
 export async function setSubscriptionCookies(user: AuthUser) {
   const cookieStore = await cookies();
   const options = cookieOptions();
@@ -90,15 +83,6 @@ export async function setSubscriptionCookies(user: AuthUser) {
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60,
   });
-}
-
-export async function clearSubscriptionCookies() {
-  const cookieStore = await cookies();
-  const options = cookieOptions();
-
-  cookieStore.set("subscription_active", "", { ...options, maxAge: 0 });
-  cookieStore.set("billing_role", "", { ...options, maxAge: 0 });
-  cookieStore.set("billing_can_manage", "", { ...options, maxAge: 0 });
 }
 
 export async function setWorkspaceNameCookie(name: string) {

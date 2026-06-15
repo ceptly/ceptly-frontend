@@ -2,14 +2,6 @@ import { resolveApiBaseUrl } from "./auth";
 import type { InvitePreview, WorkspaceInvite } from "./types";
 import { parseJsonResponse } from "./http";
 
-export interface ApiErrorBody {
-  success: boolean;
-  error?: string;
-  code?: string;
-  seatUsage?: number;
-  paidSeats?: number;
-}
-
 export async function listInvites(
   accessToken: string,
   workspaceId: string,

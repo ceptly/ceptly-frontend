@@ -1,4 +1,4 @@
-export function isSameCalendarDay(a: Date, b: Date): boolean {
+function isSameCalendarDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&

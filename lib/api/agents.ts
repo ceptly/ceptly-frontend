@@ -183,17 +183,6 @@ export function deleteAgent(
   return deleteAgents<Record<string, never>>(accessToken, workspaceId, `/${agentId}`);
 }
 
-export function listAgents(
-  accessToken: string,
-  workspaceId: string,
-): Promise<{ success: boolean; error?: string; data?: { agents: AgentFull[] } }> {
-  return getAgents<{ data?: { agents: AgentFull[] } }>(
-    accessToken,
-    workspaceId,
-    "",
-  );
-}
-
 export function updateAgent(
   accessToken: string,
   workspaceId: string,
