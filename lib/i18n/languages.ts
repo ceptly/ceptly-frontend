@@ -23,9 +23,6 @@ export const SUPPORTED_LANGUAGES = [
   { code: "pa", label: "Punjabi" },
 ] as const;
 
-export type SupportedLanguageCode =
-  (typeof SUPPORTED_LANGUAGES)[number]["code"];
-
 export function getLanguageLabel(code: string): string {
   return (
     SUPPORTED_LANGUAGES.find((language) => language.code === code)?.label ??

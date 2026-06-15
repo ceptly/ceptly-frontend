@@ -56,21 +56,6 @@ export function userNeedsSubscribe(user: AuthUser | null | undefined): boolean {
   return !workspaceHasActiveSubscription(workspace);
 }
 
-export function userBlockedBySubscription(
-  user: AuthUser | null | undefined,
-): boolean {
-  if (!isBillingEnforced()) {
-    return false;
-  }
-
-  const workspace = getPrimaryWorkspace(user);
-  if (!workspace) {
-    return false;
-  }
-
-  return !workspaceHasActiveSubscription(workspace);
-}
-
 export function formatSubscriptionStatus(
   status: WorkspaceMembership["subscriptionStatus"],
 ): string {
