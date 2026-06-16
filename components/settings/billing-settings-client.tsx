@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import {
+  changeSubscriptionTierAction,
   endTrialAction,
   openBillingPortalAction,
   refreshSubscriptionCookiesAction,
@@ -51,10 +52,39 @@ export function BillingSettingsClient({
   const [portalPending, setPortalPending] = useState(false);
   const [endTrialPending, setEndTrialPending] = useState(false);
   const [confirmEndTrial, setConfirmEndTrial] = useState(false);
+  const [tierPending, setTierPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const priceLabel = formatPricePerSeat(status.pricePerSeatCents);
   const isTrialing = status.subscriptionStatus === "trialing";
+  const targetTier = status.subscriptionTier === "tier1" ? "tier2" : "tier1";
+  const isUpgrade = targetTier === "tier2";
+  const formatLimit = (limit: number | null) =>
+    limit === null ? "Unlimited" : String(limit);
+
+  async function handleChangeTier() {
+    if (!canManage) {
+      return;
+    }
+    setTierPending(true);
+    setError(null);
+
+    try {
+      const result = await changeSubscriptionTierAction(targetTier);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      if (result.data) {
+        setStatus(result.data);
+      }
+      router.refresh();
+    } catch {
+      setError("Unable to change plan.");
+    } finally {
+      setTierPending(false);
+    }
+  }
 
   async function handleManageBilling() {
     setPortalPending(true);
@@ -127,6 +157,68 @@ export function BillingSettingsClient({
         pendingInviteCount={pendingInviteCount}
         autoOpenManage={autoOpenManage}
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Plan</CardTitle>
+          <CardDescription>
+            You&apos;re on the {status.tierLabel} plan at {priceLabel}/month per
+            seat.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <dt className="text-sm text-muted-foreground">Workspace members</dt>
+              <dd className="font-medium">
+                {status.seatUsage} of {formatLimit(status.maxMembers)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm text-muted-foreground">
+                Scheduled agents at once
+              </dt>
+              <dd className="font-medium">
+                {formatLimit(status.maxScheduledAgents)}
+              </dd>
+            </div>
+          </dl>
+
+          {canManage ? (
+            <div className="space-y-3 rounded-lg border border-border bg-muted/30 px-4 py-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">
+                  {isUpgrade
+                    ? "Upgrade to Pro — $30/seat/month"
+                    : "Switch to Starter — $20/seat/month"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isUpgrade
+                    ? "Unlimited workspace members and unlimited scheduled agents."
+                    : "Up to 5 workspace members and 5 scheduled agents running at once."}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant={isUpgrade ? "default" : "outline"}
+                onClick={() => void handleChangeTier()}
+                disabled={tierPending}
+              >
+                {tierPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Updating plan…
+                  </>
+                ) : isUpgrade ? (
+                  "Upgrade to Pro"
+                ) : (
+                  "Switch to Starter"
+                )}
+              </Button>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

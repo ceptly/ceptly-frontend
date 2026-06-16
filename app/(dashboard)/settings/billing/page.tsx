@@ -46,6 +46,10 @@ export default async function BillingSettingsPage({
         initialStatus={
           status ?? {
             subscriptionStatus: workspace.subscriptionStatus ?? "none",
+            subscriptionTier: "tier1",
+            tierLabel: "Starter",
+            maxMembers: 5,
+            maxScheduledAgents: 5,
             trialEndsAt: workspace.trialEndsAt ?? null,
             currentPeriodEnd: workspace.currentPeriodEnd ?? null,
             cancelAtPeriodEnd: workspace.cancelAtPeriodEnd ?? false,

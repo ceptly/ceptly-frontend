@@ -9,8 +9,16 @@ export type SubscriptionStatus =
   | "unpaid"
   | "incomplete";
 
+export type SubscriptionTier = "tier1" | "tier2";
+
 export interface WorkspaceBillingStatus {
   subscriptionStatus: SubscriptionStatus;
+  subscriptionTier: SubscriptionTier;
+  tierLabel: string;
+  /** Max billable seats this tier permits; null = unlimited. */
+  maxMembers: number | null;
+  /** Max simultaneously scheduled agents this tier permits; null = unlimited. */
+  maxScheduledAgents: number | null;
   trialEndsAt: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
@@ -68,6 +76,7 @@ export async function fetchBillingStatus(
 export async function createBillingCheckout(
   token: string,
   workspaceId: string,
+  tier: SubscriptionTier = "tier1",
 ): Promise<{ url?: string; error?: string }> {
   try {
     const base = await resolveApiBaseUrl();
@@ -79,6 +88,7 @@ export async function createBillingCheckout(
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ tier }),
       },
     );
 
@@ -177,6 +187,33 @@ export async function endWorkspaceTrial(
     const result = (await response.json()) as EndTrialResponse;
     if (!response.ok || !result.success) {
       return { error: result.error ?? "Failed to end trial" };
+    }
+
+    return { data: result.data };
+  } catch {
+    return { error: "Could not reach the billing API. Try again in a moment." };
+  }
+}
+
+export async function changeSubscriptionTier(
+  token: string,
+  workspaceId: string,
+  tier: SubscriptionTier,
+): Promise<{ data?: WorkspaceBillingStatus; error?: string }> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(`${base}${billingBase(workspaceId)}/tier`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ tier }),
+    });
+
+    const result = (await response.json()) as UpdateSeatsResponse;
+    if (!response.ok || !result.success) {
+      return { error: result.error ?? "Failed to change plan" };
     }
 
     return { data: result.data };
