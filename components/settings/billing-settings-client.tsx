@@ -23,6 +23,7 @@ import {
 import type { WorkspaceBillingStatus } from "@/lib/api/billing";
 import { formatPricePerSeat } from "@/lib/api/billing";
 import { formatSubscriptionStatus } from "@/lib/subscription";
+import { SUBSCRIPTION_TIERS } from "@/lib/subscription-tiers";
 
 function formatDate(value: string | null | undefined) {
   if (!value) {
@@ -53,12 +54,15 @@ export function BillingSettingsClient({
   const [endTrialPending, setEndTrialPending] = useState(false);
   const [confirmEndTrial, setConfirmEndTrial] = useState(false);
   const [tierPending, setTierPending] = useState(false);
+  const [confirmDowngrade, setConfirmDowngrade] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const priceLabel = formatPricePerSeat(status.pricePerSeatCents);
   const isTrialing = status.subscriptionStatus === "trialing";
   const targetTier = status.subscriptionTier === "tier1" ? "tier2" : "tier1";
   const isUpgrade = targetTier === "tier2";
+  const targetMeta = SUBSCRIPTION_TIERS[targetTier];
+  const targetPriceLabel = formatPricePerSeat(targetMeta.pricePerSeatCents);
   const formatLimit = (limit: number | null) =>
     limit === null ? "Unlimited" : String(limit);
 
@@ -66,6 +70,14 @@ export function BillingSettingsClient({
     if (!canManage) {
       return;
     }
+
+    // Downgrades shrink the member and agent caps immediately, so confirm first.
+    if (!isUpgrade && !confirmDowngrade) {
+      setConfirmDowngrade(true);
+      setError(null);
+      return;
+    }
+
     setTierPending(true);
     setError(null);
 
@@ -78,6 +90,7 @@ export function BillingSettingsClient({
       if (result.data) {
         setStatus(result.data);
       }
+      setConfirmDowngrade(false);
       router.refresh();
     } catch {
       setError("Unable to change plan.");
@@ -189,32 +202,74 @@ export function BillingSettingsClient({
               <div className="space-y-1">
                 <p className="text-sm font-medium">
                   {isUpgrade
-                    ? "Upgrade to Pro — $30/seat/month"
-                    : "Switch to Starter — $20/seat/month"}
+                    ? `Upgrade to ${targetMeta.label} — ${targetPriceLabel}/seat/month`
+                    : `Switch to ${targetMeta.label} — ${targetPriceLabel}/seat/month`}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {isUpgrade
                     ? "Unlimited workspace members and unlimited scheduled agents."
-                    : "Up to 5 workspace members and 5 scheduled agents running at once."}
+                    : `Up to ${formatLimit(targetMeta.maxMembers)} workspace members and ${formatLimit(
+                        targetMeta.maxScheduledAgents,
+                      )} scheduled agents running at once.`}
                 </p>
               </div>
-              <Button
-                type="button"
-                variant={isUpgrade ? "default" : "outline"}
-                onClick={() => void handleChangeTier()}
-                disabled={tierPending}
-              >
-                {tierPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Updating plan…
-                  </>
-                ) : isUpgrade ? (
-                  "Upgrade to Pro"
-                ) : (
-                  "Switch to Starter"
-                )}
-              </Button>
+              {!isUpgrade && confirmDowngrade ? (
+                <Alert>
+                  <AlertDescription className="space-y-3">
+                    <p>
+                      The {targetMeta.label} plan is limited to{" "}
+                      {formatLimit(targetMeta.maxMembers)} workspace members and{" "}
+                      {formatLimit(targetMeta.maxScheduledAgents)} scheduled
+                      agents running at once. You&apos;re currently using{" "}
+                      {status.seatUsage} seats. Are you sure?
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => void handleChangeTier()}
+                        disabled={tierPending}
+                      >
+                        {tierPending ? (
+                          <>
+                            <Loader2 className="size-3.5 animate-spin" />
+                            Updating plan…
+                          </>
+                        ) : (
+                          `Yes, switch to ${targetMeta.label}`
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setConfirmDowngrade(false)}
+                        disabled={tierPending}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Button
+                  type="button"
+                  variant={isUpgrade ? "default" : "outline"}
+                  onClick={() => void handleChangeTier()}
+                  disabled={tierPending}
+                >
+                  {tierPending ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Updating plan…
+                    </>
+                  ) : isUpgrade ? (
+                    `Upgrade to ${targetMeta.label}`
+                  ) : (
+                    `Switch to ${targetMeta.label}`
+                  )}
+                </Button>
+              )}
             </div>
           ) : null}
         </CardContent>

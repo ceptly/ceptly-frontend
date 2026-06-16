@@ -140,6 +140,12 @@ export interface EndTrialResponse {
   error?: string;
 }
 
+export interface ChangeTierResponse {
+  success: boolean;
+  data?: WorkspaceBillingStatus;
+  error?: string;
+}
+
 export async function updateSubscriptionSeats(
   token: string,
   workspaceId: string,
@@ -211,7 +217,7 @@ export async function changeSubscriptionTier(
       body: JSON.stringify({ tier }),
     });
 
-    const result = (await response.json()) as UpdateSeatsResponse;
+    const result = (await response.json()) as ChangeTierResponse;
     if (!response.ok || !result.success) {
       return { error: result.error ?? "Failed to change plan" };
     }

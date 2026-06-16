@@ -8,7 +8,8 @@ import {
   startBillingCheckoutAction,
   refreshSubscriptionCookiesAction,
 } from "@/actions/billing";
-import type { SubscriptionTier } from "@/lib/api/billing";
+import { formatPricePerSeat, type SubscriptionTier } from "@/lib/api/billing";
+import { SUBSCRIPTION_TIERS } from "@/lib/subscription-tiers";
 
 const baseFeatures = [
   "Conversational Slack meetings",
@@ -27,19 +28,19 @@ const plans: {
 }[] = [
   {
     tier: "tier1",
-    name: "Starter",
-    price: "$20",
+    name: SUBSCRIPTION_TIERS.tier1.label,
+    price: formatPricePerSeat(SUBSCRIPTION_TIERS.tier1.pricePerSeatCents),
     highlight: false,
     features: [
       ...baseFeatures,
-      "Up to 5 workspace members",
-      "Up to 5 scheduled agents running at once",
+      `Up to ${SUBSCRIPTION_TIERS.tier1.maxMembers} workspace members`,
+      `Up to ${SUBSCRIPTION_TIERS.tier1.maxScheduledAgents} scheduled agents running at once`,
     ],
   },
   {
     tier: "tier2",
-    name: "Pro",
-    price: "$30",
+    name: SUBSCRIPTION_TIERS.tier2.label,
+    price: formatPricePerSeat(SUBSCRIPTION_TIERS.tier2.pricePerSeatCents),
     highlight: true,
     features: [
       ...baseFeatures,

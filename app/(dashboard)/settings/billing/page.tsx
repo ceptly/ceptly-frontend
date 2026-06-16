@@ -1,5 +1,6 @@
 import { BillingSettingsClient } from "@/components/settings/billing-settings-client";
 import { fetchBillingStatus } from "@/lib/api/billing";
+import { TIER_DEFAULTS } from "@/lib/subscription-tiers";
 import { listInvites } from "@/lib/api/invites";
 import { listWorkspaceMembers } from "@/lib/api/members";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
@@ -47,9 +48,9 @@ export default async function BillingSettingsPage({
           status ?? {
             subscriptionStatus: workspace.subscriptionStatus ?? "none",
             subscriptionTier: "tier1",
-            tierLabel: "Starter",
-            maxMembers: 5,
-            maxScheduledAgents: 5,
+            tierLabel: TIER_DEFAULTS.label,
+            maxMembers: TIER_DEFAULTS.maxMembers,
+            maxScheduledAgents: TIER_DEFAULTS.maxScheduledAgents,
             trialEndsAt: workspace.trialEndsAt ?? null,
             currentPeriodEnd: workspace.currentPeriodEnd ?? null,
             cancelAtPeriodEnd: workspace.cancelAtPeriodEnd ?? false,
