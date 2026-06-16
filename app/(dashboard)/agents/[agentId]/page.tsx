@@ -136,9 +136,17 @@ export default async function AgentPage({
     );
   }
 
-  const sessionsResult = await getAgentSessions(token, workspace.id, agentId);
+  const [sessionsResult, rosterResult] = await Promise.all([
+    getAgentSessions(token, workspace.id, agentId),
+    listRosterMembers(token, workspace.id),
+  ]);
   const sessions = sessionsResult.data?.sessions ?? [];
   const firstSessionId = sessions[0]?.session_id;
+
+  const memberNames: Record<string, string> = {};
+  for (const member of rosterResult.data?.members ?? []) {
+    memberNames[member.id] = member.display_name;
+  }
 
   const initialDetailResult = firstSessionId
     ? await getAgentSessionDetail(token, workspace.id, agentId, firstSessionId)
@@ -184,6 +192,7 @@ export default async function AgentPage({
           initialSession={initialSession}
           agentName={agent.name}
           subtitle={subtitle}
+          memberNames={memberNames}
           actions={
             canEdit ? (
               <AgentDetailActions

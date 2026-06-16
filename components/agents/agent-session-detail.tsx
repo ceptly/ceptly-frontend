@@ -34,6 +34,8 @@ interface AgentSessionDetailViewProps {
   agentName: string;
   subtitle: string;
   actions?: ReactNode;
+  /** Maps roster_member_id → display name so participants show names, not ids. */
+  memberNames?: Record<string, string>;
 }
 
 function AgentSessionPicker({
@@ -139,6 +141,7 @@ export function AgentSessionDetailView({
   agentName,
   subtitle,
   actions,
+  memberNames,
 }: AgentSessionDetailViewProps) {
   const [selectedSessionId, setSelectedSessionId] = useState(
     initialSession?.session.session_id ?? sessions[0]?.session_id ?? "",
@@ -254,23 +257,35 @@ export function AgentSessionDetailView({
                 Participants
               </h2>
               <div className="ceptly-list-card">
-                {detail.participants.map((p, i) => (
-                  <div key={p.id} className="ceptly-list-row items-center">
-                    <span className="ceptly-avatar ceptly-avatar-sm">
-                      {i + 1}
-                    </span>
-                    <div className="ceptly-list-main">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="ceptly-list-name font-mono text-xs">
-                          {p.roster_member_id
-                            ? p.roster_member_id.slice(0, 8)
-                            : "—"}
-                        </span>
-                        {participantStatusBadge(p.status)}
+                {detail.participants.map((p, i) => {
+                  const name = p.roster_member_id
+                    ? memberNames?.[p.roster_member_id]
+                    : undefined;
+                  return (
+                    <div key={p.id} className="ceptly-list-row items-center">
+                      <span className="ceptly-avatar ceptly-avatar-sm">
+                        {i + 1}
+                      </span>
+                      <div className="ceptly-list-main">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={
+                              name
+                                ? "ceptly-list-name"
+                                : "ceptly-list-name font-mono text-xs"
+                            }
+                          >
+                            {name ??
+                              (p.roster_member_id
+                                ? p.roster_member_id.slice(0, 8)
+                                : "—")}
+                          </span>
+                          {participantStatusBadge(p.status)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           ) : null}

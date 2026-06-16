@@ -6,15 +6,19 @@ import { redirect } from "next/navigation";
 import { refreshSubscriptionCookiesAction } from "@/actions/sync-subscription";
 import { getPostHogClient } from "@/lib/posthog-server";
 import {
+  changeSubscriptionTier,
   createBillingCheckout,
   createBillingPortalSession,
   endWorkspaceTrial,
   updateSubscriptionSeats,
+  type SubscriptionTier,
 } from "@/lib/api/billing";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { getPrimaryWorkspace } from "@/lib/subscription";
 
-export async function startBillingCheckoutAction(): Promise<{
+export async function startBillingCheckoutAction(
+  tier: SubscriptionTier = "tier1",
+): Promise<{
   error?: string;
 }> {
   const user = await requireAuth();
@@ -25,7 +29,7 @@ export async function startBillingCheckoutAction(): Promise<{
     return { error: "Workspace not found" };
   }
 
-  const result = await createBillingCheckout(token, workspace.id);
+  const result = await createBillingCheckout(token, workspace.id, tier);
 
   if (result.error || !result.url) {
     return { error: result.error ?? "Unable to start checkout" };
@@ -35,11 +39,46 @@ export async function startBillingCheckoutAction(): Promise<{
   posthog.capture({
     distinctId: user.id,
     event: "billing_checkout_started",
-    properties: { workspace_id: workspace.id },
+    properties: { workspace_id: workspace.id, tier },
   });
   await posthog.shutdown();
 
   redirect(result.url);
+}
+
+export async function changeSubscriptionTierAction(
+  tier: SubscriptionTier,
+): Promise<{
+  error?: string;
+  success?: boolean;
+  data?: Awaited<ReturnType<typeof changeSubscriptionTier>>["data"];
+}> {
+  const user = await requireAuth();
+  const token = await getAccessToken();
+  const workspace = getPrimaryWorkspace(user);
+
+  if (!token || !workspace?.id) {
+    return { error: "Workspace not found" };
+  }
+
+  const result = await changeSubscriptionTier(token, workspace.id, tier);
+
+  if (result.error) {
+    return { error: result.error };
+  }
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: user.id,
+    event: "subscription_tier_changed",
+    properties: { workspace_id: workspace.id, tier },
+  });
+  await posthog.shutdown();
+
+  revalidatePath("/settings");
+  revalidatePath("/settings/billing");
+
+  return { success: true, data: result.data };
 }
 
 export async function openBillingPortalAction(): Promise<{
