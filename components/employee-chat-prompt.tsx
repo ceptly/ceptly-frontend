@@ -372,6 +372,41 @@ export function EmployeeChatPrompt({
     return agentFormDraftRef.current ?? deployCardValues;
   }
 
+  /** Collapse the deploy form, show confirmation, and persist deployed state. */
+  async function finalizeAgentDeploy(values: AgentDeployInitialValues) {
+    setAgentFormValues(null);
+    agentFormDraftRef.current = null;
+    setAgentFormVersion(0);
+    setDeploySuccess(true);
+    setMessages((current) => {
+      for (let index = current.length - 1; index >= 0; index -= 1) {
+        const message = current[index];
+        if (
+          message?.role === "assistant" &&
+          message.ui_component?.type === "agent_form"
+        ) {
+          const next = [...current];
+          next[index] = {
+            ...message,
+            ui_component: {
+              type: "agent_deployed",
+              ...(values.name ? { name: values.name } : {}),
+            },
+          };
+          return next;
+        }
+      }
+      return current;
+    });
+    if (sessionId) {
+      await markChatFormDeployedAction({
+        workspaceId,
+        sessionId,
+        name: values.name,
+      });
+    }
+  }
+
   async function handleDeployAgent() {
     const values = resolveDeployValues();
     if (
@@ -416,46 +451,13 @@ export function EmployeeChatPrompt({
         return;
       }
       client.logEvent("employee_chat_agent_deployed");
-      setAgentFormValues(null);
-      agentFormDraftRef.current = null;
-      setAgentFormVersion(0);
+      await finalizeAgentDeploy(values);
       onPlaygroundStarted(run.sessionId);
       return;
     }
 
     client.logEvent("employee_chat_agent_deployed");
-    // Collapse the inline form and surface a success note in its place.
-    setAgentFormValues(null);
-    agentFormDraftRef.current = null;
-    setAgentFormVersion(0);
-    setDeploySuccess(true);
-    setMessages((current) => {
-      for (let index = current.length - 1; index >= 0; index -= 1) {
-        const message = current[index];
-        if (
-          message?.role === "assistant" &&
-          message.ui_component?.type === "agent_form"
-        ) {
-          const next = [...current];
-          next[index] = {
-            ...message,
-            ui_component: {
-              type: "agent_deployed",
-              ...(values.name ? { name: values.name } : {}),
-            },
-          };
-          return next;
-        }
-      }
-      return current;
-    });
-    if (sessionId) {
-      void markChatFormDeployedAction({
-        workspaceId,
-        sessionId,
-        name: values.name,
-      });
-    }
+    await finalizeAgentDeploy(values);
   }
 
   async function handleTestAgent() {

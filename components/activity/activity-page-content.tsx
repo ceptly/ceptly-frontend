@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { CalendarClock, Send, Sparkles } from "lucide-react";
+import { CalendarClock, Sparkles } from "lucide-react";
 
-import { ActivityAdhocList } from "@/components/activity/activity-adhoc-list";
 import { ActivityAttentionList } from "@/components/activity/activity-attention-list";
 import { FollowUpsList } from "@/components/activity/follow-ups-list";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +39,7 @@ export async function ActivityPageContent({
       <div className="ceptly-page-head">
         <h1 className="ceptly-page-title">Activity</h1>
         <p className="ceptly-page-sub">
-          Rollups from your conversations, meetings, and one-off reach-outs.
+          Rollups from your conversations and meetings.
           {attentionCount > 0 ? (
             <Badge variant="attention">{attentionCount} need attention</Badge>
           ) : null}
@@ -89,13 +88,6 @@ export async function ActivityPageContent({
         )}
       </section>
 
-      <section className="ceptly-section">
-        <h2 className="ceptly-section-title">
-          <Send aria-hidden />
-          Recent reach-outs
-        </h2>
-        <ActivityAdhocList sessions={activity.adhoc_sessions} />
-      </section>
     </>
   );
 }
