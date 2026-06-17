@@ -82,11 +82,13 @@ export function buildAgentDeployBody(
 ): AgentDeployBody {
   const isChannelDest = values.destinationType === "channel";
   const isPretrained = values.personaMode === "pretrained";
+  const isPlayground = values.runtime === "playground";
   const rollupChannels = isChannelDest ? ctx.chatChannels : ctx.slackChannels;
 
   return {
     destination: isChannelDest ? "channel" : "dm",
     trigger: values.triggerMode === "manual" ? "one_off" : "scheduled",
+    runtime: values.runtime,
     name: values.name.trim(),
     ...(isPretrained
       ? { persona_preset: values.presetId }
@@ -99,11 +101,14 @@ export function buildAgentDeployBody(
     roster_member_ids: values.selectedMemberIds,
     context_integrations:
       values.contextIntegrations as AgentContextIntegration[],
-    result_destinations: buildResultDestinations({
-      channelIds: values.selectedChannelIds,
-      channels: rollupChannels,
-      rosterDmIds: values.selectedRosterDmIds,
-    }),
+    // Playground runs in-app and never delivers external rollups.
+    result_destinations: isPlayground
+      ? []
+      : buildResultDestinations({
+          channelIds: values.selectedChannelIds,
+          channels: rollupChannels,
+          rosterDmIds: values.selectedRosterDmIds,
+        }),
     schedule: buildDeploySchedule(values),
     ...(isChannelDest
       ? { channel_id: values.channelId, style: values.channelStyle }

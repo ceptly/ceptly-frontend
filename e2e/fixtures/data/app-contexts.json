@@ -1,0 +1,5 @@
+{
+  "app_contexts": [
+    { "id": "linear", "label": "Linear", "selectable": true }
+  ]
+}

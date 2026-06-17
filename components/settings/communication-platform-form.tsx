@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 
 import { updateCommunicationPlatformAction } from "@/actions/communication";
@@ -77,11 +77,15 @@ export function CommunicationPlatformForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
+  // Derive a guaranteed-valid platform for the UI and for save. When the set
+  // of available platforms changes (e.g. after connecting one), we surface the
+  // first valid choice without mutating state from an effect.
+  const currentPlatform = useMemo(() => {
     const values = availableOptions.map((option) => option.value);
     if (values.length > 0 && !values.includes(platform)) {
-      setPlatform(values[0]!);
+      return values[0]!;
     }
+    return platform;
   }, [availableOptions, platform]);
 
   const handleSave = () => {
@@ -90,7 +94,7 @@ export function CommunicationPlatformForm({
     startTransition(async () => {
       const result = await updateCommunicationPlatformAction({
         workspaceId,
-        platform,
+        platform: currentPlatform,
       });
       if (result.error) {
         setError(result.error);
@@ -103,7 +107,7 @@ export function CommunicationPlatformForm({
     });
   };
 
-  const dirty = platform !== settings.communication_platform;
+  const dirty = currentPlatform !== settings.communication_platform;
 
   return (
     <Card>
@@ -131,7 +135,7 @@ export function CommunicationPlatformForm({
             <Label>Platform</Label>
             <OptionSelector
               mode="single"
-              value={platform}
+              value={currentPlatform}
               onChange={(value) => setPlatform(value as CommunicationPlatform)}
               options={availableOptions}
             />

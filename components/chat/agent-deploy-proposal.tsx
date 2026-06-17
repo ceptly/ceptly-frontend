@@ -88,7 +88,7 @@ export function AgentDeployProposalCard({
   const busy = pending || testing || disabled;
 
   return (
-    <div className="ceptly-proposal-card">
+    <div className="ceptly-proposal-card" data-testid="agent-deploy-proposal">
       <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
         <Rocket className="size-3.5 shrink-0" aria-hidden="true" />
         Deploy agent · {kindLabel(values)}
@@ -119,6 +119,7 @@ export function AgentDeployProposalCard({
         <Button
           size="sm"
           className="gap-2"
+          data-testid="agent-deploy-button"
           onClick={onDeploy}
           disabled={!complete || busy}
           title={complete ? undefined : "Add the missing details to deploy"}

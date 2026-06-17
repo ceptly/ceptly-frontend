@@ -1,0 +1,21 @@
+{
+  "range": "30d",
+  "kpis": {
+    "openBlockers": 4,
+    "openFollowUps": 7,
+    "participationRate": 0.82
+  },
+  "blockerTrend": [
+    { "date": "2026-06-01", "count": 2 },
+    { "date": "2026-06-08", "count": 5 },
+    { "date": "2026-06-15", "count": 4 }
+  ],
+  "participation": [
+    { "label": "Responded", "value": 82 },
+    { "label": "Missed", "value": 18 }
+  ],
+  "memberMomentum": [
+    { "memberId": "m1", "name": "Ada Lovelace", "completed": 12, "carryOver": 1 },
+    { "memberId": "m2", "name": "Alan Turing", "completed": 9, "carryOver": 3 }
+  ]
+}

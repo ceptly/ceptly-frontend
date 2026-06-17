@@ -90,7 +90,8 @@ export function useSpeechDictation({
   disabled = false,
   lang = "en-US",
 }: UseSpeechDictationOptions) {
-  const [supported, setSupported] = useState(false);
+  // Detect support at mount time via lazy initializer (no setState in effect).
+  const [supported] = useState(() => !!getSpeechRecognitionConstructor());
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,10 +99,6 @@ export function useSpeechDictation({
   const prefixRef = useRef("");
   const committedRef = useRef("");
   const listeningRef = useRef(false);
-
-  useEffect(() => {
-    setSupported(!!getSpeechRecognitionConstructor());
-  }, []);
 
   const stop = useCallback(() => {
     listeningRef.current = false;
@@ -194,11 +191,10 @@ export function useSpeechDictation({
     };
   }, []);
 
-  useEffect(() => {
-    if (disabled && listening) {
-      stop();
-    }
-  }, [disabled, listening, stop]);
+  // Note: we intentionally do not auto-stop from an effect when `disabled`
+  // flips while listening (would trigger setState via stop() from effect).
+  // The recognition will stop on its own via onend/abort or unmount cleanup;
+  // parent can also call the returned `stop()` explicitly if needed.
 
   return {
     supported,

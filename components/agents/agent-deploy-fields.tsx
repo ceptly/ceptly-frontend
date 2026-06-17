@@ -114,6 +114,9 @@ export function AgentDeployFields({
   const [destinationType, setDestinationType] = useState<"channel" | "dm">(
     initialValues?.destinationType ?? "dm",
   );
+  const [runtime, setRuntime] = useState<"live" | "playground">(
+    initialValues?.runtime ?? "live",
+  );
   const [channelStyle, setChannelStyle] = useState<ChannelStyle>(
     initialValues?.channelStyle ?? "broadcast",
   );
@@ -179,6 +182,7 @@ export function AgentDeployFields({
   const isChannelDest = destinationType === "channel";
   const isPretrained = personaMode === "pretrained";
   const isManual = triggerMode === "manual";
+  const isPlayground = runtime === "playground";
 
   const rollupChannels = useMemo<SlackChannel[]>(
     () => (isChannelDest ? chatChannels : slackChannels),
@@ -206,6 +210,7 @@ export function AgentDeployFields({
   const currentValues = useMemo<AgentDeployInitialValues>(
     () => ({
       destinationType,
+      runtime,
       personaMode,
       presetId,
       persona,
@@ -226,6 +231,7 @@ export function AgentDeployFields({
     }),
     [
       destinationType,
+      runtime,
       personaMode,
       presetId,
       persona,
@@ -555,6 +561,33 @@ export function AgentDeployFields({
             />
 
             <div className="space-y-2">
+              <Label>Environment</Label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={isPending || isEdit}
+                  className={cn(agentPillVariants({ selected: !isPlayground }))}
+                  onClick={() => setRuntime("live")}
+                >
+                  Live
+                </button>
+                <button
+                  type="button"
+                  disabled={isPending || isEdit}
+                  className={cn(agentPillVariants({ selected: isPlayground }))}
+                  onClick={() => setRuntime("playground")}
+                >
+                  Playground
+                </button>
+              </div>
+              <p className={agentFieldHintClass}>
+                {isPlayground
+                  ? "Runs entirely in-app for testing — no Slack/Teams messages are sent."
+                  : "Delivers to your real Slack/Teams workspace."}
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label>Meeting destination</Label>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -630,20 +663,24 @@ export function AgentDeployFields({
               </div>
             ) : null}
 
-            <ChannelChipsPicker
-              channels={rollupChannels}
-              selectedIds={selectedChannelIds}
-              onChange={setSelectedChannelIds}
-              disabled={isPending}
-              error={rollupChannelsError}
-            />
-            <RecipientChipsPicker
-              members={rosterMembers}
-              selectedIds={selectedRosterDmIds}
-              onChange={setSelectedRosterDmIds}
-              disabled={isPending}
-              label="Direct messages (rollups)"
-            />
+            {isPlayground ? null : (
+              <>
+                <ChannelChipsPicker
+                  channels={rollupChannels}
+                  selectedIds={selectedChannelIds}
+                  onChange={setSelectedChannelIds}
+                  disabled={isPending}
+                  error={rollupChannelsError}
+                />
+                <RecipientChipsPicker
+                  members={rosterMembers}
+                  selectedIds={selectedRosterDmIds}
+                  onChange={setSelectedRosterDmIds}
+                  disabled={isPending}
+                  label="Direct messages (rollups)"
+                />
+              </>
+            )}
           </AgentSection>
 
           <AgentDivider />

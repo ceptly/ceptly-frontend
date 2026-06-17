@@ -1,0 +1,6 @@
+{
+  "platform": "slack",
+  "channels": [
+    { "id": "C123", "name": "general", "is_private": false }
+  ]
+}

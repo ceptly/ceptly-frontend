@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CalendarClock } from "lucide-react";
 
 import { AgentEditFields } from "@/components/agents/agent-edit-fields";
 import { AgentDetailActions } from "@/components/agents/agent-detail-actions";
 import { AgentSessionDetailView } from "@/components/agents/agent-session-detail";
+import { FollowUpsList } from "@/components/activity/follow-ups-list";
+import { listFollowUpsForAgent } from "@/lib/api/follow-ups";
 import { buttonVariants } from "@/components/ui/button";
 import { agentToInitialValues, agentHref } from "@/lib/agents";
 import { listChatChannels } from "@/lib/api/communication";
@@ -20,6 +22,7 @@ import {
   getAgentSessions,
   getAgentSessionDetail,
 } from "@/lib/api/agents";
+import { getDashboard } from "@/lib/api/dashboard";
 import { getAccessToken, requireAuth } from "@/lib/auth/server";
 import { canManageWorkspace } from "@/lib/roles";
 import { cn } from "@/lib/utils";
@@ -136,12 +139,34 @@ export default async function AgentPage({
     );
   }
 
-  const [sessionsResult, rosterResult] = await Promise.all([
-    getAgentSessions(token, workspace.id, agentId),
-    listRosterMembers(token, workspace.id),
-  ]);
+  // Use a targeted follow-ups query for this agent instead of the broad
+  // workspace activity payload (which also loads attention, blockers, adhoc
+  // sessions, etc). The dedicated follow-ups list route does not enforce the
+  // Pro feature gate; we check follow_ups_enabled from the dashboard payload
+  // (matching the Activity page).
+  const [sessionsResult, rosterResult, followUpsResult, dashboardResult] =
+    await Promise.all([
+      getAgentSessions(token, workspace.id, agentId),
+      listRosterMembers(token, workspace.id),
+      listFollowUpsForAgent(token, workspace.id, agentId).catch(() => ({
+        success: false as const,
+        data: undefined,
+      })),
+      getDashboard(token, workspace.id, 7).catch(() => ({
+        success: false as const,
+        data: undefined,
+      })),
+    ]);
   const sessions = sessionsResult.data?.sessions ?? [];
   const firstSessionId = sessions[0]?.session_id;
+
+  const followUpsEnabled =
+    dashboardResult.success &&
+    dashboardResult.data?.dashboard?.follow_ups_enabled === true;
+  const agentFollowUps =
+    canEdit && followUpsEnabled && followUpsResult.success && followUpsResult.data
+      ? (followUpsResult.data.follow_ups ?? [])
+      : [];
 
   const memberNames: Record<string, string> = {};
   for (const member of rosterResult.data?.members ?? []) {
@@ -205,6 +230,16 @@ export default async function AgentPage({
           }
         />
       )}
+
+      {agentFollowUps.length > 0 ? (
+        <section className="ceptly-section mt-8">
+          <h2 className="ceptly-section-title">
+            <CalendarClock aria-hidden />
+            Follow-ups from this agent
+          </h2>
+          <FollowUpsList workspaceId={workspace.id} items={agentFollowUps} />
+        </section>
+      ) : null}
     </div>
   );
 }

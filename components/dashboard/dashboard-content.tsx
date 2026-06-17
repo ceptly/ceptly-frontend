@@ -67,7 +67,11 @@ export async function DashboardContent({
         <DashboardEmptyState days={days} />
       ) : (
         <div className="flex flex-col gap-4">
-          <KpiCards kpis={dashboard.kpis} days={days} />
+          <KpiCards
+            kpis={dashboard.kpis}
+            days={days}
+            followUpsEnabled={dashboard.follow_ups_enabled}
+          />
 
           <Card>
             <CardHeader>

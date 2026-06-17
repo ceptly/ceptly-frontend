@@ -73,7 +73,6 @@ export function AccountHeader({ user, showBilling = false }: AccountHeaderProps)
   const pathname = usePathname();
   const { theme, resolvedTheme } = useTheme();
   const { client } = useStatsigClient();
-  const [mounted, setMounted] = useState(false);
   const [attentionCount, setAttentionCount] = useState(0);
 
   const workspace = user.workspaces?.[0];
@@ -85,10 +84,6 @@ export function AccountHeader({ user, showBilling = false }: AccountHeaderProps)
     (item) =>
       item.href !== "/settings" && item.href !== "/settings/account",
   );
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!showActivity || !workspace?.id) {
@@ -111,7 +106,7 @@ export function AccountHeader({ user, showBilling = false }: AccountHeaderProps)
 
   const workspaceName = user.workspaces?.[0]?.name ?? "My Team";
   const logoSrc =
-    mounted && (resolvedTheme ?? theme) === "light"
+    (resolvedTheme ?? theme) === "light"
       ? "/parallax-light.png"
       : "/parallax-dark.png";
 

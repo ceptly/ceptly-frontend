@@ -80,10 +80,8 @@ export function RecipientChipsPicker({
     [availableMembers, query],
   );
 
-  useEffect(() => {
-    setHighlightIndex(0);
-  }, [query, searchOpen]);
-
+  // Reset highlight when the user types or (re)opens the picker. We drive this
+  // from the event sites rather than an effect to avoid setState-in-effect.
   useEffect(() => {
     if (searchOpen) {
       searchRef.current?.focus();
@@ -169,7 +167,16 @@ export function RecipientChipsPicker({
           type="button"
           className={agentChipAddClass}
           disabled={disabled || availableMembers.length === 0}
-          onClick={() => setSearchOpen((open) => !open)}
+          onClick={() => {
+            setSearchOpen((open) => {
+              const next = !open;
+              if (next) {
+                // Reset highlight when (re)opening so arrow nav starts at top.
+                setHighlightIndex(0);
+              }
+              return next;
+            });
+          }}
         >
           <Plus className="size-3.5" />
           Add people
@@ -184,7 +191,10 @@ export function RecipientChipsPicker({
               ref={searchRef}
               type="search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setHighlightIndex(0);
+              }}
               onKeyDown={(event) => {
                 if (suggestions.length === 0) {
                   if (event.key === "Escape") {

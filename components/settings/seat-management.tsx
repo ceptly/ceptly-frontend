@@ -50,45 +50,45 @@ export function SeatManagement({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setStatus(billing);
-    if (billing) {
-      setTargetSeats(Math.max(billing.paidSeats, billing.seatUsage, 1));
-    }
-  }, [billing]);
+  // When the parent passes an updated billing (after refresh or external
+  // change), we prefer it for the main UI display. The local status is kept
+  // for optimistic updates after the user saves inside the dialog.
+  const viewStatus = billing ?? status;
 
   useEffect(() => {
-    if (autoOpenManage && canManage && status?.hasActiveSubscription) {
+    if (autoOpenManage && canManage && viewStatus?.hasActiveSubscription) {
       dialogRef.current?.showModal();
     }
-  }, [autoOpenManage, canManage, status?.hasActiveSubscription]);
+  }, [autoOpenManage, canManage, viewStatus?.hasActiveSubscription]);
 
-  if (!status?.hasActiveSubscription) {
+  if (!viewStatus?.hasActiveSubscription) {
     return null;
   }
 
-  const isTrial = status.subscriptionStatus === "trialing";
-  const priceLabel = formatPricePerSeat(status.pricePerSeatCents);
-  const minSeats = Math.max(1, status.seatUsage);
+  const isTrial = viewStatus.subscriptionStatus === "trialing";
+  const priceLabel = formatPricePerSeat(viewStatus.pricePerSeatCents);
+  const minSeats = Math.max(1, viewStatus.seatUsage);
   const maxSeats = isTrial ? 1 : undefined;
-  const atCapacity = status.seatsAvailable <= 0;
+  const atCapacity = viewStatus.seatsAvailable <= 0;
   const usagePercent =
-    status.paidSeats > 0
-      ? Math.min(100, Math.round((status.seatUsage / status.paidSeats) * 100))
+    viewStatus.paidSeats > 0
+      ? Math.min(100, Math.round((viewStatus.seatUsage / viewStatus.paidSeats) * 100))
       : 0;
-  const seatDelta = targetSeats - status.paidSeats;
+  const seatDelta = targetSeats - viewStatus.paidSeats;
   const currentMonthly = formatMonthlyTotal(
-    status.paidSeats,
-    status.pricePerSeatCents,
+    viewStatus.paidSeats,
+    viewStatus.pricePerSeatCents,
   );
   const targetMonthly = formatMonthlyTotal(
     targetSeats,
-    status.pricePerSeatCents,
+    viewStatus.pricePerSeatCents,
   );
 
   function openManageDialog() {
     setError(null);
-    setTargetSeats(Math.max(status!.paidSeats, status!.seatUsage, 1));
+    // viewStatus is non-null here (guarded by the hasActiveSubscription early return
+    // above and the button that calls this only renders for active subs).
+    setTargetSeats(Math.max(viewStatus!.paidSeats, viewStatus!.seatUsage, 1));
     dialogRef.current?.showModal();
   }
 
@@ -151,13 +151,13 @@ export function SeatManagement({
           ) : null}
         </div>
 
-        <div className="mt-5 space-y-2">
+          <div className="mt-5 space-y-2">
           <div className="flex items-baseline justify-between gap-2">
             <p className="text-sm font-medium">
-              {status.seatUsage} of {status.paidSeats} seats in use
+              {viewStatus.seatUsage} of {viewStatus.paidSeats} seats in use
             </p>
             <p className="text-sm text-muted-foreground tabular-nums">
-              {status.seatsAvailable} available
+              {viewStatus.seatsAvailable} available
             </p>
           </div>
           <Progress value={usagePercent} className="gap-0">
@@ -221,7 +221,7 @@ export function SeatManagement({
             <div className="border-b border-border px-5 py-4">
               <h3 className="text-base font-semibold">Manage seats</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                {status.seatUsage} seat{status.seatUsage === 1 ? "" : "s"} in
+                {viewStatus.seatUsage} seat{viewStatus.seatUsage === 1 ? "" : "s"} in
                 use · {priceLabel} each
               </p>
             </div>
@@ -281,7 +281,7 @@ export function SeatManagement({
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Current plan</span>
                   <span className="font-medium tabular-nums">
-                    {status.paidSeats} seats · {currentMonthly}/mo
+                    {viewStatus.paidSeats} seats · {currentMonthly}/mo
                   </span>
                 </div>
                 {seatDelta !== 0 ? (
@@ -325,7 +325,7 @@ export function SeatManagement({
                 type="button"
                 disabled={
                   pending ||
-                  targetSeats === status.paidSeats ||
+                  targetSeats === viewStatus.paidSeats ||
                   targetSeats < minSeats
                 }
                 onClick={() => void handleUpdateSeats()}

@@ -8,11 +8,13 @@ import { parseJsonResponse } from "./http";
 export type AgentApiDestination = "dm" | "channel";
 export type AgentApiTrigger = "scheduled" | "one_off";
 export type AgentApiStyle = "broadcast" | "sequential";
+export type AgentApiRuntime = "live" | "playground";
 export type AgentContextIntegration = "linear" | "jira" | "monday";
 
 export interface AgentDeployBody {
   destination: AgentApiDestination;
   trigger?: AgentApiTrigger;
+  runtime?: AgentApiRuntime;
   name: string;
   persona_preset?: string;
   agent_persona?: string | null;
@@ -202,6 +204,7 @@ export interface AgentFull {
   id: string;
   destination: "dm" | "channel";
   trigger: "scheduled" | "one_off";
+  runtime: AgentApiRuntime;
   name: string;
   summary: string | null;
   persona_preset: string | null;

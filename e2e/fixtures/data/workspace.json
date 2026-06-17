@@ -1,0 +1,9 @@
+{
+  "id": "00000000-0000-4000-a000-000000000001",
+  "name": "E2E Workspace",
+  "role": "owner",
+  "timezone": "America/Chicago",
+  "communicationPlatform": "slack",
+  "subscriptionStatus": "active",
+  "subscriptionTier": "tier2"
+}

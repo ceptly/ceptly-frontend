@@ -43,6 +43,7 @@ const resultDestinationSchema = z.discriminatedUnion("type", [
 const agentDeploySchema = z.object({
   destination: z.enum(["dm", "channel"]),
   trigger: z.enum(["scheduled", "one_off"]).optional(),
+  runtime: z.enum(["live", "playground"]).optional(),
   name: z.string().trim().min(1).max(100),
   persona_preset: z.string().trim().min(1).max(50).optional(),
   agent_persona: z.string().trim().max(4000).optional().nullable(),

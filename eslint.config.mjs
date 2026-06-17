@@ -13,7 +13,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "playwright-report/**",
   ]),
+  // Playwright E2E code isn't React/Next. Its fixture API exposes `use()`,
+  // which the react-hooks rule mistakes for React's `use` hook.
+  {
+    files: ["e2e/**/*.{ts,tsx}"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
+  },
   eslintConfigPrettier,
 ]);
 
