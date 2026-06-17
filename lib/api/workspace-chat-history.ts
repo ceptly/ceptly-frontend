@@ -1,9 +1,10 @@
 import { resolveApiBaseUrl } from "./auth";
 import type { SetupChatMessage, SetupChatUiComponent } from "./types";
 
-interface ChatSessionSummary {
+export interface ChatSessionSummary {
   id: string;
   agentId: string | null;
+  preview: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +36,25 @@ async function getJson<T>(
     return null;
   }
   return (await response.json()) as T & { success: boolean };
+}
+
+/**
+ * List all chat session summaries for the chat rail. Returns an empty array on failure.
+ */
+export async function listChatSessionSummaries(
+  accessToken: string,
+  workspaceId: string,
+): Promise<ChatSessionSummary[]> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const result = await getJson<{ data?: { sessions: ChatSessionSummary[] } }>(
+      `${base}/api/workspaces/${workspaceId}/chat/sessions`,
+      accessToken,
+    );
+    return result?.data?.sessions ?? [];
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -74,6 +94,64 @@ export async function loadChatHistory(
     return { sessionId: latest.id, messages };
   } catch {
     return { sessionId: null, messages: [] };
+  }
+}
+
+/** Load messages for a specific chat session by id. Returns null on failure. */
+export async function loadChatSession(
+  accessToken: string,
+  workspaceId: string,
+  sessionId: string,
+): Promise<ChatHistory | null> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const result = await getJson<{
+      data?: { messages: ChatHistoryMessageRow[] };
+    }>(
+      `${base}/api/workspaces/${workspaceId}/chat/sessions/${sessionId}`,
+      accessToken,
+    );
+    if (!result?.data) return null;
+    const messages: SetupChatMessage[] = result.data.messages.map((row) => ({
+      role: row.role,
+      content: row.content,
+      ui_component: row.proposal?.ui_component,
+    }));
+    return { sessionId, messages };
+  } catch {
+    return null;
+  }
+}
+
+/** Delete a chat session (and its messages). */
+export async function deleteChatSession(
+  accessToken: string,
+  workspaceId: string,
+  sessionId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const base = await resolveApiBaseUrl();
+    const response = await fetch(
+      `${base}/api/workspaces/${workspaceId}/chat/sessions/${sessionId}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
+    const contentType = response.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      return { success: false, error: "Unexpected response from server." };
+    }
+    const parsed = (await response.json()) as {
+      success?: boolean;
+      error?: string;
+    };
+    if (!response.ok || !parsed.success) {
+      return { success: false, error: parsed.error ?? "Could not delete." };
+    }
+    return { success: true };
+  } catch {
+    return { success: false, error: "Could not delete." };
   }
 }
 

@@ -83,6 +83,8 @@ interface EmployeeChatPromptProps {
   personas?: PersonaOption[];
   /** When a playground agent is deployed here, open its conversation in the rail. */
   onPlaygroundStarted?: (sessionId: string) => void;
+  /** Fires once when a new session is created (first message sent). */
+  onSessionStarted?: (sessionId: string, preview: string) => void;
 }
 
 function findInitialAgentFormValues(
@@ -134,6 +136,7 @@ export function EmployeeChatPrompt({
   chatChannelsError = null,
   personas = FALLBACK_PERSONAS,
   onPlaygroundStarted,
+  onSessionStarted,
 }: EmployeeChatPromptProps) {
   const { client } = useStatsigClient();
 
@@ -327,7 +330,11 @@ export function EmployeeChatPrompt({
     }
 
     if (result.session_id) {
+      const isNewSession = !sessionId;
       setSessionId(result.session_id);
+      if (isNewSession && onSessionStarted) {
+        onSessionStarted(result.session_id, trimmed);
+      }
     }
 
     if (result.agent) {

@@ -8,7 +8,10 @@ import { FALLBACK_PERSONAS, listPersonas } from "@/lib/api/personas";
 import { listPlaygroundConversations } from "@/lib/api/playground";
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
-import { loadChatHistory } from "@/lib/api/workspace-chat-history";
+import {
+  listChatSessionSummaries,
+  loadChatHistory,
+} from "@/lib/api/workspace-chat-history";
 import { getAccessToken } from "@/lib/auth/server";
 
 interface ChatPageContentProps {
@@ -48,6 +51,7 @@ export async function ChatPageContent({
     chatChannelsResult,
     personasResult,
     playgroundConversationsResult,
+    chatSessions,
   ] = await Promise.all([
     listAppContextOptions(token, workspaceId),
     listSlackChannels(token, workspaceId),
@@ -60,6 +64,7 @@ export async function ChatPageContent({
     canEdit
       ? listPlaygroundConversations(token, workspaceId)
       : Promise.resolve({ success: true as const, data: { conversations: [] } }),
+    listChatSessionSummaries(token, workspaceId),
   ]);
 
   const appContextOptions = appContextsResult?.data?.app_contexts ?? [];
@@ -98,6 +103,7 @@ export async function ChatPageContent({
           chatChannelsError={chatChannelsError}
           personas={personas}
           initialPlaygroundConversations={playgroundConversations}
+          initialChatSessions={chatSessions}
         />
       </div>
     </div>

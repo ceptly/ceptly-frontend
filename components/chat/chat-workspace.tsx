@@ -12,6 +12,10 @@ import {
   deletePlaygroundConversationAction,
   listPlaygroundConversationsAction,
 } from "@/actions/playground";
+import {
+  deleteChatSessionAction,
+  loadChatSessionAction,
+} from "@/actions/workspace-chat";
 import type { AppContextOption } from "@/lib/api/types";
 import type {
   ChatChannel,
@@ -22,6 +26,7 @@ import type { PlaygroundConversationSummary } from "@/lib/api/playground";
 import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 import type { SetupChatMessage } from "@/lib/api/types";
+import type { ChatSessionSummary } from "@/lib/api/workspace-chat-history";
 import { cn } from "@/lib/utils";
 
 interface ChatWorkspaceProps {
@@ -39,6 +44,7 @@ interface ChatWorkspaceProps {
   chatChannelsError: string | null;
   personas: PersonaOption[];
   initialPlaygroundConversations: PlaygroundConversationSummary[];
+  initialChatSessions: ChatSessionSummary[];
 }
 
 export function ChatWorkspace({
@@ -56,46 +62,88 @@ export function ChatWorkspace({
   chatChannelsError,
   personas,
   initialPlaygroundConversations,
+  initialChatSessions,
 }: ChatWorkspaceProps) {
-  const [conversations, setConversations] = useState(
+  const [playgroundConversations, setPlaygroundConversations] = useState(
     initialPlaygroundConversations,
   );
-  const [mode, setMode] = useState<"assistant" | "playground">("assistant");
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
+  const [chatSessions, setChatSessions] = useState(initialChatSessions);
+
+  // "assistant" = /chat conversation; "playground" = playground agent run; "past-chat" = viewing a past assistant session
+  const [mode, setMode] = useState<"assistant" | "playground" | "past-chat">(
+    "assistant",
+  );
+  const [selectedPlaygroundSessionId, setSelectedPlaygroundSessionId] =
+    useState<string | null>(null);
+
+  // Past assistant conversation being viewed
+  const [pastChatSessionId, setPastChatSessionId] = useState<string | null>(
     null,
   );
+  const [pastChatMessages, setPastChatMessages] = useState<SetupChatMessage[]>(
+    [],
+  );
+  // Incrementing key forces EmployeeChatPrompt to remount when switching sessions
+  const [assistantKey, setAssistantKey] = useState(0);
+  const [assistantInitialMessages, setAssistantInitialMessages] =
+    useState(initialMessages);
+  const [assistantInitialSessionId, setAssistantInitialSessionId] = useState(
+    initialSessionId,
+  );
+
   const [railOpen, setRailOpen] = useState(false);
 
-  const refreshConversations = useCallback(async () => {
+  const refreshPlaygroundConversations = useCallback(async () => {
     const result = await listPlaygroundConversationsAction({ workspaceId });
     if (result.conversations) {
-      setConversations(result.conversations);
+      setPlaygroundConversations(result.conversations);
     }
   }, [workspaceId]);
 
   const handleNewChat = useCallback(() => {
     setMode("assistant");
-    setSelectedSessionId(null);
+    setPastChatSessionId(null);
+    // Reset to a blank slate, remounting EmployeeChatPrompt
+    setAssistantInitialMessages([]);
+    setAssistantInitialSessionId(null);
+    setAssistantKey((k) => k + 1);
     setRailOpen(false);
   }, []);
 
-  const handleSelect = useCallback((sessionId: string) => {
-    setSelectedSessionId(sessionId);
+  const handleSelectPastChat = useCallback(
+    async (sessionId: string) => {
+      setRailOpen(false);
+      const result = await loadChatSessionAction({ workspaceId, sessionId });
+      if (result.error || !result.messages) {
+        toast.error("Could not load conversation", { description: result.error });
+        return;
+      }
+      setPastChatSessionId(sessionId);
+      setAssistantInitialMessages(result.messages);
+      setAssistantInitialSessionId(sessionId);
+      setAssistantKey((k) => k + 1);
+      setMode("past-chat");
+    },
+    [workspaceId],
+  );
+
+  const handleSelectPlayground = useCallback((sessionId: string) => {
+    setSelectedPlaygroundSessionId(sessionId);
     setMode("playground");
     setRailOpen(false);
   }, []);
 
-  const handleConversationStarted = useCallback(
+  const handlePlaygroundConversationStarted = useCallback(
     (sessionId: string) => {
-      setSelectedSessionId(sessionId);
+      setSelectedPlaygroundSessionId(sessionId);
       setMode("playground");
       setRailOpen(false);
-      void refreshConversations();
+      void refreshPlaygroundConversations();
     },
-    [refreshConversations],
+    [refreshPlaygroundConversations],
   );
 
-  const handleDelete = useCallback(
+  const handleDeletePlayground = useCallback(
     async (sessionId: string) => {
       const result = await deletePlaygroundConversationAction({
         workspaceId,
@@ -105,19 +153,48 @@ export function ChatWorkspace({
         toast.error("Could not delete", { description: result.error });
         return;
       }
-      setConversations((current) =>
-        current.filter((conversation) => conversation.sessionId !== sessionId),
+      setPlaygroundConversations((current) =>
+        current.filter((c) => c.sessionId !== sessionId),
       );
-      setSelectedSessionId((current) => {
-        if (current === sessionId) {
-          setMode("assistant");
-          return null;
-        }
-        return current;
+      if (selectedPlaygroundSessionId === sessionId) {
+        setMode("assistant");
+        setSelectedPlaygroundSessionId(null);
+      }
+    },
+    [workspaceId, selectedPlaygroundSessionId],
+  );
+
+  const handleDeleteChatSession = useCallback(
+    async (sessionId: string) => {
+      const result = await deleteChatSessionAction({ workspaceId, sessionId });
+      if (result.error) {
+        toast.error("Could not delete", { description: result.error });
+        return;
+      }
+      setChatSessions((current) => current.filter((s) => s.id !== sessionId));
+      if (pastChatSessionId === sessionId) {
+        handleNewChat();
+      }
+    },
+    [workspaceId, pastChatSessionId, handleNewChat],
+  );
+
+  const handleSessionStarted = useCallback(
+    (sessionId: string, preview: string) => {
+      setChatSessions((current) => {
+        // Avoid duplicates if already present
+        if (current.some((s) => s.id === sessionId)) return current;
+        const now = new Date().toISOString();
+        return [
+          { id: sessionId, agentId: null, preview, createdAt: now, updatedAt: now },
+          ...current,
+        ];
       });
     },
-    [workspaceId],
+    [],
   );
+
+  const isAssistantVisible = mode === "assistant" || mode === "past-chat";
 
   return (
     <div className="flex h-full min-h-0 w-full gap-4">
@@ -130,13 +207,17 @@ export function ChatWorkspace({
       >
         <ConversationRail
           workspaceId={workspaceId}
-          conversations={conversations}
-          selectedSessionId={selectedSessionId}
+          chatSessions={chatSessions}
+          selectedChatSessionId={pastChatSessionId}
+          playgroundConversations={playgroundConversations}
+          selectedPlaygroundSessionId={selectedPlaygroundSessionId}
           mode={mode}
           onNewChat={handleNewChat}
-          onSelect={handleSelect}
-          onDelete={(sessionId) => void handleDelete(sessionId)}
-          onConversationStarted={handleConversationStarted}
+          onSelectChatSession={(id) => void handleSelectPastChat(id)}
+          onDeleteChatSession={(id) => void handleDeleteChatSession(id)}
+          onSelectPlayground={handleSelectPlayground}
+          onDeletePlayground={(id) => void handleDeletePlayground(id)}
+          onConversationStarted={handlePlaygroundConversationStarted}
         />
       </aside>
 
@@ -155,37 +236,39 @@ export function ChatWorkspace({
           </Button>
         </div>
 
-        {/* Assistant chat stays mounted so its state survives mode switches. */}
+        {/* Assistant chat — remounts when key changes (new chat or past session selected). */}
         <div
           className={cn(
             "min-h-0 flex-1 flex-col",
-            mode === "assistant" ? "flex" : "hidden",
+            isAssistantVisible ? "flex" : "hidden",
           )}
         >
           <EmployeeChatPrompt
+            key={assistantKey}
             workspaceId={workspaceId}
             canEdit={canEdit}
             appContextOptions={appContextOptions}
             slackChannels={slackChannels}
             slackChannelsError={slackChannelsError}
             rosterMembers={rosterMembers}
-            initialMessages={initialMessages}
-            initialSessionId={initialSessionId}
+            initialMessages={assistantInitialMessages}
+            initialSessionId={assistantInitialSessionId}
             workspaceTimezone={workspaceTimezone}
             chatChannels={chatChannels}
             communicationPlatform={communicationPlatform}
             chatChannelsError={chatChannelsError}
             personas={personas}
-            onPlaygroundStarted={handleConversationStarted}
+            onPlaygroundStarted={handlePlaygroundConversationStarted}
+            onSessionStarted={handleSessionStarted}
           />
         </div>
 
-        {mode === "playground" && selectedSessionId ? (
+        {mode === "playground" && selectedPlaygroundSessionId ? (
           <PlaygroundConversationView
-            key={selectedSessionId}
+            key={selectedPlaygroundSessionId}
             workspaceId={workspaceId}
-            sessionId={selectedSessionId}
-            onConversationUpdated={() => void refreshConversations()}
+            sessionId={selectedPlaygroundSessionId}
+            onConversationUpdated={() => void refreshPlaygroundConversations()}
           />
         ) : null}
       </div>

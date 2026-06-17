@@ -838,11 +838,7 @@ export function AgentDeployFields({
           <AgentDeployedDialog
             name={deployed.name}
             detail={deployed.detail}
-            onClose={() =>
-              router.push(
-                `/agents?deployed=${isChannelDest ? "meeting" : "conversation"}`,
-              )
-            }
+            onClose={() => router.push("/agents")}
           />
         ) : null}
       </div>
