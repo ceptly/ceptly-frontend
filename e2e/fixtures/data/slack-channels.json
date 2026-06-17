@@ -1,0 +1,5 @@
+{
+  "channels": [
+    { "id": "C456", "name": "engineering", "is_private": false }
+  ]
+}

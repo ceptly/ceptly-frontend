@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 interface KpiCardsProps {
   kpis: DashboardKpis;
   days: DashboardRangeDays;
+  followUpsEnabled: boolean;
 }
 
 function formatHours(hours: number): string {
@@ -45,7 +46,7 @@ function KpiCard({
   );
 }
 
-export function KpiCards({ kpis, days }: KpiCardsProps) {
+export function KpiCards({ kpis, days, followUpsEnabled }: KpiCardsProps) {
   const delta = kpis.response_rate_delta_pct;
 
   return (
@@ -103,6 +104,17 @@ export function KpiCards({ kpis, days }: KpiCardsProps) {
             : "No repeated work detected"
         }
       />
+      {followUpsEnabled ? (
+        <KpiCard
+          label="Pending follow-ups"
+          value={kpis.pending_follow_ups}
+          detail={
+            kpis.pending_follow_ups > 0
+              ? "Scheduled check-ins ahead"
+              : "Nothing scheduled"
+          }
+        />
+      ) : null}
     </div>
   );
 }

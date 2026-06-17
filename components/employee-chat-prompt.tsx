@@ -19,6 +19,7 @@ import { useSpeechDictation } from "@/hooks/use-speech-dictation";
 import { cn } from "@/lib/utils";
 
 import { deployAgentAction, testAgentAction } from "@/actions/agents";
+import { runPlaygroundAgentAction } from "@/actions/playground";
 import { markChatFormDeployedAction } from "@/actions/workspace-chat";
 import { AgentDeployProposalCard } from "@/components/chat/agent-deploy-proposal";
 import { AgentDeployFields } from "@/components/agents/agent-deploy-fields";
@@ -80,6 +81,8 @@ interface EmployeeChatPromptProps {
   communicationPlatform?: CommunicationPlatform;
   chatChannelsError?: string | null;
   personas?: PersonaOption[];
+  /** When a playground agent is deployed here, open its conversation in the rail. */
+  onPlaygroundStarted?: (sessionId: string) => void;
 }
 
 function findInitialAgentFormValues(
@@ -130,6 +133,7 @@ export function EmployeeChatPrompt({
   communicationPlatform = "slack",
   chatChannelsError = null,
   personas = FALLBACK_PERSONAS,
+  onPlaygroundStarted,
 }: EmployeeChatPromptProps) {
   const { client } = useStatsigClient();
 
@@ -387,6 +391,31 @@ export function EmployeeChatPrompt({
       return;
     }
 
+    // Playground agents run in-app: kick off a conversation and open it in the
+    // rail instead of the "deployed to Slack" confirmation.
+    if (
+      values.runtime === "playground" &&
+      result.agent?.agentId &&
+      onPlaygroundStarted
+    ) {
+      const run = await runPlaygroundAgentAction({
+        workspaceId,
+        agentId: result.agent.agentId,
+      });
+      if (run.error || !run.sessionId) {
+        setDeployError(
+          run.error ?? "Could not start the playground conversation.",
+        );
+        return;
+      }
+      client.logEvent("employee_chat_agent_deployed");
+      setAgentFormValues(null);
+      agentFormDraftRef.current = null;
+      setAgentFormVersion(0);
+      onPlaygroundStarted(run.sessionId);
+      return;
+    }
+
     client.logEvent("employee_chat_agent_deployed");
     // Collapse the inline form and surface a success note in its place.
     setAgentFormValues(null);
@@ -497,6 +526,7 @@ export function EmployeeChatPrompt({
       ) : null}
       <ChatMentionTextarea
         variant="chat"
+        data-testid="chat-message-input"
         placeholder="Ask about your team — @ for people, # for channels. Enter to send, Shift+Enter for new line."
         rows={3}
         value={input}
@@ -699,7 +729,10 @@ export function EmployeeChatPrompt({
       ) : null}
 
       {deploySuccess ? (
-        <p className="text-center text-sm text-muted-foreground">
+        <p
+          className="text-center text-sm text-muted-foreground"
+          data-testid="agent-deployed-confirmation"
+        >
           Agent deployed.{" "}
           <Link
             href="/agents"

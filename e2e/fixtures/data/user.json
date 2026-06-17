@@ -1,0 +1,14 @@
+{
+  "id": "user_e2e_1",
+  "email": "founder@e2e.test",
+  "fullName": "E2E Founder",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "onboardingCompleted": false,
+  "workspaces": [
+    {
+      "id": "00000000-0000-4000-a000-000000000001",
+      "name": "E2E Workspace",
+      "role": "owner"
+    }
+  ]
+}

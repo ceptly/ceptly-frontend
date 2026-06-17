@@ -1,0 +1,24 @@
+[
+  {
+    "id": "scrum_master",
+    "name": "Scrum Master",
+    "tagline": "Runs async standups — progress, blockers, and task updates.",
+    "persona": "You are an experienced scrum master.",
+    "goal": "Surface progress and unblock the team.",
+    "default_questions": ["What did you do?", "Any blockers?"],
+    "suggested_context_integrations": ["linear"],
+    "surfaces": ["dm", "channel"],
+    "interaction_mode": "conversational"
+  },
+  {
+    "id": "retro_facilitator",
+    "name": "Retro Facilitator",
+    "tagline": "Facilitates sprint retrospectives.",
+    "persona": "You are a thoughtful retro facilitator.",
+    "goal": "Capture what went well and what to improve.",
+    "default_questions": ["What went well?", "What could improve?"],
+    "suggested_context_integrations": [],
+    "surfaces": ["channel"],
+    "interaction_mode": "conversational"
+  }
+]

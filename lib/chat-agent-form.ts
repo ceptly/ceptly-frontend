@@ -18,6 +18,7 @@ export function agentFormValuesToInitialValues(
   const hasCustomPersona = Boolean(values.persona?.trim());
   return {
     destinationType: values.destination === "channel" ? "channel" : "dm",
+    runtime: "live",
     personaMode: hasCustomPersona ? "custom" : "pretrained",
     presetId: values.persona_preset,
     persona: values.persona ?? "",

@@ -1,10 +1,11 @@
-import { EmployeeChatPrompt } from "@/components/employee-chat-prompt";
+import { ChatWorkspace } from "@/components/chat/chat-workspace";
 import {
   getWorkspaceTimezone,
   listAppContextOptions,
 } from "@/lib/api/workspace-settings";
 import { listChatChannels } from "@/lib/api/communication";
 import { FALLBACK_PERSONAS, listPersonas } from "@/lib/api/personas";
+import { listPlaygroundConversations } from "@/lib/api/playground";
 import { listRosterMembers } from "@/lib/api/roster";
 import { listSlackChannels } from "@/lib/api/slack-channels";
 import { loadChatHistory } from "@/lib/api/workspace-chat-history";
@@ -46,6 +47,7 @@ export async function ChatPageContent({
     timezoneResult,
     chatChannelsResult,
     personasResult,
+    playgroundConversationsResult,
   ] = await Promise.all([
     listAppContextOptions(token, workspaceId),
     listSlackChannels(token, workspaceId),
@@ -54,6 +56,10 @@ export async function ChatPageContent({
     getWorkspaceTimezone(token, workspaceId),
     listChatChannels(token, workspaceId),
     listPersonas(token),
+    // Playground is admin-only; non-managers get an empty rail.
+    canEdit
+      ? listPlaygroundConversations(token, workspaceId)
+      : Promise.resolve({ success: true as const, data: { conversations: [] } }),
   ]);
 
   const appContextOptions = appContextsResult?.data?.app_contexts ?? [];
@@ -71,11 +77,13 @@ export async function ChatPageContent({
   const personas = personasResult.data?.personas?.length
     ? personasResult.data.personas
     : FALLBACK_PERSONAS;
+  const playgroundConversations =
+    playgroundConversationsResult.data?.conversations ?? [];
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] min-h-0 flex-col px-4 py-7 md:h-dvh">
       <div className="mx-auto flex w-full max-w-[1400px] min-h-0 flex-1 flex-col">
-        <EmployeeChatPrompt
+        <ChatWorkspace
           workspaceId={workspaceId}
           canEdit={canEdit}
           appContextOptions={appContextOptions}
@@ -89,6 +97,7 @@ export async function ChatPageContent({
           communicationPlatform={communicationPlatform}
           chatChannelsError={chatChannelsError}
           personas={personas}
+          initialPlaygroundConversations={playgroundConversations}
         />
       </div>
     </div>

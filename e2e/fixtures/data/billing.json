@@ -1,0 +1,15 @@
+{
+  "subscriptionStatus": "active",
+  "subscriptionTier": "tier2",
+  "tierLabel": "Pro",
+  "maxMembers": null,
+  "maxScheduledAgents": null,
+  "trialEndsAt": null,
+  "currentPeriodEnd": "2026-07-01T00:00:00.000Z",
+  "cancelAtPeriodEnd": false,
+  "hasActiveSubscription": true,
+  "seatUsage": 3,
+  "paidSeats": 5,
+  "seatsAvailable": 2,
+  "pricePerSeatCents": 3000
+}

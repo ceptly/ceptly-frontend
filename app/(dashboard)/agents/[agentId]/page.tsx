@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CalendarClock } from "lucide-react";
 
 import { AgentEditFields } from "@/components/agents/agent-edit-fields";
 import { AgentDetailActions } from "@/components/agents/agent-detail-actions";
 import { AgentSessionDetailView } from "@/components/agents/agent-session-detail";
+import { FollowUpsList } from "@/components/activity/follow-ups-list";
+import { getWorkspaceActivity } from "@/lib/api/activity";
 import { buttonVariants } from "@/components/ui/button";
 import { agentToInitialValues, agentHref } from "@/lib/agents";
 import { listChatChannels } from "@/lib/api/communication";
@@ -136,12 +138,21 @@ export default async function AgentPage({
     );
   }
 
-  const [sessionsResult, rosterResult] = await Promise.all([
+  const [sessionsResult, rosterResult, activityResult] = await Promise.all([
     getAgentSessions(token, workspace.id, agentId),
     listRosterMembers(token, workspace.id),
+    getWorkspaceActivity(token, workspace.id),
   ]);
   const sessions = sessionsResult.data?.sessions ?? [];
   const firstSessionId = sessions[0]?.session_id;
+
+  const activity = activityResult.data?.activity;
+  const agentFollowUps =
+    activity?.follow_ups_enabled && canEdit
+      ? (activity.scheduled_follow_ups ?? []).filter(
+          (followUp) => followUp.agent_id === agentId,
+        )
+      : [];
 
   const memberNames: Record<string, string> = {};
   for (const member of rosterResult.data?.members ?? []) {
@@ -205,6 +216,16 @@ export default async function AgentPage({
           }
         />
       )}
+
+      {agentFollowUps.length > 0 ? (
+        <section className="ceptly-section mt-8">
+          <h2 className="ceptly-section-title">
+            <CalendarClock aria-hidden />
+            Follow-ups from this agent
+          </h2>
+          <FollowUpsList workspaceId={workspace.id} items={agentFollowUps} />
+        </section>
+      ) : null}
     </div>
   );
 }

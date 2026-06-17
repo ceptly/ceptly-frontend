@@ -123,11 +123,23 @@ export interface ActivityAdhocSession {
 
 export type ChannelStyle = "broadcast" | "sequential";
 
+export interface ScheduledFollowUp {
+  id: string;
+  member_name: string;
+  agent_id: string | null;
+  agent_name: string | null;
+  item_text: string;
+  scheduled_for: string;
+  status: "pending" | "fired" | "cancelled" | "dismissed";
+}
+
 export interface WorkspaceActivity {
   attention_count: number;
   attention_items: ActivityAttentionItem[];
   agents: ActivityAgent[];
   adhoc_sessions: ActivityAdhocSession[];
+  scheduled_follow_ups: ScheduledFollowUp[];
+  follow_ups_enabled: boolean;
 }
 
 export interface ProposedSchedule {
@@ -332,6 +344,7 @@ export interface DashboardKpis {
   avg_resolution_hours: number | null;
   tasks_done: number;
   carry_over_count: number;
+  pending_follow_ups: number;
 }
 
 export interface DashboardParticipationPoint {
@@ -404,6 +417,7 @@ export interface DashboardMemberMomentum {
 export interface DashboardData {
   range: { days: DashboardRangeDays; start: string; end: string };
   has_data: boolean;
+  follow_ups_enabled: boolean;
   kpis: DashboardKpis;
   participation: {
     by_day: DashboardParticipationPoint[];

@@ -66,6 +66,8 @@ export function schedulePresetFromSchedule(
 export interface AgentDeployInitialValues {
   /** "channel" = runs in a Slack/Teams channel (meeting); "dm" = DMs each participant (conversation). */
   destinationType: "channel" | "dm";
+  /** "live" delivers to Slack/Teams; "playground" runs in-app for testing. */
+  runtime: "live" | "playground";
   personaMode: PersonaMode;
   /** Pretrained persona preset id (e.g. "scrum_master"); defaults to the first available. */
   presetId?: string;
@@ -103,6 +105,7 @@ export function agentToInitialValues(
   const hasPreset = Boolean(a.persona_preset);
   return {
     destinationType: a.destination === "channel" ? "channel" : "dm",
+    runtime: a.runtime,
     personaMode: hasPreset ? "pretrained" : "custom",
     presetId: a.persona_preset ?? undefined,
     persona: a.agent_persona ?? "",
