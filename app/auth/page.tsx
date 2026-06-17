@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useActionState, useEffect, useState } from "react";
+import { Suspense, useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
@@ -77,24 +77,23 @@ function SubmitButton({
 function AuthPageContent() {
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get("invite") ?? undefined;
-  const initialMode =
-    searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
   const prefilledEmail = searchParams.get("email") ?? "";
   const checkoutSuccess = searchParams.get("checkout") === "success";
   const googleAuthError = resolveGoogleAuthError(searchParams.get("error"));
 
-  const [mode, setMode] = useState<"sign-in" | "sign-up">(initialMode);
+  // Initialize from URL intent (deep link, post-checkout, invite flow).
+  // Using lazy initializer avoids a setState in effect.
+  const [mode, setMode] = useState<"sign-in" | "sign-up">(() => {
+    if (
+      searchParams.get("mode") === "sign-up" ||
+      searchParams.get("checkout") === "success"
+    ) {
+      return "sign-up";
+    }
+    return "sign-in";
+  });
   const [signInState, signInAction] = useActionState(signIn, undefined);
   const [signUpState, signUpAction] = useActionState(signUp, undefined);
-
-  useEffect(() => {
-    if (searchParams.get("mode") === "sign-up") {
-      setMode("sign-up");
-    }
-    if (searchParams.get("checkout") === "success") {
-      setMode("sign-up");
-    }
-  }, [searchParams]);
 
   const isSignUp = mode === "sign-up";
   const formState = isSignUp ? signUpState : signInState;

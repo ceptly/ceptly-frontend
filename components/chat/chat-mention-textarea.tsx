@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ComponentProps,
@@ -348,15 +349,23 @@ export function ChatMentionTextarea({
     : activeChannelMention
       ? "channel"
       : null;
-  const memberSuggestions = activeMemberMention
-    ? filterMembersForMentionQuery(rosterMembers, activeMemberMention.query)
-    : [];
-  const channelSuggestions = activeChannelMention
-    ? filterChannelsForMentionQuery(
-        slackChannels,
-        activeChannelMention.query,
-      )
-    : [];
+  const memberSuggestions = useMemo(
+    () =>
+      activeMemberMention
+        ? filterMembersForMentionQuery(rosterMembers, activeMemberMention.query)
+        : [],
+    [activeMemberMention, rosterMembers],
+  );
+  const channelSuggestions = useMemo(
+    () =>
+      activeChannelMention
+        ? filterChannelsForMentionQuery(
+            slackChannels,
+            activeChannelMention.query,
+          )
+        : [],
+    [activeChannelMention, slackChannels],
+  );
   const suggestions =
     mentionKind === "channel" ? channelSuggestions : memberSuggestions;
   const menuOpen = !!activeMention;
@@ -364,14 +373,22 @@ export function ChatMentionTextarea({
   const mentionStart = activeMention?.start ?? null;
   const mentionQuery = activeMention?.query ?? "";
 
-  useEffect(() => {
-    setHighlightIndex(0);
-  }, [mentionQuery, mentionStart]);
+  // Clamp to keep the highlight valid even if the previous index is now out of
+  // range after the query or suggestions list changed. This replaces the
+  // set-to-0 effect and keeps the component pure w.r.t. this state.
+  const effectiveHighlightIndex =
+    suggestions.length === 0
+      ? 0
+      : Math.min(highlightIndex, suggestions.length - 1);
+
+  // No setHighlightIndex(0) effect here. We clamp on use (see effectiveHighlightIndex)
+  // so that filter/query changes don't require a state write from an effect.
 
   const syncDropdownPosition = useCallback(() => {
     const textarea = textareaRef.current;
     if (!textarea || mentionStart === null) {
-      setDropdownPosition((previous) => (previous === null ? previous : null));
+      // Consumers (the portaled dropdowns) ignore position when !open, so we
+      // can simply bail without touching state. Avoids set-in-effect patterns.
       return;
     }
 
@@ -389,7 +406,9 @@ export function ChatMentionTextarea({
 
   useLayoutEffect(() => {
     if (!menuOpen) {
-      setDropdownPosition((previous) => (previous === null ? previous : null));
+      // Do not write state on close; the dropdown components already early-return
+      // when !open. Leaving a stale position object here is harmless and avoids
+      // a setState call from within a layout effect.
       return;
     }
     syncDropdownPosition();
@@ -490,14 +509,14 @@ export function ChatMentionTextarea({
       return false;
     }
     if (mentionKind === "channel") {
-      const channel = channelSuggestions[highlightIndex] ?? channelSuggestions[0];
+      const channel = channelSuggestions[effectiveHighlightIndex] ?? channelSuggestions[0];
       if (!channel) {
         return false;
       }
       applyChannelMention(channel, activeMention);
       return true;
     }
-    const member = memberSuggestions[highlightIndex] ?? memberSuggestions[0];
+    const member = memberSuggestions[effectiveHighlightIndex] ?? memberSuggestions[0];
     if (!member) {
       return false;
     }
@@ -508,7 +527,7 @@ export function ChatMentionTextarea({
     applyChannelMention,
     applyMemberMention,
     channelSuggestions,
-    highlightIndex,
+    effectiveHighlightIndex,
     memberSuggestions,
     mentionKind,
     suggestions.length,
@@ -608,7 +627,7 @@ export function ChatMentionTextarea({
           position={dropdownPosition}
           query={mentionQuery}
           suggestions={channelSuggestions}
-          highlightIndex={highlightIndex}
+          highlightIndex={effectiveHighlightIndex}
           onHighlight={setHighlightIndex}
           onSelect={(channel) => {
             if (!activeChannelMention) {
@@ -623,7 +642,7 @@ export function ChatMentionTextarea({
           position={dropdownPosition}
           query={mentionQuery}
           suggestions={memberSuggestions}
-          highlightIndex={highlightIndex}
+          highlightIndex={effectiveHighlightIndex}
           rosterMembers={rosterMembers}
           onHighlight={setHighlightIndex}
           onSelect={(member) => {

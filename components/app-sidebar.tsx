@@ -9,7 +9,6 @@ import { useStatsigClient } from "@statsig/react-bindings";
 import {
   Activity,
   Bot,
-  Brain,
   ChevronDown,
   ChevronsUpDown,
   LayoutDashboard,
@@ -114,7 +113,6 @@ export function AppSidebar({ user, className }: AppSidebarProps) {
   const pathname = usePathname();
   const { theme, resolvedTheme } = useTheme();
   const { client } = useStatsigClient();
-  const [mounted, setMounted] = useState(false);
   const [attentionCount, setAttentionCount] = useState(0);
 
   const workspace = user.workspaces?.[0];
@@ -127,10 +125,6 @@ export function AppSidebar({ user, className }: AppSidebarProps) {
   );
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
     if (!showActivity || !workspace?.id) {
       return;
     }
@@ -140,7 +134,7 @@ export function AppSidebar({ user, className }: AppSidebarProps) {
   }, [showActivity, workspace?.id]);
 
   const logoSrc =
-    mounted && (resolvedTheme ?? theme) === "light"
+    (resolvedTheme ?? theme) === "light"
       ? "/parallax-light.png"
       : "/parallax-dark.png";
 

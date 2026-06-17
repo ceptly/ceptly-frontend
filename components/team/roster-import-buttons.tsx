@@ -34,7 +34,8 @@ export function RosterImportButtons({
   jiraConnected,
   mondayConnected,
   teamsConnected,
-  communicationPlatform = "slack",
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  communicationPlatform: _communicationPlatform = "slack",
 }: RosterImportButtonsProps) {
   // MS Teams integration temporarily disabled — use `communicationPlatform === "teams"` to re-enable.
   const teamsPrimary = false;
@@ -45,7 +46,8 @@ export function RosterImportButtons({
   const linearLogo = getIntegrationLogo("linear", logoTheme);
   const jiraLogo = getIntegrationLogo("jira", logoTheme);
   const mondayLogo = getIntegrationLogo("monday", logoTheme);
-  const teamsLogo = getIntegrationLogo("teams", logoTheme);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _teamsLogo = getIntegrationLogo("teams", logoTheme);
 
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +116,7 @@ export function RosterImportButtons({
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleTeamsImport = () => {
     setMessage(null);
     setError(null);

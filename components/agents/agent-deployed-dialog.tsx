@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import type { CSSProperties } from "react";
+import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,26 +32,26 @@ export function AgentDeployedDialog({
   buttonLabel = "View my agents",
   onClose,
 }: AgentDeployedDialogProps) {
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 30 }).map((_, i) => {
-        const tx = (Math.random() * 2 - 1) * 320;
-        const ty = (Math.random() * 2 - 1) * 110 + 200;
-        const rot = Math.random() * 760 - 200;
-        const w = 6 + Math.random() * 7;
-        return {
-          "--tx": tx + "px",
-          "--ty": ty + "px",
-          "--rot": rot + "deg",
-          "--c": CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-          width: w + "px",
-          height: w * 1.7 + "px",
-          borderRadius: Math.random() < 0.4 ? "50%" : "1px",
-          animationDelay: Math.random() * 0.18 + "s",
-          animationDuration: 1.15 + Math.random() * 0.8 + "s",
-        } as CSSProperties;
-      }),
-    [],
+  // Capture random particle layout once on mount so the burst is stable
+  // across re-renders and the initializer is not re-executed on every render.
+  const [pieces] = useState<CSSProperties[]>(() =>
+    Array.from({ length: 30 }).map((_, i) => {
+      const tx = (Math.random() * 2 - 1) * 320;
+      const ty = (Math.random() * 2 - 1) * 110 + 200;
+      const rot = Math.random() * 760 - 200;
+      const w = 6 + Math.random() * 7;
+      return {
+        "--tx": tx + "px",
+        "--ty": ty + "px",
+        "--rot": rot + "deg",
+        "--c": CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        width: w + "px",
+        height: w * 1.7 + "px",
+        borderRadius: Math.random() < 0.4 ? "50%" : "1px",
+        animationDelay: Math.random() * 0.18 + "s",
+        animationDuration: 1.15 + Math.random() * 0.8 + "s",
+      } as CSSProperties;
+    }),
   );
 
   return (

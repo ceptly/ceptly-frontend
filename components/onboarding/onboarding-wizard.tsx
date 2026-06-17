@@ -96,7 +96,17 @@ export function OnboardingWizard({
   const searchParams = useSearchParams();
   const slackConnectedFromOAuth = searchParams.get("slack") === "connected";
 
-  const [step, setStep] = useState(1);
+  // Initialize step from ?step query param for deep links (e.g. Slack OAuth
+  // redirect back to step 6) using a lazy initializer so we don't call setStep
+  // from inside an effect.
+  const [step, setStep] = useState(() => {
+    const stepParam = searchParams.get("step");
+    const parsedStep = stepParam ? Number.parseInt(stepParam, 10) : NaN;
+    if (Number.isInteger(parsedStep) && parsedStep >= 1 && parsedStep <= 6) {
+      return parsedStep;
+    }
+    return 1;
+  });
   const [error, setError] = useState<string | null>(null);
   const [slackConnectError, setSlackConnectError] = useState<string | null>(
     null,
@@ -152,14 +162,6 @@ export function OnboardingWizard({
   useEffect(() => {
     sessionStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify(formData));
   }, [formData]);
-
-  useEffect(() => {
-    const stepParam = searchParams.get("step");
-    const parsedStep = stepParam ? Number.parseInt(stepParam, 10) : NaN;
-    if (Number.isInteger(parsedStep) && parsedStep >= 1 && parsedStep <= 6) {
-      setStep(parsedStep);
-    }
-  }, [searchParams]);
 
   const updateForm = (patch: Partial<OnboardingFormData>) => {
     setFormData((prev) => ({ ...prev, ...patch }));

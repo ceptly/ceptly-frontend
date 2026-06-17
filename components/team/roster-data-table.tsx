@@ -25,6 +25,11 @@ export function RosterDataTable<TData, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
+  // TanStack Table's useReactTable returns unstable function refs that the
+  // React compiler (and its eslint rule) cannot safely memoize. This is a
+  // known incompatibility with the library; we accept the skipped compilation
+  // for this table (no other memoization depends on the table instance here).
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
