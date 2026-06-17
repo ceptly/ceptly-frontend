@@ -34,7 +34,7 @@ export async function rescheduleFollowUpAction(input: {
   workspaceId: string;
   followUpId: string;
   scheduledFor: string;
-}): Promise<{ error?: string }> {
+}): Promise<{ error?: string; scheduledFor?: string }> {
   const token = await getAccessToken();
   if (!token) {
     return { error: "You must be signed in." };
@@ -51,5 +51,5 @@ export async function rescheduleFollowUpAction(input: {
   }
 
   revalidatePath("/activity");
-  return {};
+  return { scheduledFor: result.data?.scheduled_for };
 }

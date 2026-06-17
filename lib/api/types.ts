@@ -130,7 +130,7 @@ export interface ScheduledFollowUp {
   agent_name: string | null;
   item_text: string;
   scheduled_for: string;
-  status: "pending" | "fired" | "cancelled" | "dismissed";
+  status: "pending" | "firing" | "fired" | "cancelled" | "dismissed";
 }
 
 export interface WorkspaceActivity {

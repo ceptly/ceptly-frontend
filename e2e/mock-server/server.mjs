@@ -148,6 +148,77 @@ const routes = [
     json(res, 200, { success: true, data: { agents: [] } }),
   ],
 
+  // Follow-ups (Pro feature) — minimal fixtures so activity + management UI render.
+  // The handler inspects ?agent_id (if present) so the agent detail page E2E gets
+  // the row only when viewing the matching agent; other agents see [] (no phantom
+  // follow-ups).
+  ["GET", /^\/api\/workspaces\/[^/]+\/follow-ups$/, (res, rawUrl = "") => {
+    const qs = rawUrl.includes("?") ? rawUrl.split("?")[1] : "";
+    const agentId = new URLSearchParams(qs).get("agent_id");
+    const fixtureRow = {
+      id: "00000000-0000-4000-a000-0000000000f1",
+      member_name: "Alex Chen",
+      agent_id: "00000000-0000-4000-a000-000000000030",
+      agent_name: "Daily Standup",
+      item_text: "Finish the API spec",
+      scheduled_for: "2026-06-18T10:00:00.000Z",
+      status: "pending",
+    };
+    const followUps =
+      !agentId || agentId === fixtureRow.agent_id ? [fixtureRow] : [];
+    json(res, 200, { success: true, data: { follow_ups: followUps } });
+  }],
+  ["PATCH", /^\/api\/workspaces\/[^/]+\/follow-ups\/[^/]+$/, (res) =>
+    json(res, 200, {
+      success: true,
+      data: { scheduled_for: "2026-06-19T09:00:00.000Z" },
+    }),
+  ],
+  ["DELETE", /^\/api\/workspaces\/[^/]+\/follow-ups\/[^/]+$/, (res) =>
+    json(res, 200, { success: true }),
+  ],
+
+  // Playground (in-app agent runs) — empty but shape-safe so pages don't explode
+  ["GET", /^\/api\/workspaces\/[^/]+\/playground\/agents$/, (res) =>
+    json(res, 200, { success: true, data: { agents: [] } }),
+  ],
+  ["GET", /^\/api\/workspaces\/[^/]+\/playground\/conversations$/, (res) =>
+    json(res, 200, { success: true, data: { conversations: [] } }),
+  ],
+  ["GET", /^\/api\/workspaces\/[^/]+\/playground\/conversations\/[^/]+$/, (res) =>
+    json(res, 200, {
+      success: true,
+      data: {
+        conversation: {
+          session: {
+            sessionId: "00000000-0000-4000-a000-000000000021",
+            agentId: "00000000-0000-4000-a000-000000000031",
+            agentName: "Playground Demo",
+            destination: "dm",
+            style: null,
+            status: "active",
+            startedAt: "2026-06-16T12:00:00.000Z",
+            completedAt: null,
+          },
+          participants: [],
+          messages: [],
+        },
+      },
+    }),
+  ],
+  ["DELETE", /^\/api\/workspaces\/[^/]+\/playground\/conversations\/[^/]+$/, (res) =>
+    json(res, 200, { success: true }),
+  ],
+  ["POST", /^\/api\/workspaces\/[^/]+\/playground\/run$/, (res) =>
+    json(res, 200, {
+      success: true,
+      data: { sessionId: "00000000-0000-4000-a000-000000000021" },
+    }),
+  ],
+  ["POST", /^\/api\/workspaces\/[^/]+\/playground\/conversations\/[^/]+\/reply$/, (res) =>
+    json(res, 200, { success: true, data: { handled: true } }),
+  ],
+
   // Chat + agent deploy (the flagship flow)
   ["POST", /^\/api\/workspaces\/[^/]+\/chat\/stream$/, streamAgentForm],
   ["POST", /^\/api\/workspaces\/[^/]+\/agents$/, (res) =>
@@ -162,7 +233,8 @@ const routes = [
 ];
 
 const server = createServer((req, res) => {
-  const url = (req.url ?? "").split("?")[0];
+  const rawUrl = req.url ?? "";
+  const url = rawUrl.split("?")[0];
   const method = req.method ?? "GET";
 
   const match = routes.find(
@@ -173,7 +245,7 @@ const server = createServer((req, res) => {
   req.on("data", () => {});
   req.on("end", () => {
     if (match) {
-      match[2](res);
+      match[2](res, rawUrl);
       return;
     }
     // Permissive default keeps unmodelled pages from crashing.

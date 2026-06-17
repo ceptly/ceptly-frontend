@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { CalendarClock, Check, X } from "lucide-react";
 
 import {
@@ -65,7 +66,7 @@ export function FollowUpsList({ workspaceId, items }: FollowUpsListProps) {
     startTransition(async () => {
       const result = await cancelFollowUpAction({ workspaceId, followUpId });
       if (result.error) {
-        console.error(result.error);
+        toast.error("Failed to cancel follow-up", { description: result.error });
         return;
       }
       router.refresh();
@@ -84,7 +85,9 @@ export function FollowUpsList({ workspaceId, items }: FollowUpsListProps) {
         scheduledFor,
       });
       if (result.error) {
-        console.error(result.error);
+        toast.error("Failed to reschedule follow-up", {
+          description: result.error,
+        });
         return;
       }
       setEditingId(null);
