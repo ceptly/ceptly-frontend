@@ -1,6 +1,6 @@
 "use client";
 
-import { FlaskConical, Loader2, Plus, Trash2 } from "lucide-react";
+import { FlaskConical, Loader2, MessageSquare, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -13,16 +13,22 @@ import type {
   PlaygroundAgentSummary,
   PlaygroundConversationSummary,
 } from "@/lib/api/playground";
+import type { ChatSessionSummary } from "@/lib/api/workspace-chat-history";
 import { cn } from "@/lib/utils";
 
 interface ConversationRailProps {
   workspaceId: string;
-  conversations: PlaygroundConversationSummary[];
-  selectedSessionId: string | null;
-  mode: "assistant" | "playground";
+  chatSessions: ChatSessionSummary[];
+  selectedChatSessionId: string | null;
+  playgroundConversations: PlaygroundConversationSummary[];
+  selectedPlaygroundSessionId: string | null;
+  mode: "assistant" | "playground" | "past-chat";
+  loadingChatSessionId?: string | null;
   onNewChat: () => void;
-  onSelect: (sessionId: string) => void;
-  onDelete: (sessionId: string) => void;
+  onSelectChatSession: (sessionId: string) => void;
+  onDeleteChatSession: (sessionId: string) => void;
+  onSelectPlayground: (sessionId: string) => void;
+  onDeletePlayground: (sessionId: string) => void;
   /** Called with the new session id after a playground agent is run. */
   onConversationStarted: (sessionId: string) => void;
 }
@@ -43,12 +49,17 @@ function relativeTime(iso: string | null): string {
 
 export function ConversationRail({
   workspaceId,
-  conversations,
-  selectedSessionId,
+  chatSessions,
+  selectedChatSessionId,
+  playgroundConversations,
+  selectedPlaygroundSessionId,
   mode,
+  loadingChatSessionId = null,
   onNewChat,
-  onSelect,
-  onDelete,
+  onSelectChatSession,
+  onDeleteChatSession,
+  onSelectPlayground,
+  onDeletePlayground,
   onConversationStarted,
 }: ConversationRailProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -99,101 +110,156 @@ export function ConversationRail({
         New chat
       </Button>
 
-      <div className="relative">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start gap-2 text-muted-foreground"
-          onClick={() => void openPicker()}
-        >
-          <FlaskConical className="size-4" />
-          Test an agent
-        </Button>
-        {pickerOpen ? (
-          <div className="absolute top-full left-0 z-10 mt-1 max-h-[280px] w-full overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-md">
-            {loadingAgents ? (
-              <div className="flex items-center justify-center py-3">
-                <Loader2 className="size-4 animate-spin text-muted-foreground" />
-              </div>
-            ) : agents && agents.length > 0 ? (
-              agents.map((agent) => (
-                <button
-                  key={agent.id}
-                  type="button"
-                  className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted"
-                  onClick={() => void runAgent(agent.id)}
-                  disabled={runningAgentId !== null}
-                >
-                  <span className="truncate">{agent.name}</span>
-                  {runningAgentId === agent.id ? (
-                    <Loader2 className="size-3.5 shrink-0 animate-spin" />
-                  ) : (
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {agent.destination === "channel" ? "Channel" : "DM"}
-                    </span>
-                  )}
-                </button>
-              ))
-            ) : (
-              <p className="px-2 py-3 text-xs text-muted-foreground">
-                No playground agents yet. Deploy one with Environment =
-                Playground.
-              </p>
-            )}
-          </div>
-        ) : null}
-      </div>
-
+      {/* Past assistant conversations */}
       <div className="mt-1 min-h-0 flex-1 overflow-y-auto">
         <p className="px-1 py-1 text-xs font-medium text-muted-foreground">
-          Playground conversations
+          Past conversations
         </p>
-        {conversations.length === 0 ? (
-          <p className="px-1 py-2 text-xs text-muted-foreground">
-            Run a playground agent to see its conversation here.
-          </p>
-        ) : (
+        {chatSessions.length > 0 ? (
           <ul className="flex flex-col gap-0.5">
-            {conversations.map((conversation) => {
-              const selected =
-                mode === "playground" &&
-                conversation.sessionId === selectedSessionId;
-              return (
-                <li key={conversation.sessionId} className="group relative">
-                  <button
-                    type="button"
-                    className={cn(
-                      "w-full rounded-md px-2 py-1.5 pr-7 text-left hover:bg-muted",
-                      selected && "bg-muted",
-                    )}
-                    onClick={() => onSelect(conversation.sessionId)}
-                  >
-                    <span className="block truncate text-sm font-medium text-foreground">
-                      {conversation.agentName}
-                    </span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {conversation.preview ?? "No messages yet"}
-                    </span>
-                    <span className="block text-[11px] text-muted-foreground">
-                      {relativeTime(
-                        conversation.lastMessageAt ?? conversation.startedAt,
+              {chatSessions.map((session) => {
+                const selected =
+                  mode === "past-chat" &&
+                  session.id === selectedChatSessionId;
+                const loading = loadingChatSessionId === session.id;
+                return (
+                  <li key={session.id} className="group relative">
+                    <button
+                      type="button"
+                      className={cn(
+                        "w-full rounded-md px-2 py-1.5 pr-7 text-left hover:bg-muted",
+                        selected && "bg-muted",
                       )}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Delete conversation"
-                    className="absolute top-1.5 right-1 hidden rounded-sm p-1 text-muted-foreground hover:bg-background hover:text-destructive group-hover:block"
-                    onClick={() => onDelete(conversation.sessionId)}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
-                </li>
-              );
-            })}
+                      disabled={loadingChatSessionId !== null}
+                      onClick={() => onSelectChatSession(session.id)}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {loading ? (
+                          <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
+                        ) : (
+                          <MessageSquare className="size-3 shrink-0 text-muted-foreground" />
+                        )}
+                        <span className="block truncate text-sm font-medium text-foreground">
+                          {session.preview ?? "New conversation"}
+                        </span>
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground pl-4.5">
+                        {relativeTime(session.updatedAt)}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Delete conversation"
+                      className="absolute top-1.5 right-1 hidden rounded-sm p-1 text-muted-foreground hover:bg-background hover:text-destructive group-hover:block"
+                      onClick={() => onDeleteChatSession(session.id)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </li>
+                );
+              })}
           </ul>
+        ) : (
+          <p className="px-2 py-1 text-xs text-muted-foreground">
+            Your past conversations will appear here.
+          </p>
         )}
+
+        {/* Playground section */}
+        <div className="mt-3">
+          <div className="relative">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2 text-muted-foreground"
+              onClick={() => void openPicker()}
+            >
+              <FlaskConical className="size-4" />
+              Test an agent
+            </Button>
+            {pickerOpen ? (
+              <div className="absolute top-full left-0 z-10 mt-1 max-h-[280px] w-full overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-md">
+                {loadingAgents ? (
+                  <div className="flex items-center justify-center py-3">
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : agents && agents.length > 0 ? (
+                  agents.map((agent) => (
+                    <button
+                      key={agent.id}
+                      type="button"
+                      className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted"
+                      onClick={() => void runAgent(agent.id)}
+                      disabled={runningAgentId !== null}
+                    >
+                      <span className="truncate">{agent.name}</span>
+                      {runningAgentId === agent.id ? (
+                        <Loader2 className="size-3.5 shrink-0 animate-spin" />
+                      ) : (
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {agent.destination === "channel" ? "Channel" : "DM"}
+                        </span>
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  <p className="px-2 py-3 text-xs text-muted-foreground">
+                    No playground agents yet. Deploy one with Environment =
+                    Playground.
+                  </p>
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          {playgroundConversations.length > 0 ? (
+            <>
+              <p className="px-1 py-1 text-xs font-medium text-muted-foreground">
+                Playground conversations
+              </p>
+              <ul className="flex flex-col gap-0.5">
+                {playgroundConversations.map((conversation) => {
+                  const selected =
+                    mode === "playground" &&
+                    conversation.sessionId === selectedPlaygroundSessionId;
+                  return (
+                    <li key={conversation.sessionId} className="group relative">
+                      <button
+                        type="button"
+                        className={cn(
+                          "w-full rounded-md px-2 py-1.5 pr-7 text-left hover:bg-muted",
+                          selected && "bg-muted",
+                        )}
+                        onClick={() => onSelectPlayground(conversation.sessionId)}
+                      >
+                        <span className="block truncate text-sm font-medium text-foreground">
+                          {conversation.agentName}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {conversation.preview ?? "No messages yet"}
+                        </span>
+                        <span className="block text-[11px] text-muted-foreground">
+                          {relativeTime(
+                            conversation.lastMessageAt ?? conversation.startedAt,
+                          )}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Delete conversation"
+                        className="absolute top-1.5 right-1 hidden rounded-sm p-1 text-muted-foreground hover:bg-background hover:text-destructive group-hover:block"
+                        onClick={() => onDeletePlayground(conversation.sessionId)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          ) : null}
+        </div>
       </div>
     </div>
   );

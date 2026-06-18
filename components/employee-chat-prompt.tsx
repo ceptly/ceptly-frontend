@@ -16,6 +16,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useSpeechDictation } from "@/hooks/use-speech-dictation";
+import { formatChatSessionPreview } from "@/lib/chat-session-preview";
 import { cn } from "@/lib/utils";
 
 import { deployAgentAction, testAgentAction } from "@/actions/agents";
@@ -83,6 +84,12 @@ interface EmployeeChatPromptProps {
   personas?: PersonaOption[];
   /** When a playground agent is deployed here, open its conversation in the rail. */
   onPlaygroundStarted?: (sessionId: string) => void;
+  /** Fires once when a new session is created (first message sent). */
+  onSessionStarted?: (sessionId: string, preview: string) => void;
+  /** Viewing a past session from the rail; send a message to continue it. */
+  continuingPastSession?: boolean;
+  /** Fires when the user sends a message while viewing a past session. */
+  onSessionContinued?: (sessionId: string) => void;
 }
 
 function findInitialAgentFormValues(
@@ -134,6 +141,9 @@ export function EmployeeChatPrompt({
   chatChannelsError = null,
   personas = FALLBACK_PERSONAS,
   onPlaygroundStarted,
+  onSessionStarted,
+  continuingPastSession = false,
+  onSessionContinued,
 }: EmployeeChatPromptProps) {
   const { client } = useStatsigClient();
 
@@ -250,6 +260,13 @@ export function EmployeeChatPrompt({
     client.logEvent("employee_chat_submit");
     stopDictation();
 
+    const continuingSession =
+      continuingPastSession && Boolean(sessionId ?? initialSessionId);
+    const activeSessionId = sessionId ?? initialSessionId;
+    if (continuingSession && activeSessionId) {
+      onSessionContinued?.(activeSessionId);
+    }
+
     const attachmentsToSend = pendingAttachments;
     const nextMessages: SetupChatMessage[] = [
       ...messages,
@@ -327,7 +344,12 @@ export function EmployeeChatPrompt({
     }
 
     if (result.session_id) {
+      const isNewSession = !sessionId;
       setSessionId(result.session_id);
+      if (isNewSession && onSessionStarted) {
+        // Optimistic preview; truncated to match backend listChatSessions.
+        onSessionStarted(result.session_id, formatChatSessionPreview(trimmed));
+      }
     }
 
     if (result.agent) {
@@ -363,6 +385,41 @@ export function EmployeeChatPrompt({
    * so the draft ref reflects any direct edits. */
   function resolveDeployValues(): AgentDeployInitialValues | null {
     return agentFormDraftRef.current ?? deployCardValues;
+  }
+
+  /** Collapse the deploy form, show confirmation, and persist deployed state. */
+  async function finalizeAgentDeploy(values: AgentDeployInitialValues) {
+    setAgentFormValues(null);
+    agentFormDraftRef.current = null;
+    setAgentFormVersion(0);
+    setDeploySuccess(true);
+    setMessages((current) => {
+      for (let index = current.length - 1; index >= 0; index -= 1) {
+        const message = current[index];
+        if (
+          message?.role === "assistant" &&
+          message.ui_component?.type === "agent_form"
+        ) {
+          const next = [...current];
+          next[index] = {
+            ...message,
+            ui_component: {
+              type: "agent_deployed",
+              ...(values.name ? { name: values.name } : {}),
+            },
+          };
+          return next;
+        }
+      }
+      return current;
+    });
+    if (sessionId) {
+      await markChatFormDeployedAction({
+        workspaceId,
+        sessionId,
+        name: values.name,
+      });
+    }
   }
 
   async function handleDeployAgent() {
@@ -409,46 +466,13 @@ export function EmployeeChatPrompt({
         return;
       }
       client.logEvent("employee_chat_agent_deployed");
-      setAgentFormValues(null);
-      agentFormDraftRef.current = null;
-      setAgentFormVersion(0);
+      await finalizeAgentDeploy(values);
       onPlaygroundStarted(run.sessionId);
       return;
     }
 
     client.logEvent("employee_chat_agent_deployed");
-    // Collapse the inline form and surface a success note in its place.
-    setAgentFormValues(null);
-    agentFormDraftRef.current = null;
-    setAgentFormVersion(0);
-    setDeploySuccess(true);
-    setMessages((current) => {
-      for (let index = current.length - 1; index >= 0; index -= 1) {
-        const message = current[index];
-        if (
-          message?.role === "assistant" &&
-          message.ui_component?.type === "agent_form"
-        ) {
-          const next = [...current];
-          next[index] = {
-            ...message,
-            ui_component: {
-              type: "agent_deployed",
-              ...(values.name ? { name: values.name } : {}),
-            },
-          };
-          return next;
-        }
-      }
-      return current;
-    });
-    if (sessionId) {
-      void markChatFormDeployedAction({
-        workspaceId,
-        sessionId,
-        name: values.name,
-      });
-    }
+    await finalizeAgentDeploy(values);
   }
 
   async function handleTestAgent() {
@@ -508,6 +532,15 @@ export function EmployeeChatPrompt({
   }
 
   const agentBadgeLabel = activeAgent ? AGENT_LABELS[activeAgent] : null;
+
+  const continuingBanner = continuingPastSession ? (
+    <Alert className="border-border bg-muted/40">
+      <AlertDescription className="text-sm text-muted-foreground">
+        Viewing a past conversation. Send a message to continue where you left
+        off.
+      </AlertDescription>
+    </Alert>
+  ) : null;
 
   const promptForm = (
     <form
@@ -698,6 +731,7 @@ export function EmployeeChatPrompt({
 
   const composerBlock = (
     <div className="mx-auto flex w-full max-w-[700px] flex-col gap-4">
+      {continuingBanner}
       {chatError ? (
         <Alert variant="destructive">
           <AlertDescription>{chatError}</AlertDescription>
