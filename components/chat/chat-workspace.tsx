@@ -27,6 +27,7 @@ import type { RosterMember } from "@/lib/api/roster";
 import type { SlackChannel } from "@/lib/api/slack-channels";
 import type { SetupChatMessage } from "@/lib/api/types";
 import type { ChatSessionSummary } from "@/lib/api/workspace-chat-history";
+import { formatChatSessionPreview } from "@/lib/chat-session-preview";
 import { cn } from "@/lib/utils";
 
 interface ChatWorkspaceProps {
@@ -92,6 +93,9 @@ export function ChatWorkspace({
   );
 
   const [railOpen, setRailOpen] = useState(false);
+  const [loadingChatSessionId, setLoadingChatSessionId] = useState<
+    string | null
+  >(null);
 
   const refreshPlaygroundConversations = useCallback(async () => {
     const result = await listPlaygroundConversationsAction({ workspaceId });
@@ -113,16 +117,23 @@ export function ChatWorkspace({
   const handleSelectPastChat = useCallback(
     async (sessionId: string) => {
       setRailOpen(false);
-      const result = await loadChatSessionAction({ workspaceId, sessionId });
-      if (result.error || !result.messages) {
-        toast.error("Could not load conversation", { description: result.error });
-        return;
+      setLoadingChatSessionId(sessionId);
+      try {
+        const result = await loadChatSessionAction({ workspaceId, sessionId });
+        if (result.error || !result.messages) {
+          toast.error("Could not load conversation", {
+            description: result.error,
+          });
+          return;
+        }
+        setPastChatSessionId(sessionId);
+        setAssistantInitialMessages(result.messages);
+        setAssistantInitialSessionId(sessionId);
+        setAssistantKey((k) => k + 1);
+        setMode("past-chat");
+      } finally {
+        setLoadingChatSessionId(null);
       }
-      setPastChatSessionId(sessionId);
-      setAssistantInitialMessages(result.messages);
-      setAssistantInitialSessionId(sessionId);
-      setAssistantKey((k) => k + 1);
-      setMode("past-chat");
     },
     [workspaceId],
   );
@@ -171,28 +182,48 @@ export function ChatWorkspace({
         toast.error("Could not delete", { description: result.error });
         return;
       }
-      setChatSessions((current) => current.filter((s) => s.id !== sessionId));
       if (pastChatSessionId === sessionId) {
         handleNewChat();
       }
+      setChatSessions((current) => current.filter((s) => s.id !== sessionId));
     },
     [workspaceId, pastChatSessionId, handleNewChat],
   );
 
   const handleSessionStarted = useCallback(
     (sessionId: string, preview: string) => {
+      const formattedPreview = formatChatSessionPreview(preview);
       setChatSessions((current) => {
         // Avoid duplicates if already present
         if (current.some((s) => s.id === sessionId)) return current;
         const now = new Date().toISOString();
         return [
-          { id: sessionId, agentId: null, preview, createdAt: now, updatedAt: now },
+          {
+            id: sessionId,
+            agentId: null,
+            preview: formattedPreview,
+            createdAt: now,
+            updatedAt: now,
+          },
           ...current,
         ];
       });
     },
     [],
   );
+
+  const handleSessionContinued = useCallback((sessionId: string) => {
+    setMode("assistant");
+    setPastChatSessionId(null);
+    const now = new Date().toISOString();
+    setChatSessions((current) =>
+      current.map((session) =>
+        session.id === sessionId
+          ? { ...session, updatedAt: now }
+          : session,
+      ),
+    );
+  }, []);
 
   const isAssistantVisible = mode === "assistant" || mode === "past-chat";
 
@@ -212,6 +243,7 @@ export function ChatWorkspace({
           playgroundConversations={playgroundConversations}
           selectedPlaygroundSessionId={selectedPlaygroundSessionId}
           mode={mode}
+          loadingChatSessionId={loadingChatSessionId}
           onNewChat={handleNewChat}
           onSelectChatSession={(id) => void handleSelectPastChat(id)}
           onDeleteChatSession={(id) => void handleDeleteChatSession(id)}
@@ -258,8 +290,10 @@ export function ChatWorkspace({
             communicationPlatform={communicationPlatform}
             chatChannelsError={chatChannelsError}
             personas={personas}
+            continuingPastSession={mode === "past-chat"}
             onPlaygroundStarted={handlePlaygroundConversationStarted}
             onSessionStarted={handleSessionStarted}
+            onSessionContinued={handleSessionContinued}
           />
         </div>
 

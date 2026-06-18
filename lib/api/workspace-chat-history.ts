@@ -1,5 +1,7 @@
+import { parseStoredUiComponent } from "@/lib/chat-history-ui-component";
+
 import { resolveApiBaseUrl } from "./auth";
-import type { SetupChatMessage, SetupChatUiComponent } from "./types";
+import type { SetupChatMessage } from "./types";
 
 export interface ChatSessionSummary {
   id: string;
@@ -13,8 +15,17 @@ interface ChatHistoryMessageRow {
   role: "user" | "assistant";
   content: string;
   agentId: string | null;
-  proposal: { ui_component?: SetupChatUiComponent } | null;
+  proposal: Record<string, unknown> | null;
   createdAt: string;
+}
+
+function rowToSetupChatMessage(row: ChatHistoryMessageRow): SetupChatMessage {
+  const uiComponent = parseStoredUiComponent(row.proposal?.ui_component);
+  return {
+    role: row.role,
+    content: row.content,
+    ...(uiComponent ? { ui_component: uiComponent } : {}),
+  };
 }
 
 export interface ChatHistory {
@@ -85,11 +96,7 @@ export async function loadChatHistory(
     );
 
     const rows = messagesResult?.data?.messages ?? [];
-    const messages: SetupChatMessage[] = rows.map((row) => ({
-      role: row.role,
-      content: row.content,
-      ui_component: row.proposal?.ui_component,
-    }));
+    const messages: SetupChatMessage[] = rows.map(rowToSetupChatMessage);
 
     return { sessionId: latest.id, messages };
   } catch {
@@ -112,11 +119,8 @@ export async function loadChatSession(
       accessToken,
     );
     if (!result?.data) return null;
-    const messages: SetupChatMessage[] = result.data.messages.map((row) => ({
-      role: row.role,
-      content: row.content,
-      ui_component: row.proposal?.ui_component,
-    }));
+    const messages: SetupChatMessage[] =
+      result.data.messages.map(rowToSetupChatMessage);
     return { sessionId, messages };
   } catch {
     return null;

@@ -16,6 +16,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useSpeechDictation } from "@/hooks/use-speech-dictation";
+import { formatChatSessionPreview } from "@/lib/chat-session-preview";
 import { cn } from "@/lib/utils";
 
 import { deployAgentAction, testAgentAction } from "@/actions/agents";
@@ -85,6 +86,10 @@ interface EmployeeChatPromptProps {
   onPlaygroundStarted?: (sessionId: string) => void;
   /** Fires once when a new session is created (first message sent). */
   onSessionStarted?: (sessionId: string, preview: string) => void;
+  /** Viewing a past session from the rail; send a message to continue it. */
+  continuingPastSession?: boolean;
+  /** Fires when the user sends a message while viewing a past session. */
+  onSessionContinued?: (sessionId: string) => void;
 }
 
 function findInitialAgentFormValues(
@@ -137,6 +142,8 @@ export function EmployeeChatPrompt({
   personas = FALLBACK_PERSONAS,
   onPlaygroundStarted,
   onSessionStarted,
+  continuingPastSession = false,
+  onSessionContinued,
 }: EmployeeChatPromptProps) {
   const { client } = useStatsigClient();
 
@@ -253,6 +260,13 @@ export function EmployeeChatPrompt({
     client.logEvent("employee_chat_submit");
     stopDictation();
 
+    const continuingSession =
+      continuingPastSession && Boolean(sessionId ?? initialSessionId);
+    const activeSessionId = sessionId ?? initialSessionId;
+    if (continuingSession && activeSessionId) {
+      onSessionContinued?.(activeSessionId);
+    }
+
     const attachmentsToSend = pendingAttachments;
     const nextMessages: SetupChatMessage[] = [
       ...messages,
@@ -333,7 +347,8 @@ export function EmployeeChatPrompt({
       const isNewSession = !sessionId;
       setSessionId(result.session_id);
       if (isNewSession && onSessionStarted) {
-        onSessionStarted(result.session_id, trimmed);
+        // Optimistic preview; truncated to match backend listChatSessions.
+        onSessionStarted(result.session_id, formatChatSessionPreview(trimmed));
       }
     }
 
@@ -517,6 +532,15 @@ export function EmployeeChatPrompt({
   }
 
   const agentBadgeLabel = activeAgent ? AGENT_LABELS[activeAgent] : null;
+
+  const continuingBanner = continuingPastSession ? (
+    <Alert className="border-border bg-muted/40">
+      <AlertDescription className="text-sm text-muted-foreground">
+        Viewing a past conversation. Send a message to continue where you left
+        off.
+      </AlertDescription>
+    </Alert>
+  ) : null;
 
   const promptForm = (
     <form
@@ -707,6 +731,7 @@ export function EmployeeChatPrompt({
 
   const composerBlock = (
     <div className="mx-auto flex w-full max-w-[700px] flex-col gap-4">
+      {continuingBanner}
       {chatError ? (
         <Alert variant="destructive">
           <AlertDescription>{chatError}</AlertDescription>

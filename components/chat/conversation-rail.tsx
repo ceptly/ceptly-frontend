@@ -23,6 +23,7 @@ interface ConversationRailProps {
   playgroundConversations: PlaygroundConversationSummary[];
   selectedPlaygroundSessionId: string | null;
   mode: "assistant" | "playground" | "past-chat";
+  loadingChatSessionId?: string | null;
   onNewChat: () => void;
   onSelectChatSession: (sessionId: string) => void;
   onDeleteChatSession: (sessionId: string) => void;
@@ -53,6 +54,7 @@ export function ConversationRail({
   playgroundConversations,
   selectedPlaygroundSessionId,
   mode,
+  loadingChatSessionId = null,
   onNewChat,
   onSelectChatSession,
   onDeleteChatSession,
@@ -100,7 +102,7 @@ export function ConversationRail({
         size="sm"
         className={cn(
           "justify-start gap-2",
-          (mode === "assistant") && "border-primary/40 bg-primary/5",
+          mode === "assistant" && "border-primary/40 bg-primary/5",
         )}
         onClick={onNewChat}
       >
@@ -110,16 +112,16 @@ export function ConversationRail({
 
       {/* Past assistant conversations */}
       <div className="mt-1 min-h-0 flex-1 overflow-y-auto">
+        <p className="px-1 py-1 text-xs font-medium text-muted-foreground">
+          Past conversations
+        </p>
         {chatSessions.length > 0 ? (
-          <>
-            <p className="px-1 py-1 text-xs font-medium text-muted-foreground">
-              Past conversations
-            </p>
-            <ul className="flex flex-col gap-0.5">
+          <ul className="flex flex-col gap-0.5">
               {chatSessions.map((session) => {
                 const selected =
                   mode === "past-chat" &&
                   session.id === selectedChatSessionId;
+                const loading = loadingChatSessionId === session.id;
                 return (
                   <li key={session.id} className="group relative">
                     <button
@@ -128,10 +130,15 @@ export function ConversationRail({
                         "w-full rounded-md px-2 py-1.5 pr-7 text-left hover:bg-muted",
                         selected && "bg-muted",
                       )}
+                      disabled={loadingChatSessionId !== null}
                       onClick={() => onSelectChatSession(session.id)}
                     >
                       <span className="flex items-center gap-1.5">
-                        <MessageSquare className="size-3 shrink-0 text-muted-foreground" />
+                        {loading ? (
+                          <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
+                        ) : (
+                          <MessageSquare className="size-3 shrink-0 text-muted-foreground" />
+                        )}
                         <span className="block truncate text-sm font-medium text-foreground">
                           {session.preview ?? "New conversation"}
                         </span>
@@ -151,9 +158,12 @@ export function ConversationRail({
                   </li>
                 );
               })}
-            </ul>
-          </>
-        ) : null}
+          </ul>
+        ) : (
+          <p className="px-2 py-1 text-xs text-muted-foreground">
+            Your past conversations will appear here.
+          </p>
+        )}
 
         {/* Playground section */}
         <div className="mt-3">
