@@ -35,3 +35,11 @@ next-env.d.ts
 
 # one-off artifacts
 *.zip
+
+# editor / agent config (local)
+.claude/
+.cursor/
+.vscode/
+AGENTS.md
+CLAUDE.md
+AGENTS-TESTING.md
