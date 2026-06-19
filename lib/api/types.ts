@@ -257,7 +257,7 @@ export interface SetupChatMessage {
   activity?: import("./workspace-chat-stream").AgentActivityState;
 }
 
-export type ChatAgentId = "team_qa" | "meeting_creator";
+export type ChatAgentId = "scrum_intelligence" | "meeting_creator";
 
 export interface AuthUser {
   id: string;

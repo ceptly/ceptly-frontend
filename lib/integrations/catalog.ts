@@ -9,7 +9,7 @@ export const KNOWN_INTEGRATIONS: Record<string, KnownIntegration> = {
     id: "slack",
     name: "Slack",
     description:
-      "Connect Ceptly to Slack for conversation DMs and Team insights search across your workspace history.",
+      "Connect Ceptly to Slack for conversation DMs and Scrum intelligence search across your workspace history.",
   },
   linear: {
     id: "linear",

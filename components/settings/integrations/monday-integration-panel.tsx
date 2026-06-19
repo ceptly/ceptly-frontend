@@ -95,7 +95,7 @@ export function MondayIntegrationPanel({
         <Alert>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            Monday.com connected successfully. Team insights chat can now
+            Monday.com connected successfully. Scrum intelligence chat can now
             reference assigned items alongside conversation responses.
           </AlertDescription>
         </Alert>

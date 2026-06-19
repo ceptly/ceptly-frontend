@@ -126,11 +126,11 @@ export function SlackIntegrationPanel({
                 ) : null}
                 {searchEnabled ? (
                   <p className="text-sm text-muted-foreground">
-                    Team insights search enabled
+                    Scrum intelligence search enabled
                   </p>
                 ) : status.connected ? (
                   <p className="text-sm text-amber-600 dark:text-amber-400">
-                    Re-install Slack to enable Team insights search
+                    Re-install Slack to enable Scrum intelligence search
                   </p>
                 ) : null}
               </div>
