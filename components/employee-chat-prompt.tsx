@@ -64,7 +64,7 @@ const ATTACHMENT_ACCEPT = ".pdf,.txt,.md,.markdown";
 const MAX_ATTACHMENTS = 5;
 
 const AGENT_LABELS: Record<ChatAgentId, string> = {
-  team_qa: "Team insights",
+  scrum_intelligence: "Scrum intelligence",
   meeting_creator: "Meeting setup",
 };
 

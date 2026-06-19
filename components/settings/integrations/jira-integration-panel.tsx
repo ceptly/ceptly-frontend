@@ -92,7 +92,7 @@ export function JiraIntegrationPanel({
         <Alert>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            Jira connected successfully. Team insights chat can now reference
+            Jira connected successfully. Scrum intelligence chat can now reference
             assigned issues alongside conversation responses.
           </AlertDescription>
         </Alert>

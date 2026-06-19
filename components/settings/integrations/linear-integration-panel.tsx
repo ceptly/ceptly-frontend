@@ -95,7 +95,7 @@ export function LinearIntegrationPanel({
         <Alert>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            Linear connected successfully. Team insights chat can now reference
+            Linear connected successfully. Scrum intelligence chat can now reference
             assigned issues alongside conversation responses.
           </AlertDescription>
         </Alert>
