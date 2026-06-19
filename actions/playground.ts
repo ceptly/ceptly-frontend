@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import {
   deletePlaygroundConversation as deletePlaygroundConversationApi,
   getPlaygroundConversation as getPlaygroundConversationApi,
@@ -75,6 +77,9 @@ export async function deletePlaygroundConversationAction(input: {
   if (!result.success) {
     return { error: result.error ?? "Failed to delete the conversation." };
   }
+  // Invalidate the cached /chat render so the deleted conversation doesn't
+  // reappear when the user navigates back to the page (Next.js Router Cache).
+  revalidatePath("/chat");
   return {};
 }
 

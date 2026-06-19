@@ -1,6 +1,7 @@
 "use client";
 
 import { PanelLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
@@ -65,6 +66,7 @@ export function ChatWorkspace({
   initialPlaygroundConversations,
   initialChatSessions,
 }: ChatWorkspaceProps) {
+  const router = useRouter();
   const [playgroundConversations, setPlaygroundConversations] = useState(
     initialPlaygroundConversations,
   );
@@ -150,8 +152,11 @@ export function ChatWorkspace({
       setMode("playground");
       setRailOpen(false);
       void refreshPlaygroundConversations();
+      // Refresh the server render so the new conversation survives navigating
+      // away and back (Next.js Router Cache would otherwise serve a stale rail).
+      router.refresh();
     },
-    [refreshPlaygroundConversations],
+    [refreshPlaygroundConversations, router],
   );
 
   const handleDeletePlayground = useCallback(
@@ -208,8 +213,11 @@ export function ChatWorkspace({
           ...current,
         ];
       });
+      // Refresh the server render so the new session survives navigating away
+      // and back (Next.js Router Cache would otherwise serve a stale rail).
+      router.refresh();
     },
-    [],
+    [router],
   );
 
   const handleSessionContinued = useCallback((sessionId: string) => {

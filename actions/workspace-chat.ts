@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import {
@@ -63,6 +64,9 @@ export async function deleteChatSessionAction(input: {
     parsed.data.sessionId,
   );
   if (!result.success) return { error: result.error };
+  // Invalidate the cached /chat render so the deleted session doesn't reappear
+  // when the user navigates back to the page (Next.js Router Cache).
+  revalidatePath("/chat");
   return {};
 }
 
