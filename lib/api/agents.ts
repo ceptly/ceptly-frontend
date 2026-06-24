@@ -1,9 +1,5 @@
-import { resolveApiBaseUrl } from "./auth";
-import type {
-  ConversationResultDestination,
-  WorkspaceSchedule,
-} from "./types";
-import { parseJsonResponse } from "./http";
+import { apiFetch, type ApiFetchOptions, type ApiResult } from "./client";
+import type { ConversationResultDestination, WorkspaceSchedule } from "./types";
 
 export type AgentApiDestination = "dm" | "channel";
 export type AgentApiTrigger = "scheduled" | "one_off";
@@ -38,129 +34,48 @@ export interface DeployedAgent {
   sessionsStarted?: number;
 }
 
-function authHeaders(accessToken: string): HeadersInit {
-  return {
-    Authorization: `Bearer ${accessToken}`,
-    "Content-Type": "application/json",
-  };
-}
-
-async function writeAgents<T>(
-  method: "POST" | "PUT",
+/** All agent endpoints are nested under the workspace's `/agents` path. */
+function agentsRequest<TData>(
   accessToken: string,
   workspaceId: string,
   path: string,
-  body: unknown,
-): Promise<T & { success: boolean; error?: string }> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/agents${path}`,
-      {
-        method,
-        headers: authHeaders(accessToken),
-        body: JSON.stringify(body),
-      },
-    );
-    return parseJsonResponse<T>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    } as T & { success: boolean; error?: string };
-  }
-}
-
-function postAgents<T>(
-  accessToken: string,
-  workspaceId: string,
-  path: string,
-  body: unknown,
-): Promise<T & { success: boolean; error?: string }> {
-  return writeAgents<T>("POST", accessToken, workspaceId, path, body);
+  // Derive method/body from apiFetch so the two never drift (e.g. PATCH).
+  options: Pick<ApiFetchOptions, "method" | "body"> = {},
+): Promise<ApiResult<TData>> {
+  return apiFetch<TData>(`/api/workspaces/${workspaceId}/agents${path}`, {
+    token: accessToken,
+    ...options,
+  });
 }
 
 export function deployAgent(
   accessToken: string,
   workspaceId: string,
   body: AgentDeployBody,
-): Promise<{ success: boolean; error?: string; data?: DeployedAgent }> {
-  return postAgents<{ data?: DeployedAgent }>(
-    accessToken,
-    workspaceId,
-    "",
-    body,
-  );
+): Promise<ApiResult<DeployedAgent>> {
+  return agentsRequest(accessToken, workspaceId, "", { method: "POST", body });
 }
 
 export function previewAgent(
   accessToken: string,
   workspaceId: string,
   body: AgentDeployBody,
-): Promise<{ success: boolean; error?: string; data?: { opener: string } }> {
-  return postAgents<{ data?: { opener: string } }>(
-    accessToken,
-    workspaceId,
-    "/preview",
+): Promise<ApiResult<{ opener: string }>> {
+  return agentsRequest(accessToken, workspaceId, "/preview", {
+    method: "POST",
     body,
-  );
+  });
 }
 
 export function testAgent(
   accessToken: string,
   workspaceId: string,
   body: AgentDeployBody,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { sessionsStarted: number };
-}> {
-  return postAgents<{ data?: { sessionsStarted: number } }>(
-    accessToken,
-    workspaceId,
-    "/test",
+): Promise<ApiResult<{ sessionsStarted: number }>> {
+  return agentsRequest(accessToken, workspaceId, "/test", {
+    method: "POST",
     body,
-  );
-}
-
-async function getAgents<T>(
-  accessToken: string,
-  workspaceId: string,
-  path: string,
-): Promise<T & { success: boolean; error?: string }> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/agents${path}`,
-      { headers: authHeaders(accessToken) },
-    );
-    return parseJsonResponse<T>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    } as T & { success: boolean; error?: string };
-  }
-}
-
-async function deleteAgents<T>(
-  accessToken: string,
-  workspaceId: string,
-  path: string,
-): Promise<T & { success: boolean; error?: string }> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/agents${path}`,
-      { method: "DELETE", headers: authHeaders(accessToken) },
-    );
-    return parseJsonResponse<T>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    } as T & { success: boolean; error?: string };
-  }
+  });
 }
 
 export function setAgentEnabled(
@@ -168,21 +83,21 @@ export function setAgentEnabled(
   workspaceId: string,
   agentId: string,
   enabled: boolean,
-): Promise<{ success: boolean; error?: string }> {
-  return postAgents<Record<string, never>>(
-    accessToken,
-    workspaceId,
-    `/${agentId}/enabled`,
-    { enabled },
-  );
+): Promise<ApiResult<never>> {
+  return agentsRequest(accessToken, workspaceId, `/${agentId}/enabled`, {
+    method: "POST",
+    body: { enabled },
+  });
 }
 
 export function deleteAgent(
   accessToken: string,
   workspaceId: string,
   agentId: string,
-): Promise<{ success: boolean; error?: string }> {
-  return deleteAgents<Record<string, never>>(accessToken, workspaceId, `/${agentId}`);
+): Promise<ApiResult<never>> {
+  return agentsRequest(accessToken, workspaceId, `/${agentId}`, {
+    method: "DELETE",
+  });
 }
 
 export function updateAgent(
@@ -190,14 +105,11 @@ export function updateAgent(
   workspaceId: string,
   agentId: string,
   body: AgentDeployBody,
-): Promise<{ success: boolean; error?: string; data?: { agent: AgentFull } }> {
-  return writeAgents<{ data?: { agent: AgentFull } }>(
-    "PUT",
-    accessToken,
-    workspaceId,
-    `/${agentId}`,
+): Promise<ApiResult<{ agent: AgentFull }>> {
+  return agentsRequest(accessToken, workspaceId, `/${agentId}`, {
+    method: "PUT",
     body,
-  );
+  });
 }
 
 export interface AgentFull {
@@ -270,24 +182,16 @@ export function getAgent(
   accessToken: string,
   workspaceId: string,
   agentId: string,
-): Promise<{ success: boolean; error?: string; data?: { agent: AgentFull } }> {
-  return getAgents<{ data?: { agent: AgentFull } }>(
-    accessToken,
-    workspaceId,
-    `/${agentId}`,
-  );
+): Promise<ApiResult<{ agent: AgentFull }>> {
+  return agentsRequest(accessToken, workspaceId, `/${agentId}`);
 }
 
 export function getAgentSessions(
   accessToken: string,
   workspaceId: string,
   agentId: string,
-): Promise<{ success: boolean; error?: string; data?: { sessions: AgentSessionRow[] } }> {
-  return getAgents<{ data?: { sessions: AgentSessionRow[] } }>(
-    accessToken,
-    workspaceId,
-    `/${agentId}/sessions`,
-  );
+): Promise<ApiResult<{ sessions: AgentSessionRow[] }>> {
+  return agentsRequest(accessToken, workspaceId, `/${agentId}/sessions`);
 }
 
 export function getAgentSessionDetail(
@@ -295,8 +199,8 @@ export function getAgentSessionDetail(
   workspaceId: string,
   agentId: string,
   sessionId: string,
-): Promise<{ success: boolean; error?: string; data?: AgentSessionDetail }> {
-  return getAgents<{ data?: AgentSessionDetail }>(
+): Promise<ApiResult<AgentSessionDetail>> {
+  return agentsRequest(
     accessToken,
     workspaceId,
     `/${agentId}/sessions/${sessionId}`,

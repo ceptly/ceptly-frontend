@@ -1,5 +1,4 @@
-import { resolveApiBaseUrl } from "./auth";
-import { parseJsonResponse } from "./http";
+import { apiFetch, type ApiResult } from "./client";
 
 export interface WorkspaceIntegration {
   id: string;
@@ -11,34 +10,11 @@ export interface WorkspaceIntegration {
   metadata?: Record<string, unknown>;
 }
 
-export async function listIntegrations(
+export function listIntegrations(
   accessToken: string,
   workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { integrations: WorkspaceIntegration[] };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/integrations`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        cache: "no-store",
-      },
-    );
-
-    return parseJsonResponse<{
-      data?: { integrations: WorkspaceIntegration[] };
-    }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<{ integrations: WorkspaceIntegration[] }>> {
+  return apiFetch(`/api/workspaces/${workspaceId}/integrations`, {
+    token: accessToken,
+  });
 }

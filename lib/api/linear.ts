@@ -1,5 +1,4 @@
-import { resolveApiBaseUrl } from "./auth";
-import { parseJsonResponse } from "./http";
+import { apiFetch, type ApiResult } from "./client";
 
 export interface LinearConnectionStatus {
   connected: boolean;
@@ -8,93 +7,33 @@ export interface LinearConnectionStatus {
   connectedAt?: string | null;
 }
 
-export async function getLinearConnectionStatus(
+export function getLinearConnectionStatus(
   accessToken: string,
   workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: LinearConnectionStatus;
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/linear/status`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        cache: "no-store",
-      },
-    );
-
-    return parseJsonResponse<{ data?: LinearConnectionStatus }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<LinearConnectionStatus>> {
+  return apiFetch(`/api/workspaces/${workspaceId}/linear/status`, {
+    token: accessToken,
+  });
 }
 
-export async function getLinearInstallUrl(
+export function getLinearInstallUrl(
   accessToken: string,
   workspaceId: string,
   returnTo: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { url: string };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const params = new URLSearchParams({ return_to: returnTo });
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/linear/install-url?${params.toString()}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        cache: "no-store",
-      },
-    );
-
-    return parseJsonResponse<{ data?: { url: string } }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<{ url: string }>> {
+  const params = new URLSearchParams({ return_to: returnTo });
+  return apiFetch(
+    `/api/workspaces/${workspaceId}/linear/install-url?${params.toString()}`,
+    { token: accessToken },
+  );
 }
 
-export async function disconnectLinear(
+export function disconnectLinear(
   accessToken: string,
   workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/linear/disconnect`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        cache: "no-store",
-      },
-    );
-
-    return parseJsonResponse<Record<string, never>>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<never>> {
+  return apiFetch(`/api/workspaces/${workspaceId}/linear/disconnect`, {
+    token: accessToken,
+    method: "POST",
+  });
 }

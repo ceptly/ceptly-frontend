@@ -1,4 +1,4 @@
-import { resolveApiBaseUrl } from "./auth";
+import { apiFetch, type ApiResult } from "./client";
 
 /** A persona preset from the backend registry (GET /api/personas). */
 export interface PersonaOption {
@@ -35,34 +35,8 @@ export const FALLBACK_PERSONAS: PersonaOption[] = [
   },
 ];
 
-export async function listPersonas(accessToken: string): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { personas: PersonaOption[] };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(`${base}/api/personas`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${accessToken}` },
-      cache: "no-store",
-    });
-    const contentType = response.headers.get("content-type");
-    if (!contentType?.includes("application/json")) {
-      return {
-        success: false,
-        error: `Unexpected response (HTTP ${response.status}).`,
-      };
-    }
-    return (await response.json()) as {
-      success: boolean;
-      error?: string;
-      data?: { personas: PersonaOption[] };
-    };
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+export function listPersonas(
+  accessToken: string,
+): Promise<ApiResult<{ personas: PersonaOption[] }>> {
+  return apiFetch(`/api/personas`, { token: accessToken });
 }

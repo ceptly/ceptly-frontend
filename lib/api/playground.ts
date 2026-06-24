@@ -1,5 +1,4 @@
-import { resolveApiBaseUrl } from "./auth";
-import { parseJsonResponse } from "./http";
+import { apiFetch, type ApiResult } from "./client";
 
 export type PlaygroundDestination = "dm" | "channel";
 export type PlaygroundStyle = "broadcast" | "sequential";
@@ -57,146 +56,73 @@ export interface PlaygroundConversationDetail {
   messages: PlaygroundConversationMessage[];
 }
 
-function authHeaders(accessToken: string): HeadersInit {
-  return { Authorization: `Bearer ${accessToken}` };
-}
+const playgroundBase = (workspaceId: string) =>
+  `/api/workspaces/${workspaceId}/playground`;
 
-const UNREACHABLE = "Could not reach the API. Is the backend running?";
-
-export async function listPlaygroundAgents(
+export function listPlaygroundAgents(
   accessToken: string,
   workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { agents: PlaygroundAgentSummary[] };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/playground/agents`,
-      { headers: authHeaders(accessToken), cache: "no-store" },
-    );
-    return parseJsonResponse<{ data?: { agents: PlaygroundAgentSummary[] } }>(
-      response,
-    );
-  } catch {
-    return { success: false, error: UNREACHABLE };
-  }
+): Promise<ApiResult<{ agents: PlaygroundAgentSummary[] }>> {
+  return apiFetch(`${playgroundBase(workspaceId)}/agents`, {
+    token: accessToken,
+  });
 }
 
-export async function listPlaygroundConversations(
+export function listPlaygroundConversations(
   accessToken: string,
   workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { conversations: PlaygroundConversationSummary[] };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/playground/conversations`,
-      { headers: authHeaders(accessToken), cache: "no-store" },
-    );
-    return parseJsonResponse<{
-      data?: { conversations: PlaygroundConversationSummary[] };
-    }>(response);
-  } catch {
-    return { success: false, error: UNREACHABLE };
-  }
+): Promise<ApiResult<{ conversations: PlaygroundConversationSummary[] }>> {
+  return apiFetch(`${playgroundBase(workspaceId)}/conversations`, {
+    token: accessToken,
+  });
 }
 
-export async function getPlaygroundConversation(
+export function getPlaygroundConversation(
   accessToken: string,
   workspaceId: string,
   sessionId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { conversation: PlaygroundConversationDetail };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/playground/conversations/${sessionId}`,
-      { headers: authHeaders(accessToken), cache: "no-store" },
-    );
-    return parseJsonResponse<{
-      data?: { conversation: PlaygroundConversationDetail };
-    }>(response);
-  } catch {
-    return { success: false, error: UNREACHABLE };
-  }
+): Promise<ApiResult<{ conversation: PlaygroundConversationDetail }>> {
+  return apiFetch(`${playgroundBase(workspaceId)}/conversations/${sessionId}`, {
+    token: accessToken,
+  });
 }
 
-export async function deletePlaygroundConversation(
+export function deletePlaygroundConversation(
   accessToken: string,
   workspaceId: string,
   sessionId: string,
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/playground/conversations/${sessionId}`,
-      { method: "DELETE", headers: authHeaders(accessToken) },
-    );
-    return parseJsonResponse<Record<string, never>>(response);
-  } catch {
-    return { success: false, error: UNREACHABLE };
-  }
+): Promise<ApiResult<never>> {
+  return apiFetch(`${playgroundBase(workspaceId)}/conversations/${sessionId}`, {
+    token: accessToken,
+    method: "DELETE",
+  });
 }
 
-export async function runPlaygroundAgent(
+export function runPlaygroundAgent(
   accessToken: string,
   workspaceId: string,
   agentId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { sessionId: string };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/playground/run`,
-      {
-        method: "POST",
-        headers: {
-          ...authHeaders(accessToken),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ agent_id: agentId }),
-      },
-    );
-    return parseJsonResponse<{ data?: { sessionId: string } }>(response);
-  } catch {
-    return { success: false, error: UNREACHABLE };
-  }
+): Promise<ApiResult<{ sessionId: string }>> {
+  return apiFetch(`${playgroundBase(workspaceId)}/run`, {
+    token: accessToken,
+    method: "POST",
+    body: { agent_id: agentId },
+  });
 }
 
-export async function postPlaygroundReply(
+export function postPlaygroundReply(
   accessToken: string,
   workspaceId: string,
   sessionId: string,
   rosterMemberId: string,
   text: string,
-): Promise<{ success: boolean; error?: string; data?: { handled: boolean } }> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/playground/conversations/${sessionId}/reply`,
-      {
-        method: "POST",
-        headers: {
-          ...authHeaders(accessToken),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ roster_member_id: rosterMemberId, text }),
-      },
-    );
-    return parseJsonResponse<{ data?: { handled: boolean } }>(response);
-  } catch {
-    return { success: false, error: UNREACHABLE };
-  }
+): Promise<ApiResult<{ handled: boolean }>> {
+  return apiFetch(
+    `${playgroundBase(workspaceId)}/conversations/${sessionId}/reply`,
+    {
+      token: accessToken,
+      method: "POST",
+      body: { roster_member_id: rosterMemberId, text },
+    },
+  );
 }
