@@ -1,126 +1,47 @@
-import { resolveApiBaseUrl } from "./auth";
+import { apiFetch, type ApiResult } from "./client";
 import type { WorkspaceMember } from "./types";
-import { parseJsonResponse } from "./http";
 
-export async function listWorkspaceMembers(
+const membersBase = (workspaceId: string) =>
+  `/api/workspaces/${workspaceId}/members`;
+
+export function listWorkspaceMembers(
   accessToken: string,
   workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { members: WorkspaceMember[] };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/members`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        cache: "no-store",
-      },
-    );
-
-    return parseJsonResponse<{ data?: { members: WorkspaceMember[] } }>(
-      response,
-    );
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<{ members: WorkspaceMember[] }>> {
+  return apiFetch(membersBase(workspaceId), { token: accessToken });
 }
 
-export async function updateWorkspaceMemberRole(
+export function updateWorkspaceMemberRole(
   accessToken: string,
   workspaceId: string,
   userId: string,
   role: "admin" | "member",
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { member: WorkspaceMember };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/members/${userId}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ role }),
-      },
-    );
-
-    return parseJsonResponse<{ data?: { member: WorkspaceMember } }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<{ member: WorkspaceMember }>> {
+  return apiFetch(`${membersBase(workspaceId)}/${userId}`, {
+    token: accessToken,
+    method: "PATCH",
+    body: { role },
+  });
 }
 
-export async function removeWorkspaceMember(
+export function removeWorkspaceMember(
   accessToken: string,
   workspaceId: string,
   userId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/members/${userId}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    );
-
-    return parseJsonResponse<Record<string, never>>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<never>> {
+  return apiFetch(`${membersBase(workspaceId)}/${userId}`, {
+    token: accessToken,
+    method: "DELETE",
+  });
 }
 
-export async function transferWorkspaceOwnership(
+export function transferWorkspaceOwnership(
   accessToken: string,
   workspaceId: string,
   userId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/members/${userId}/transfer-ownership`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    );
-
-    return parseJsonResponse<Record<string, never>>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<never>> {
+  return apiFetch(`${membersBase(workspaceId)}/${userId}/transfer-ownership`, {
+    token: accessToken,
+    method: "POST",
+  });
 }

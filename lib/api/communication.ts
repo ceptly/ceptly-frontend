@@ -1,5 +1,4 @@
-import { resolveApiBaseUrl } from "./auth";
-import { parseJsonResponse } from "./http";
+import { apiFetch, type ApiResult } from "./client";
 
 export type CommunicationPlatform = "slack" | "teams";
 
@@ -22,85 +21,32 @@ export interface ChatChannelsPayload {
   channels: ChatChannel[];
 }
 
-interface ApiEnvelope<T> {
-  success: boolean;
-  error?: string;
-  data?: T;
-}
-
-function authHeaders(accessToken: string): HeadersInit {
-  return { Authorization: `Bearer ${accessToken}` };
-}
-
-export async function getCommunicationSettings(
+export function getCommunicationSettings(
   accessToken: string,
   workspaceId: string,
-): Promise<ApiEnvelope<CommunicationSettings>> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/communication`,
-      {
-        method: "GET",
-        headers: authHeaders(accessToken),
-        cache: "no-store",
-      },
-    );
-    return parseJsonResponse<CommunicationSettings>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<CommunicationSettings>> {
+  return apiFetch(`/api/workspaces/${workspaceId}/communication`, {
+    token: accessToken,
+  });
 }
 
-export async function updateCommunicationPlatform(
+export function updateCommunicationPlatform(
   accessToken: string,
   workspaceId: string,
   platform: CommunicationPlatform,
-): Promise<ApiEnvelope<CommunicationSettings>> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/communication`,
-      {
-        method: "PATCH",
-        headers: {
-          ...authHeaders(accessToken),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ communication_platform: platform }),
-      },
-    );
-    return parseJsonResponse<CommunicationSettings>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<CommunicationSettings>> {
+  return apiFetch(`/api/workspaces/${workspaceId}/communication`, {
+    token: accessToken,
+    method: "PATCH",
+    body: { communication_platform: platform },
+  });
 }
 
-export async function listChatChannels(
+export function listChatChannels(
   accessToken: string,
   workspaceId: string,
-): Promise<ApiEnvelope<ChatChannelsPayload>> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/chat/channels`,
-      {
-        method: "GET",
-        headers: authHeaders(accessToken),
-        cache: "no-store",
-      },
-    );
-    return parseJsonResponse<ChatChannelsPayload>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<ChatChannelsPayload>> {
+  return apiFetch(`/api/workspaces/${workspaceId}/chat/channels`, {
+    token: accessToken,
+  });
 }

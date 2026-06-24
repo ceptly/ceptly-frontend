@@ -1,64 +1,25 @@
-import { resolveApiBaseUrl } from "./auth";
-import { parseJsonResponse } from "./http";
+import { apiFetch, type ApiResult } from "./client";
 
-export async function getDigestSlackChannel(
+type DigestChannel = { digest_slack_channel_id: string | null };
+
+const digestChannelPath = (workspaceId: string) =>
+  `/api/workspaces/${workspaceId}/digest-channel`;
+
+export function getDigestSlackChannel(
   accessToken: string,
   workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { digest_slack_channel_id: string | null };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/digest-channel`,
-      {
-        method: "GET",
-        headers: { Authorization: `Bearer ${accessToken}` },
-        cache: "no-store",
-      },
-    );
-    return parseJsonResponse<{
-      data?: { digest_slack_channel_id: string | null };
-    }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<DigestChannel>> {
+  return apiFetch(digestChannelPath(workspaceId), { token: accessToken });
 }
 
-export async function updateDigestSlackChannel(
+export function updateDigestSlackChannel(
   accessToken: string,
   workspaceId: string,
   digestSlackChannelId: string | null,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { digest_slack_channel_id: string | null };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/digest-channel`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ digest_slack_channel_id: digestSlackChannelId }),
-      },
-    );
-    return parseJsonResponse<{
-      data?: { digest_slack_channel_id: string | null };
-    }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<DigestChannel>> {
+  return apiFetch(digestChannelPath(workspaceId), {
+    token: accessToken,
+    method: "PATCH",
+    body: { digest_slack_channel_id: digestSlackChannelId },
+  });
 }

@@ -1,148 +1,65 @@
-import { resolveApiBaseUrl } from "./auth";
+import { apiFetch, type ApiResult } from "./client";
 import type { InvitePreview, WorkspaceInvite } from "./types";
-import { parseJsonResponse } from "./http";
 
-export async function listInvites(
+export function listInvites(
   accessToken: string,
   workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { invites: WorkspaceInvite[] };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/invites`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        cache: "no-store",
-      },
-    );
-
-    return parseJsonResponse<{ data?: { invites: WorkspaceInvite[] } }>(
-      response,
-    );
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<{ invites: WorkspaceInvite[] }>> {
+  return apiFetch(`/api/workspaces/${workspaceId}/invites`, {
+    token: accessToken,
+  });
 }
 
-export async function createInvite(
+export function createInvite(
   accessToken: string,
   workspaceId: string,
   email: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  code?: string;
-  seatUsage?: number;
-  paidSeats?: number;
-  data?: { invite: WorkspaceInvite };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/invites`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      },
-    );
-
-    return parseJsonResponse<{ data?: { invite: WorkspaceInvite } }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
+): Promise<
+  ApiResult<{ invite: WorkspaceInvite }> & {
+    code?: string;
+    seatUsage?: number;
+    paidSeats?: number;
   }
+> {
+  // The seat-limit response carries extra top-level fields alongside the
+  // standard envelope; apiFetch only types `data`, so widen the result.
+  return apiFetch<{ invite: WorkspaceInvite }>(
+    `/api/workspaces/${workspaceId}/invites`,
+    { token: accessToken, method: "POST", body: { email } },
+  ) as Promise<
+    ApiResult<{ invite: WorkspaceInvite }> & {
+      code?: string;
+      seatUsage?: number;
+      paidSeats?: number;
+    }
+  >;
 }
 
-export async function revokeInvite(
+export function revokeInvite(
   accessToken: string,
   workspaceId: string,
   inviteId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/invites/${inviteId}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    );
-
-    return parseJsonResponse<Record<string, never>>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<never>> {
+  return apiFetch(`/api/workspaces/${workspaceId}/invites/${inviteId}`, {
+    token: accessToken,
+    method: "DELETE",
+  });
 }
 
-export async function fetchInvitePreview(token: string): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { preview: InvitePreview };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(`${base}/api/invites/${token}`, {
-      method: "GET",
-      cache: "no-store",
-    });
-
-    return parseJsonResponse<{ data?: { preview: InvitePreview } }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+export function fetchInvitePreview(
+  token: string,
+): Promise<ApiResult<{ preview: InvitePreview }>> {
+  return apiFetch(`/api/invites/${token}`);
 }
 
-export async function acceptInvite(
+export function acceptInvite(
   accessToken: string,
   token: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { workspace: { id: string; name: string; role: string } };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(`${base}/api/invites/${token}/accept`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    return parseJsonResponse<{
-      data?: { workspace: { id: string; name: string; role: string } };
-    }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<
+  ApiResult<{ workspace: { id: string; name: string; role: string } }>
+> {
+  return apiFetch(`/api/invites/${token}/accept`, {
+    token: accessToken,
+    method: "POST",
+  });
 }

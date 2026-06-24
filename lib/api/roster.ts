@@ -1,5 +1,4 @@
-import { resolveApiBaseUrl } from "./auth";
-import { parseJsonResponse } from "./http";
+import { apiFetch, type ApiResult } from "./client";
 
 export interface RosterMember {
   id: string;
@@ -21,69 +20,29 @@ export interface RosterImportResult {
   failed: number;
 }
 
-export async function listRosterMembers(
+const rosterBase = (workspaceId: string) =>
+  `/api/workspaces/${workspaceId}/roster`;
+
+export function listRosterMembers(
   accessToken: string,
   workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { members: RosterMember[] };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/roster`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        cache: "no-store",
-      },
-    );
-
-    return parseJsonResponse<{ data?: { members: RosterMember[] } }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<{ members: RosterMember[] }>> {
+  return apiFetch(rosterBase(workspaceId), { token: accessToken });
 }
 
-export async function addRosterMember(
+export function addRosterMember(
   accessToken: string,
   workspaceId: string,
   email: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { member: RosterMember };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/roster`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      },
-    );
-
-    return parseJsonResponse<{ data?: { member: RosterMember } }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<{ member: RosterMember }>> {
+  return apiFetch(rosterBase(workspaceId), {
+    token: accessToken,
+    method: "POST",
+    body: { email },
+  });
 }
 
-export async function updateRosterMember(
+export function updateRosterMember(
   accessToken: string,
   workspaceId: string,
   memberId: string,
@@ -93,204 +52,47 @@ export async function updateRosterMember(
     timezone?: string | null;
     language?: string | null;
   },
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { member: RosterMember };
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/roster/${memberId}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      },
-    );
-
-    return parseJsonResponse<{ data?: { member: RosterMember } }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<{ member: RosterMember }>> {
+  return apiFetch(`${rosterBase(workspaceId)}/${memberId}`, {
+    token: accessToken,
+    method: "PATCH",
+    body: payload,
+  });
 }
 
-export async function importRosterFromSlack(
+function importRosterFrom(
+  source: "slack" | "linear" | "jira" | "monday" | "teams",
   accessToken: string,
   workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: RosterImportResult;
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/roster/import/slack`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    );
-
-    return parseJsonResponse<{ data?: RosterImportResult }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<RosterImportResult>> {
+  return apiFetch(`${rosterBase(workspaceId)}/import/${source}`, {
+    token: accessToken,
+    method: "POST",
+  });
 }
 
-export async function importRosterFromLinear(
-  accessToken: string,
-  workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: RosterImportResult;
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/roster/import/linear`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    );
+export const importRosterFromSlack = (token: string, workspaceId: string) =>
+  importRosterFrom("slack", token, workspaceId);
 
-    return parseJsonResponse<{ data?: RosterImportResult }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
-}
+export const importRosterFromLinear = (token: string, workspaceId: string) =>
+  importRosterFrom("linear", token, workspaceId);
 
-export async function importRosterFromJira(
-  accessToken: string,
-  workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: RosterImportResult;
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/roster/import/jira`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    );
+export const importRosterFromJira = (token: string, workspaceId: string) =>
+  importRosterFrom("jira", token, workspaceId);
 
-    return parseJsonResponse<{ data?: RosterImportResult }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
-}
+export const importRosterFromMonday = (token: string, workspaceId: string) =>
+  importRosterFrom("monday", token, workspaceId);
 
-export async function importRosterFromMonday(
-  accessToken: string,
-  workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: RosterImportResult;
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/roster/import/monday`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    );
+export const importRosterFromTeams = (token: string, workspaceId: string) =>
+  importRosterFrom("teams", token, workspaceId);
 
-    return parseJsonResponse<{ data?: RosterImportResult }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
-}
-
-export async function importRosterFromTeams(
-  accessToken: string,
-  workspaceId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  data?: RosterImportResult;
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/roster/import/teams`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    );
-
-    return parseJsonResponse<{ data?: RosterImportResult }>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
-}
-
-export async function deleteRosterMember(
+export function deleteRosterMember(
   accessToken: string,
   workspaceId: string,
   memberId: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  try {
-    const base = await resolveApiBaseUrl();
-    const response = await fetch(
-      `${base}/api/workspaces/${workspaceId}/roster/${memberId}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    );
-
-    return parseJsonResponse<Record<string, never>>(response);
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach the API. Is the backend running?",
-    };
-  }
+): Promise<ApiResult<never>> {
+  return apiFetch(`${rosterBase(workspaceId)}/${memberId}`, {
+    token: accessToken,
+    method: "DELETE",
+  });
 }
