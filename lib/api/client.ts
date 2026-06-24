@@ -12,6 +12,11 @@
 import { resolveApiBaseUrl } from "./auth";
 import { parseJsonResponse } from "./http";
 
+/**
+ * Standard backend response envelope. `T` is the shape of `data`. Endpoints
+ * that return no payload use `ApiResult<never>`, which makes `data` always
+ * `undefined` — callers should read only `success`/`error`.
+ */
 export type ApiResult<T> = {
   success: boolean;
   error?: string;

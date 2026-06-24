@@ -1,4 +1,4 @@
-import { apiFetch, type ApiResult } from "./client";
+import { apiFetch, type ApiFetchOptions, type ApiResult } from "./client";
 import type { ConversationResultDestination, WorkspaceSchedule } from "./types";
 
 export type AgentApiDestination = "dm" | "channel";
@@ -34,15 +34,13 @@ export interface DeployedAgent {
   sessionsStarted?: number;
 }
 
-/** All agent endpoints hang off the workspace's `/agents` path. */
+/** All agent endpoints are nested under the workspace's `/agents` path. */
 function agentsRequest<TData>(
   accessToken: string,
   workspaceId: string,
   path: string,
-  options: {
-    method?: "GET" | "POST" | "PUT" | "DELETE";
-    body?: unknown;
-  } = {},
+  // Derive method/body from apiFetch so the two never drift (e.g. PATCH).
+  options: Pick<ApiFetchOptions, "method" | "body"> = {},
 ): Promise<ApiResult<TData>> {
   return apiFetch<TData>(`/api/workspaces/${workspaceId}/agents${path}`, {
     token: accessToken,

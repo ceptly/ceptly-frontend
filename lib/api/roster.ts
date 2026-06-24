@@ -71,20 +71,30 @@ function importRosterFrom(
   });
 }
 
-export const importRosterFromSlack = (token: string, workspaceId: string) =>
-  importRosterFrom("slack", token, workspaceId);
+export const importRosterFromSlack = (
+  accessToken: string,
+  workspaceId: string,
+) => importRosterFrom("slack", accessToken, workspaceId);
 
-export const importRosterFromLinear = (token: string, workspaceId: string) =>
-  importRosterFrom("linear", token, workspaceId);
+export const importRosterFromLinear = (
+  accessToken: string,
+  workspaceId: string,
+) => importRosterFrom("linear", accessToken, workspaceId);
 
-export const importRosterFromJira = (token: string, workspaceId: string) =>
-  importRosterFrom("jira", token, workspaceId);
+export const importRosterFromJira = (
+  accessToken: string,
+  workspaceId: string,
+) => importRosterFrom("jira", accessToken, workspaceId);
 
-export const importRosterFromMonday = (token: string, workspaceId: string) =>
-  importRosterFrom("monday", token, workspaceId);
+export const importRosterFromMonday = (
+  accessToken: string,
+  workspaceId: string,
+) => importRosterFrom("monday", accessToken, workspaceId);
 
-export const importRosterFromTeams = (token: string, workspaceId: string) =>
-  importRosterFrom("teams", token, workspaceId);
+export const importRosterFromTeams = (
+  accessToken: string,
+  workspaceId: string,
+) => importRosterFrom("teams", accessToken, workspaceId);
 
 export function deleteRosterMember(
   accessToken: string,

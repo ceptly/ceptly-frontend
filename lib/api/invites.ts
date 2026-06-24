@@ -22,7 +22,9 @@ export function createInvite(
   }
 > {
   // The seat-limit response carries extra top-level fields alongside the
-  // standard envelope; apiFetch only types `data`, so widen the result.
+  // standard envelope; apiFetch only types `data`, so widen the result here.
+  // TODO: fold code/seatUsage/paidSeats into `data` on the backend so this
+  // cast can be dropped (the only non-standard envelope in lib/api).
   return apiFetch<{ invite: WorkspaceInvite }>(
     `/api/workspaces/${workspaceId}/invites`,
     { token: accessToken, method: "POST", body: { email } },
